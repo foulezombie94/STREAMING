@@ -346,12 +346,16 @@ const closePlayerBtn = document.getElementById('close-player-btn');
 
 let currentSeasonsCount = 0;
 
+function getProxyUrl(embedUrl: string): string {
+    return `/api/proxy?url=${encodeURIComponent(embedUrl)}`;
+}
+
 function updateTvIframe() {
     if (!videoIframe || !seasonSelect || !episodeSelect) return;
     const s = seasonSelect.value || "1";
     const e = episodeSelect.value || "1";
-    // Using vidsrc.me which is the most stable and official VidSrc domain
-    videoIframe.src = `https://vidsrc.me/embed/tv?tmdb=${mediaId}&season=${s}&episode=${e}`;
+    const embedUrl = `https://vidsrc-embed.ru/embed/tv/${mediaId}/${s}-${e}`;
+    videoIframe.src = getProxyUrl(embedUrl);
 }
 
 if (watchMovieBtn && playerSection && videoIframe) {
@@ -363,8 +367,8 @@ if (watchMovieBtn && playerSection && videoIframe) {
 
         if (mediaType === 'movie') {
             if (playerControls) playerControls.style.display = 'none';
-            // Using vidsrc.me which is the most stable and official VidSrc domain
-            videoIframe.src = `https://vidsrc.me/embed/movie?tmdb=${mediaId}`;
+            const embedUrl = `https://vidsrc-embed.ru/embed/movie/${mediaId}`;
+            videoIframe.src = getProxyUrl(embedUrl);
         } else {
             if (playerControls) playerControls.style.display = 'flex';
             // It's a TV show, initialize season select if not already done
