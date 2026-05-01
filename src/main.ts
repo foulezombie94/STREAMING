@@ -1,4 +1,5 @@
 import './style.css';
+import './antiblocker';
 
 // 1. Constantes TMDB
 const TMDB_API_KEY = 'e1a2bb6a3ed288feb5d767908732e751';
