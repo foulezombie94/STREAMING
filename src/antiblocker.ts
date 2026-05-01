@@ -43,6 +43,46 @@ import blockedScripts from './blocked_scripts.json';
         'aliexpress.com', 'aliexpress.ru', 'aliexpress.us',
         'alicdn.com', 'aliapp.org', 'alibaba.com',
         'ae01.alicdn.com', 'gw.alicdn.com',
+        // YouTube
+        'youtube.com', 'youtu.be', 'youtube-nocookie.com',
+        'youtubei.googleapis.com', 'ytimg.com', 'yt3.ggpht.com',
+        'googlevideo.com', 'youtube-ui.l.google.com',
+        // Facebook / Meta
+        'facebook.com', 'facebook.net', 'fbcdn.net', 'fb.com', 'fb.me',
+        'connect.facebook.net', 'staticxx.facebook.com',
+        'messenger.com', 'fbsbx.com',
+        // Instagram
+        'instagram.com', 'cdninstagram.com', 'ig.me',
+        // TikTok
+        'tiktok.com', 'tiktokcdn.com', 'tiktokv.com',
+        'musical.ly', 'tiktokcdn-us.com', 'byteoversea.com',
+        'byteimg.com', 'ibyteimg.com', 'ibytedtos.com',
+        // Twitter / X
+        'twitter.com', 'x.com', 't.co', 'twimg.com',
+        'platform.twitter.com', 'syndication.twitter.com',
+        'abs.twimg.com', 'pbs.twimg.com',
+        // Snapchat
+        'snapchat.com', 'snap.com', 'sc-cdn.net',
+        'snap-storage-cdn.appspot.com',
+        // Pinterest
+        'pinterest.com', 'pinimg.com', 'pinterest.fr',
+        'widgets.pinterest.com',
+        // LinkedIn
+        'linkedin.com', 'licdn.com', 'platform.linkedin.com',
+        // Reddit
+        'reddit.com', 'redd.it', 'redditstatic.com', 'redditmedia.com',
+        // Twitch
+        'twitch.tv', 'twitchcdn.net', 'jtvnw.net',
+        // Discord
+        'discord.com', 'discord.gg', 'discordapp.com', 'discordapp.net',
+        // Telegram
+        'telegram.org', 't.me', 'telegram.me',
+        // WhatsApp
+        'whatsapp.com', 'whatsapp.net', 'wa.me',
+        // Autres réseaux
+        'tumblr.com', 'vk.com', 'vkontakte.ru',
+        'weibo.com', 'wechat.com', 'line.me',
+        'threads.net', 'bsky.app', 'mastodon.social',
     ];
     extraDomains.forEach(d => blockedDomains.add(d));
 
