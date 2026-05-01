@@ -351,31 +351,43 @@ let currentServer = 'videasy'; // Default server
 
 // Server URL builders
 function getMovieUrl(server: string, id: string | null): string {
+    let url = '';
     switch (server) {
         case 'multiembed':
-            return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
+            url = `https://multiembed.mov/?video_id=${id}&tmdb=1`;
+            break;
         case 'moviesapi':
-            return `https://moviesapi.club/movie/${id}`;
+            url = `https://moviesapi.club/movie/${id}`;
+            break;
         case 'vidfast':
-            return `https://vidfast.pro/movie/${id}`;
+            url = `https://vidfast.pro/movie/${id}`;
+            break;
         case 'videasy':
         default:
-            return `https://player.videasy.net/movie/${id}`;
+            url = `https://player.videasy.net/movie/${id}`;
+            break;
     }
+    return `/api/proxy?url=${encodeURIComponent(url)}`;
 }
 
 function getTvUrl(server: string, id: string | null, season: string, episode: string): string {
+    let url = '';
     switch (server) {
         case 'multiembed':
-            return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
+            url = `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
+            break;
         case 'moviesapi':
-            return `https://moviesapi.club/tv/${id}-${season}-${episode}`;
+            url = `https://moviesapi.club/tv/${id}-${season}-${episode}`;
+            break;
         case 'vidfast':
-            return `https://vidfast.pro/tv/${id}/${season}/${episode}`;
+            url = `https://vidfast.pro/tv/${id}/${season}/${episode}`;
+            break;
         case 'videasy':
         default:
-            return `https://player.videasy.net/tv/${id}/${season}/${episode}`;
+            url = `https://player.videasy.net/tv/${id}/${season}/${episode}`;
+            break;
     }
+    return `/api/proxy?url=${encodeURIComponent(url)}`;
 }
 
 // Server button click handlers

@@ -10,13 +10,21 @@ export default async function handler(request) {
     return new Response('Missing url parameter', { status: 400 });
   }
 
-  // Only allow vidsrc domains
+  // Only allow trusted streaming domains
   const allowed = [
+    'player.videasy.net',
+    'multiembed.mov',
+    'moviesapi.club',
+    'vidfast.pro',
     'vidsrc-embed.ru',
     'vidsrc-embed.su',
     'vidsrcme.su',
     'vsrc.su',
     'vidsrc.me',
+    'vidsrc.to',
+    'vidsrc.cc',
+    'vidsrc.xyz',
+    'superembed.cc',
     'cloudnestra.com',
   ];
   
@@ -29,7 +37,20 @@ export default async function handler(request) {
 
   const isAllowed = allowed.some(d => urlObj.hostname === d || urlObj.hostname.endsWith('.' + d));
   if (!isAllowed) {
-    return new Response('Domain not allowed', { status: 403 });
+    return new Response('Domain not allowed: ' + urlObj.hostname, { status: 403 });
+  }
+
+  // 1. MÉTHODE "MISE EN ÉCHEC" : Blocage des scripts de pub/tracking connus
+  const scriptsToBlock = [
+    'popads.js', 'onclickads.js', 'disable-devtool.min.js', 
+    'console-ban', 'block-console', 'devtools-detect',
+    'shein.com', 'aliexpress.com', 'alicdn.com',
+    'doubleclick.net', 'googlesyndication.com',
+    'adservice.google.com', 'popads.net', 'popcash.net'
+  ];
+
+  if (scriptsToBlock.some(s => targetUrl.toLowerCase().includes(s))) {
+    return new Response('Blocked by Movieverse Shield', { status: 404 });
   }
 
   try {
@@ -65,15 +86,49 @@ export default async function handler(request) {
 
     const contentType = response.headers.get('content-type') || '';
 
-    // If it's HTML, rewrite internal URLs to go through our proxy
+    // If it's HTML, rewrite internal URLs and inject shield code
     if (contentType.includes('text/html')) {
       let html = await response.text();
+      
+      // 2. MÉTHODE "INJECTION CSS NETTOYEUR"
+      const cleanCSS = `
+<style>
+  /* On cache les overlays de pub, les bannières et les popups détectés */
+  [class*="popup"], [id*="popup"], .ads-layer, .overlay-ads, 
+  .video-ad-overlay, .player-ad, [class*="vast-"],
+  #popads, .popunder, .ad-banner, .ali-ads, .shein-ads {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
+  }
+</style>`;
+
+      // 3. MÉTHODE "NEUTRALISATION JS" : On désamorce window.open
+      const neutralJS = `
+<script>
+  (function() {
+    window.open = function() { console.log("[Shield] Pop-up bloquée !"); return null; };
+    window.alert = function() { return true; };
+    // Désactive les tentatives de détection de console
+    window.onresize = null;
+    console.clear = function() {};
+  })();
+</script>`;
+
+      // Inject just after <head> or at beginning
+      if (html.includes('<head>')) {
+        html = html.replace('<head>', `<head>${cleanCSS}${neutralJS}`);
+      } else {
+        html = cleanCSS + neutralJS + html;
+      }
       
       // Get the base URL for resolving relative URLs  
       const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
       const proxyBase = '/api/proxy?url=';
 
-      // Rewrite absolute URLs to vidsrc/cloudnestra domains to go through proxy
+      // Rewrite absolute URLs to allowed domains to go through proxy
       for (const domain of allowed) {
         // https:// URLs
         html = html.replace(
@@ -85,10 +140,6 @@ export default async function handler(request) {
       // Add base tag so relative URLs resolve correctly
       if (!html.includes('<base')) {
         html = html.replace('<head>', `<head><base href="${baseUrl}/">`);
-        // If no <head> tag, add at beginning
-        if (!html.includes('<base')) {
-          html = `<base href="${baseUrl}/">` + html;
-        }
       }
 
       newHeaders.set('Content-Type', 'text/html; charset=utf-8');
