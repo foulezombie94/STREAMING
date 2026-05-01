@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOVIEVERSE</title>
+    <!-- Importation de la police Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- En-tête -->
+    <header class="navbar" id="navbar">
+        <div class="logo">MOVIEVERSE</div>
+        <ul class="nav-links">
+            <li><a href="#" class="nav-item active" data-type="trending">Accueil</a></li>
+            <li><a href="#" class="nav-item" data-type="tv">Séries</a></li>
+            <li><a href="#" class="nav-item" data-type="movie">Films</a></li>
+            <li><a href="#" class="nav-item">Ma Liste</a></li>
+        </ul>
+        <div class="nav-actions">
+            <!-- Icône Cloche -->
+            <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+            </svg>
+            <!-- Barre de recherche -->
+            <label class="search-container" for="search-input">
+                <svg class="icon search-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+                <input type="text" id="search-input" class="search-input" placeholder="Rechercher...">
+            </label>
+            <!-- Photo de Profil -->
+            <img src="https://i.pravatar.cc/100?img=11" alt="Profile" class="profile-pic">
+        </div>
+    </header>
+
+    <main>
+        <!-- Section Héros -->
+        <section class="hero" id="hero-section">
+            <div class="hero-content">
+                <h1 id="hero-title">Chargement...</h1>
+                <div class="hero-meta" id="hero-meta">
+                    &nbsp;
+                </div>
+                <p class="hero-synopsis" id="hero-synopsis">
+                    Veuillez patienter pendant le chargement des films...
+                </p>
+                <div class="hero-buttons">
+                    <button class="btn btn-primary" id="watch-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 5V19L19 12L8 5Z"/>
+                        </svg>
+                        Regarder
+                    </button>
+                    <button class="btn btn-secondary" id="see-more-btn">Voir Plus</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Populaire / Carrousel -->
+        <section class="popular" id="popular-section">
+            <h2 class="section-title" id="section-title">Tendances Actuelles</h2>
+            
+            <!-- Barre de filtres par genre -->
+            <div class="genre-filters" id="genre-filters" style="display: none;"></div>
+
+            <div class="carousel-container" id="carousel">
+                <!-- Les cartes de films seront injectées ici par JS -->
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
