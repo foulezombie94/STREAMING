@@ -350,7 +350,7 @@ function updateTvIframe() {
     if (!videoIframe || !seasonSelect || !episodeSelect) return;
     const s = seasonSelect.value || "1";
     const e = episodeSelect.value || "1";
-    videoIframe.src = `https://vsrc.su/embed/tv?tmdb=${mediaId}&season=${s}&episode=${e}&ds_lang=fr`;
+    videoIframe.src = `https://vsembed.su/embed/tv?tmdb=${mediaId}&season=${s}&episode=${e}&ds_lang=fr`;
 }
 
 if (watchMovieBtn && playerSection && videoIframe) {
@@ -362,7 +362,7 @@ if (watchMovieBtn && playerSection && videoIframe) {
 
         if (mediaType === 'movie') {
             if (playerControls) playerControls.style.display = 'none';
-            videoIframe.src = `https://vsrc.su/embed/movie?tmdb=${mediaId}&ds_lang=fr`;
+            videoIframe.src = `https://vsembed.su/embed/movie?tmdb=${mediaId}&ds_lang=fr`;
         } else {
             if (playerControls) playerControls.style.display = 'flex';
             // It's a TV show, initialize season select if not already done
