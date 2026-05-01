@@ -1,100 +1,77 @@
 /**
- * MOVIEVERSE Anti-Annoyance Shield
- * Based on Fanboy's Annoyance List - comprehensive ad/popup/tracking blocker
+ * MOVIEVERSE Anti-Annoyance Shield v2.0
+ * Based on Fanboy's Annoyance List (28,121 rules)
+ * 1,025 blocked domains via Set + 1,660 blocked script patterns
  * Blocks: ads, popups, cookie banners, tracking, notifications, overlays, redirects
  */
+
+import blacklist from './blacklist.json';
+import blockedScripts from './blocked_scripts.json';
 
 (() => {
     'use strict';
 
-    // ===== 1. BLOCKED DOMAINS (from Fanboy's list - ad networks, trackers, popups) =====
-    const BLOCKED_DOMAINS: string[] = [
-        // Ad networks
-        'doubleclick.net', 'googlesyndication.com', 'googleadservices.com',
-        'adservice.google.com', 'pagead2.googlesyndication.com',
-        'adnxs.com', 'adsrvr.org', 'adtechus.com', 'advertising.com',
-        'amazon-adsystem.com', 'bidswitch.net', 'casalemedia.com',
-        'criteo.com', 'criteo.net', 'demdex.net', 'dotomi.com',
-        'exoclick.com', 'exponential.com', 'eyeblaster.com',
-        'flashtalking.com', 'gumgum.com', 'indexww.com',
-        'mathtag.com', 'media.net', 'moatads.com', 'mookie1.com',
-        'openx.net', 'pubmatic.com', 'rfihub.com', 'richaudience.com',
-        'rubiconproject.com', 'scorecardresearch.com', 'serving-sys.com',
-        'sharethrough.com', 'smartadserver.com', 'taboola.com',
-        'tidaltv.com', 'tribalfusion.com', 'turn.com',
-        'yieldmo.com', 'zemanta.com',
-        // Popups / annoyances
-        'optinmonster.com', 'opmnstr.com', 'optmnstr.com', 'optkit.com',
-        'optnmnstr.com', 'optnmstr.com', 'optimonk.com',
-        'hellobar.com', 'privy.com', 'sleeknote.com', 'wisepops.com',
-        'exitintel.com', 'pippity.com', 'screenpopper.com',
-        'convertflow.co', 'getdrip.com', 'leadpages.co',
-        'hsleadflows.net', 'mailmunch.co', 'sumo.com', 'sumome.com',
-        'zotabox.com', 'prooffactor.com', 'usefomo.com',
-        'wheelysales.com', 'rightmessage.com',
-        // Tracking / analytics (aggressive)
+    // ===== 1. DOMAIN BLOCKLIST (1,025 domains from Fanboy list) =====
+    const blockedDomains: Set<string> = new Set(blacklist as string[]);
+
+    // ===== 2. ADDITIONAL STREAMING-SPECIFIC DOMAINS =====
+    const extraDomains = [
+        'popads.net', 'popcash.net', 'popunder.net', 'propellerads.com',
+        'adcash.com', 'hilltopads.net', 'juicyads.com', 'trafficjunky.net',
+        'trafficfactory.biz', 'clickadu.com', 'evadav.com', 'galaksion.com',
+        'mondiad.com', 'a-ads.com', 'bitmedia.io', 'coinzilla.com',
+        'cointraffic.io', 'exoclick.com', 'adnxs.com', 'adsrvr.org',
+        'adtechus.com', 'advertising.com', 'amazon-adsystem.com',
+        'bidswitch.net', 'casalemedia.com', 'criteo.com', 'criteo.net',
+        'demdex.net', 'dotomi.com', 'exponential.com', 'eyeblaster.com',
+        'flashtalking.com', 'gumgum.com', 'indexww.com', 'mathtag.com',
+        'media.net', 'moatads.com', 'mookie1.com', 'openx.net',
+        'pubmatic.com', 'rfihub.com', 'richaudience.com', 'rubiconproject.com',
+        'scorecardresearch.com', 'serving-sys.com', 'sharethrough.com',
+        'smartadserver.com', 'tidaltv.com', 'tribalfusion.com', 'turn.com',
+        'yieldmo.com', 'zemanta.com', 'doubleclick.net',
+        'googlesyndication.com', 'googleadservices.com',
+        'pagead2.googlesyndication.com', 'adservice.google.com',
+        'cloudnestra.com', 'novavaultcore.co.in',
+        'bfrss.xyz', 'bfrns.xyz', 'iclickcdn.com', 'stooadstools.com',
         'hotjar.com', 'mouseflow.com', 'luckyorange.com',
         'fullstory.com', 'crazyegg.com', 'inspectlet.com',
         'logrocket.com', 'clarity.ms',
-        // Social widgets / annoyances
-        'platform.twitter.com', 'connect.facebook.net',
-        'apis.google.com/js/plusone', 'widgets.pinterest.com',
-        'disqus.com', 'nrelate.com', 'linkwithin.com',
-        // Push notifications
-        'onesignal.com', 'pushwoosh.com', 'pushcrew.com',
-        'webpushr.com', 'pushengage.com', 'pushassist.com',
-        'pushly.com', 'gravitec.net', 'notifyon.com',
-        'frizbit.com', 'letreach.com', 'batch.com',
-        // Chat widgets (annoying auto-popups)
-        'tawk.to', 'crisp.chat', 'drift.com', 'intercom.io',
-        'livechat.com', 'olark.com', 'zendesk.com',
-        // Misc annoyances from Fanboy list
-        'taboola.com', 'outbrain.com', 'zergnet.com', 'revcontent.com',
-        'mgid.com', 'content.ad', 'contentad.net',
-        'plista.com', 'ligatus.com', 'insticator.com',
-        'apester.com', 'contextly.com', 'phoenix-widget.com',
-        // Malware / scam domains commonly injected by video players
-        'cloudnestra.com', 'novavaultcore.co.in',
-        'bfrss.xyz', 'bfrns.xyz', 'iclickcdn.com',
-        'stooadstools.com', 'whos.amung.us',
-        'popads.net', 'popcash.net', 'popunder.net',
-        'adcash.com', 'propellerads.com', 'hilltopads.net',
-        'juicyads.com', 'trafficjunky.net', 'trafficfactory.biz',
-        'clickadu.com', 'evadav.com', 'galaksion.com',
-        'mondiad.com', 'a-ads.com', 'bitmedia.io',
-        'coinzilla.com', 'cointraffic.io',
-        // Anti-devtools / anti-rightclick (from Fanboy list)
-        'devtools-detect', 'disable-devtool',
-        // Cookie consent popups
-        'cookiebot.com', 'cookiepro.com', 'cookielaw.org',
-        'trustarc.com', 'evidon.com', 'consentmanager.net',
-        'quantcast.com', 'onetrust.com',
     ];
+    extraDomains.forEach(d => blockedDomains.add(d));
 
-    // ===== 2. BLOCKED SCRIPT PATTERNS (from Fanboy list) =====
-    const BLOCKED_SCRIPT_PATTERNS: RegExp[] = [
-        /popupally/i, /popup-maker/i, /popup-builder/i,
-        /exitintent/i, /exit.intent/i, /ExitIntentPopUp/i,
-        /devtools-detect/i, /disable-devtool/i, /devtools-detector/i,
-        /console-ban/i, /block-console/i, /console-blocker/i,
-        /antirightclick/i, /disablerightclick/i, /no-right-click/i,
-        /block-right-click/i, /norightclick/i,
-        /detectIncognito/i, /detect\.dev/i,
-        /wordpress-popup/i, /scroll-triggered-box/i,
-        /hellobar/i, /optinmonster/i, /opmnstr/i,
-        /mailmunch/i, /sumo\.com/i, /sumome/i,
-        /pushwoosh/i, /onesignal/i, /webpushr/i,
-        /popunder/i, /popads/i, /popcash/i,
-        /adsbygoogle/i, /googlesyndication/i,
-        /taboola/i, /outbrain/i, /mgid/i, /revcontent/i,
-        /coinminer/i, /coinhive/i, /cryptonight/i,
-        /snowstorm/i, /snowfall/i, /letitsnow/i, /snow\.js/i,
-        /fartscroll/i, /particleground/i,
-    ];
+    // ===== 3. SCRIPT PATH PATTERNS (1,660 from Fanboy list) =====
+    const scriptPatterns: string[] = blockedScripts as string[];
 
-    // ===== 3. CSS SELECTORS TO HIDE (from Fanboy annoyance list) =====
+    // ===== 4. DOMAIN CHECK (with subdomain matching) =====
+    function isDomainBlocked(url: string): boolean {
+        try {
+            const hostname = new URL(url).hostname;
+            if (blockedDomains.has(hostname)) return true;
+            // Check parent domains (e.g. cdn.optinmonster.com → optinmonster.com)
+            const parts = hostname.split('.');
+            for (let i = 1; i < parts.length - 1; i++) {
+                if (blockedDomains.has(parts.slice(i).join('.'))) return true;
+            }
+            return false;
+        } catch {
+            return false;
+        }
+    }
+
+    // ===== 5. SCRIPT PATH CHECK =====
+    function isScriptBlocked(url: string): boolean {
+        const urlLower = url.toLowerCase();
+        return scriptPatterns.some(p => urlLower.includes(p.toLowerCase()));
+    }
+
+    function shouldBlock(url: string): boolean {
+        return isDomainBlocked(url) || isScriptBlocked(url);
+    }
+
+    // ===== 6. ANNOYANCE-HIDING CSS =====
     const ANNOYANCE_CSS = `
-        /* Cookie consent / GDPR banners */
+        /* Cookie / GDPR / Consent banners */
         #cookie-banner, #cookie-consent, #cookie-notice, #cookie-bar,
         #cookiebar, #cookie-popup, #cookie-modal, #cookie-law,
         .cookie-banner, .cookie-consent, .cookie-notice, .cookie-bar,
@@ -108,13 +85,14 @@
         [id*="gdpr"], [class*="gdpr-banner"],
         #CybotCookiebotDialog, #onetrust-banner-sdk,
         .truste_box_overlay, .truste_overlay,
+        #consentBanner, .cmp-container, .cmp-banner,
 
         /* Newsletter / subscription popups */
         .newsletter-popup, .newsletter-modal, .newsletter-overlay,
         .subscribe-popup, .subscribe-modal, .subscribe-overlay,
         .email-popup, .email-modal, .email-overlay,
         .signup-popup, .signup-modal, .signup-overlay,
-        .popup-overlay, .modal-overlay, .exit-popup,
+        .popup-overlay, .exit-popup,
         .exit-intent, .exit-intent-popup, .exit-modal,
         [class*="newsletter-popup"], [class*="subscribe-popup"],
         [class*="exit-intent"], [class*="email-signup"],
@@ -129,7 +107,7 @@
         .yo-notification, .fomo-notification, .social-proof,
         [class*="fomo-"], [class*="social-proof"],
 
-        /* Scroll-triggered / sticky annoyances */
+        /* Scroll-triggered annoyances */
         .slide-dock-on, .sticky-widget,
         [class*="scroll-triggered"],
 
@@ -137,24 +115,30 @@
         .app-banner, .smart-banner, .smartbanner,
         [class*="app-banner"], [class*="smart-banner"],
 
-        /* Chat widget popups (auto-opened) */
+        /* Chat widget auto-popups */
         .drift-widget-welcome-message,
         .intercom-lightweight-app-launcher,
 
-        /* Paywalls / login walls */
+        /* Paywalls */
         .paywall-overlay, .paywall-modal,
         [class*="paywall"], [class*="login-wall"],
 
-        /* Video player overlay ads */
+        /* Video overlay ads */
         .video-ad-overlay, .player-ad,
         [class*="ad-overlay"], [class*="vast-"],
+        [class*="preroll"], [class*="midroll"],
 
-        /* Generic overlays & modals that block content */
-        .overlay-blocker, .content-blocker,
-        [class*="blocker-overlay"]
+        /* Misc Fanboy selectors */
+        .preezie-widget-modal, .es-badge-container,
+        .vjs-pip-y-bottom, [name="bridged-flipcard-div"],
+        .pm-follow-wrap, .bp-banner,
+        .u-zIndexMetabar.u-fixed, .subscription-tout,
+        .widget_rssiconwidget, .zr_alerts_widget_link,
+        .ad400, .check-also-box,
+        #TB_overlay, #TB_window
         { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
 
-        /* Restore body scroll when popups try to lock it */
+        /* Restore body scroll */
         body.no-scroll, body.modal-open, body.popup-open,
         body.overflow-hidden, body.locked,
         html.no-scroll, html.modal-open, html.popup-open {
@@ -163,185 +147,148 @@
         }
     `;
 
-    // ===== INJECT ANNOYANCE-HIDING CSS =====
+    // ===== INJECT CSS =====
     function injectCSS() {
         const style = document.createElement('style');
-        style.id = 'mv-antiblocker-css';
+        style.id = 'mv-shield-css';
         style.textContent = ANNOYANCE_CSS;
         (document.head || document.documentElement).appendChild(style);
     }
 
-    // ===== BLOCK NETWORK REQUESTS =====
-    function isDomainBlocked(url: string): boolean {
-        try {
-            const hostname = new URL(url).hostname;
-            return BLOCKED_DOMAINS.some(d => hostname === d || hostname.endsWith('.' + d));
-        } catch {
-            return false;
-        }
-    }
-
-    function isScriptBlocked(url: string): boolean {
-        return BLOCKED_SCRIPT_PATTERNS.some(p => p.test(url));
-    }
-
-    // Override fetch to block ad/tracker requests
+    // ===== OVERRIDE FETCH =====
     const originalFetch = window.fetch;
     window.fetch = function (...args: Parameters<typeof fetch>) {
         const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url || '';
-        if (isDomainBlocked(url) || isScriptBlocked(url)) {
+        if (shouldBlock(url)) {
             return Promise.resolve(new Response('', { status: 200 }));
         }
         return originalFetch.apply(this, args);
     };
 
-    // Override XMLHttpRequest to block ad/tracker requests
+    // ===== OVERRIDE XMLHttpRequest =====
     const originalXHROpen = XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.open = function (method: string, url: string | URL, ...rest: any[]) {
         const urlStr = url.toString();
-        if (isDomainBlocked(urlStr) || isScriptBlocked(urlStr)) {
-            // Redirect to empty response
+        if (shouldBlock(urlStr)) {
             return originalXHROpen.apply(this, [method, 'data:text/plain,', ...rest] as any);
         }
         return originalXHROpen.apply(this, [method, url, ...rest] as any);
     };
 
-    // ===== BLOCK POPUP WINDOWS (from video players) =====
+    // ===== BLOCK POPUPS =====
     const originalOpen = window.open;
     window.open = function (...args: Parameters<typeof window.open>) {
         const url = args[0]?.toString() || '';
-        // Only allow popups that are same-origin or trusted
         if (url && !url.startsWith(window.location.origin) && !url.startsWith('about:')) {
-            console.log('[AntiBlocker] Blocked popup:', url);
+            console.log('[Shield] Popup bloqué:', url);
             return null;
         }
         return originalOpen.apply(this, args);
     };
 
-    // ===== BLOCK UNWANTED REDIRECTS =====
-    // Prevent JS-based redirects from ad scripts
-    const originalAssign = window.location.assign;
-    const originalReplace = window.location.replace;
-    
-    const isRedirectAllowed = (url: string): boolean => {
-        try {
-            const target = new URL(url, window.location.origin);
-            // Allow same-origin redirects and TMDB/our own domains
-            return target.origin === window.location.origin;
-        } catch {
-            return false;
-        }
-    };
-
-    // ===== BLOCK SCRIPT INJECTION via DOM =====
+    // ===== DOM MUTATION OBSERVER (block injected scripts/iframes/overlays) =====
     const observer = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
             for (const node of mutation.addedNodes) {
-                if (node instanceof HTMLElement) {
-                    // Block injected scripts
-                    if (node.tagName === 'SCRIPT') {
-                        const src = node.getAttribute('src') || '';
-                        if (src && (isDomainBlocked(src) || isScriptBlocked(src))) {
-                            node.remove();
-                            console.log('[AntiBlocker] Blocked script:', src);
-                            continue;
-                        }
-                        // Block inline anti-devtools scripts
-                        const content = node.textContent || '';
-                        if (/debugger|devtools|right.?click|context.?menu.*prevent|disable.*console/i.test(content) && content.length < 5000) {
-                            node.remove();
-                            console.log('[AntiBlocker] Blocked inline anti-devtools script');
-                            continue;
-                        }
-                    }
+                if (!(node instanceof HTMLElement)) continue;
 
-                    // Block injected iframes (ads)
-                    if (node.tagName === 'IFRAME') {
-                        const src = node.getAttribute('src') || '';
-                        if (src && isDomainBlocked(src)) {
-                            node.remove();
-                            console.log('[AntiBlocker] Blocked ad iframe:', src);
-                            continue;
-                        }
+                // Block injected scripts
+                if (node.tagName === 'SCRIPT') {
+                    const src = node.getAttribute('src') || '';
+                    if (src && shouldBlock(src)) {
+                        node.remove();
+                        continue;
                     }
+                    // Block inline anti-devtools
+                    const txt = node.textContent || '';
+                    if (/debugger|devtools|right.?click|context.?menu.*prevent|disable.*console/i.test(txt) && txt.length < 5000) {
+                        node.remove();
+                        continue;
+                    }
+                }
 
-                    // Remove cookie/popup overlays
-                    const el = node as HTMLElement;
-                    const id = (el.id || '').toLowerCase();
-                    const cls = (el.className?.toString() || '').toLowerCase();
+                // Block injected ad iframes
+                if (node.tagName === 'IFRAME') {
+                    const src = node.getAttribute('src') || '';
+                    if (src && shouldBlock(src)) {
+                        node.remove();
+                        continue;
+                    }
+                }
+
+                // Block injected link/stylesheets from ad networks
+                if (node.tagName === 'LINK') {
+                    const href = node.getAttribute('href') || '';
+                    if (href && isDomainBlocked(href)) {
+                        node.remove();
+                        continue;
+                    }
+                }
+
+                // Hide cookie/popup overlays
+                const el = node as HTMLElement;
+                const id = (el.id || '').toLowerCase();
+                const cls = (el.className?.toString() || '').toLowerCase();
+                if (
+                    /cookie|gdpr|consent|newsletter.*popup|subscribe.*popup|push.*notif|paywall/i.test(id + ' ' + cls) &&
+                    !el.closest('.player-section') && !el.closest('#player-section')
+                ) {
+                    el.style.display = 'none';
+                }
+
+                // Block fullscreen ad overlays (z-index > 9000, fixed position, full width)
+                if (el.style?.position === 'fixed' || el.style?.position === 'absolute') {
+                    const cs = window.getComputedStyle(el);
                     if (
-                        /cookie|gdpr|consent|newsletter.*popup|subscribe.*popup|push.*notif/i.test(id + ' ' + cls) &&
-                        !el.closest('.player-section') // Don't touch our player
-                    ) {
-                        el.style.display = 'none';
-                        console.log('[AntiBlocker] Hidden annoyance element:', id || cls);
-                    }
-
-                    // Block fullscreen overlays from ad scripts
-                    const style = window.getComputedStyle(el);
-                    if (
-                        style.position === 'fixed' &&
-                        style.zIndex && parseInt(style.zIndex) > 9000 &&
-                        (style.width === '100%' || style.width === '100vw') &&
+                        cs.zIndex && parseInt(cs.zIndex) > 9000 &&
                         !el.closest('.player-section') &&
-                        !el.closest('#player-section') &&
                         !el.id?.includes('player') &&
-                        !el.classList.contains('modal')
+                        !el.classList.contains('modal') &&
+                        !el.closest('.modal')
                     ) {
-                        // Likely an ad overlay
                         setTimeout(() => {
-                            if (el.parentNode && !el.closest('.player-section')) {
-                                el.style.display = 'none';
-                                console.log('[AntiBlocker] Hidden fullscreen overlay');
-                            }
-                        }, 100);
+                            if (el.parentNode) el.style.display = 'none';
+                        }, 50);
                     }
                 }
             }
         }
     });
 
-    // ===== PREVENT ANTI-DEVTOOLS / ANTI-RIGHTCLICK =====
-    // Re-enable right-click
-    document.addEventListener('contextmenu', (e) => { e.stopPropagation(); }, true);
-    
-    // Block debugger statements from video player scripts
-    // This is handled by the script content check in MutationObserver
+    // ===== PREVENT ANTI-DEVTOOLS =====
+    document.addEventListener('contextmenu', (e) => e.stopPropagation(), true);
 
-    // Prevent visibility change tricks (sites that pause when you switch tabs)
+    // Prevent visibility tricks
     Object.defineProperty(document, 'hidden', { get: () => false, configurable: true });
     Object.defineProperty(document, 'visibilityState', { get: () => 'visible', configurable: true });
 
-    // ===== BLOCK beforeunload ANNOYANCES =====
-    window.addEventListener('beforeunload', (e) => {
-        // Prevent "are you sure you want to leave" popups from ad scripts
-        e.stopImmediatePropagation();
-    }, true);
+    // Block beforeunload annoyances
+    window.addEventListener('beforeunload', (e) => e.stopImmediatePropagation(), true);
 
-    // ===== RESTORE SCROLL when popups try to lock body =====
+    // ===== RESTORE SCROLL =====
     function unlockScroll() {
         document.body.style.overflow = '';
         document.body.style.position = '';
         document.documentElement.style.overflow = '';
         document.documentElement.style.position = '';
-        document.body.classList.remove('no-scroll', 'modal-open', 'popup-open', 'overflow-hidden', 'locked');
-        document.documentElement.classList.remove('no-scroll', 'modal-open', 'popup-open');
+        ['no-scroll', 'modal-open', 'popup-open', 'overflow-hidden', 'locked'].forEach(c => {
+            document.body.classList.remove(c);
+            document.documentElement.classList.remove(c);
+        });
     }
-
-    // Periodically check for scroll locks (from cookie banners etc)
     setInterval(unlockScroll, 3000);
 
-    // ===== INITIALIZE =====
+    // ===== INIT =====
     function init() {
         injectCSS();
-        observer.observe(document.documentElement, {
-            childList: true,
-            subtree: true,
-        });
-        console.log('%c[MOVIEVERSE AntiBlocker] Shield active ✅', 'color: #4ade80; font-weight: bold; font-size: 14px;');
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+        const totalRules = blockedDomains.size + scriptPatterns.length;
+        console.log(
+            `%c[MOVIEVERSE Shield v2.0] ✅ Actif — ${blockedDomains.size} domaines + ${scriptPatterns.length} patterns = ${totalRules} règles`,
+            'color: #4ade80; font-weight: bold; font-size: 13px;'
+        );
     }
 
-    // Start immediately
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
