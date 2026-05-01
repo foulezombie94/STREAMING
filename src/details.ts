@@ -350,8 +350,8 @@ function updateTvIframe() {
     if (!videoIframe || !seasonSelect || !episodeSelect) return;
     const s = seasonSelect.value || "1";
     const e = episodeSelect.value || "1";
-    // Using vidsrcme.su as alternative official domain to bypass blocks
-    videoIframe.src = `https://vidsrcme.su/embed/tv?tmdb=${mediaId}&season=${s}&episode=${e}&ds_lang=fr`;
+    // Using vidsrc.me which is the most stable and official VidSrc domain
+    videoIframe.src = `https://vidsrc.me/embed/tv?tmdb=${mediaId}&season=${s}&episode=${e}`;
 }
 
 if (watchMovieBtn && playerSection && videoIframe) {
@@ -363,8 +363,8 @@ if (watchMovieBtn && playerSection && videoIframe) {
 
         if (mediaType === 'movie') {
             if (playerControls) playerControls.style.display = 'none';
-            // Using vidsrcme.su as alternative official domain to bypass blocks
-            videoIframe.src = `https://vidsrcme.su/embed/movie?tmdb=${mediaId}&ds_lang=fr`;
+            // Using vidsrc.me which is the most stable and official VidSrc domain
+            videoIframe.src = `https://vidsrc.me/embed/movie?tmdb=${mediaId}`;
         } else {
             if (playerControls) playerControls.style.display = 'flex';
             // It's a TV show, initialize season select if not already done
