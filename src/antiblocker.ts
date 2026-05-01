@@ -46,8 +46,8 @@ import blockedCSS from './blocked_css.json';
         'ae01.alicdn.com', 'gw.alicdn.com',
         // YouTube
         'youtube.com', 'youtu.be', 'youtube-nocookie.com',
-        'youtubei.googleapis.com', 'ytimg.com', 'yt3.ggpht.com',
-        'googlevideo.com', 'youtube-ui.l.google.com',
+        'youtubei.googleapis.com', 'yt3.ggpht.com',
+        'youtube-ui.l.google.com',
         // Facebook / Meta
         'facebook.com', 'facebook.net', 'fbcdn.net', 'fb.com', 'fb.me',
         'connect.facebook.net', 'staticxx.facebook.com',
@@ -90,12 +90,31 @@ import blockedCSS from './blocked_css.json';
     // ===== 3. SCRIPT PATH PATTERNS (1,660 from Fanboy list) =====
     const scriptPatterns: string[] = blockedScripts as string[];
 
-    // ===== 4. DOMAIN CHECK (with subdomain matching) =====
+    // ===== 4. EXCLUSIONS (Whitelist) - To never block these =====
+    const whitelist = new Set([
+        'player.videasy.net', 'videasy.net',
+        'multiembed.mov', 'multiembed.cc',
+        'moviesapi.club', 'vidfast.pro',
+        'themoviedb.org', 'tmdb.org',
+        'vidsrc.me', 'vidsrc.to', 'vidsrc.cc', 'vidsrc.xyz',
+        'cloudflare.com', 'fastly.net', 'akamaihd.net',
+        'google.com', 'gstatic.com', 'googleapis.com'
+    ]);
+
+    // ===== 5. DOMAIN CHECK (with subdomain matching) =====
     function isDomainBlocked(url: string): boolean {
         try {
-            const hostname = new URL(url).hostname;
+            const urlObj = new URL(url);
+            const hostname = urlObj.hostname;
+
+            // Check whitelist first
+            if (whitelist.has(hostname)) return false;
+            for (const d of whitelist) {
+                if (hostname.endsWith('.' + d)) return false;
+            }
+
             if (blockedDomains.has(hostname)) return true;
-            // Check parent domains (e.g. cdn.optinmonster.com → optinmonster.com)
+            // Check parent domains
             const parts = hostname.split('.');
             for (let i = 1; i < parts.length - 1; i++) {
                 if (blockedDomains.has(parts.slice(i).join('.'))) return true;
@@ -106,8 +125,16 @@ import blockedCSS from './blocked_css.json';
         }
     }
 
-    // ===== 5. SCRIPT PATH CHECK =====
+    // ===== 6. SCRIPT PATH CHECK =====
     function isScriptBlocked(url: string): boolean {
+        try {
+            const hostname = new URL(url).hostname;
+            if (whitelist.has(hostname)) return false;
+            for (const d of whitelist) {
+                if (hostname.endsWith('.' + d)) return false;
+            }
+        } catch {}
+
         const urlLower = url.toLowerCase();
         return scriptPatterns.some(p => urlLower.includes(p.toLowerCase()));
     }
