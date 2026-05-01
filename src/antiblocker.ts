@@ -7,6 +7,7 @@
 
 import blacklist from './blacklist.json';
 import blockedScripts from './blocked_scripts.json';
+import blockedCSS from './blocked_css.json';
 
 (() => {
     'use strict';
@@ -181,7 +182,8 @@ import blockedScripts from './blocked_scripts.json';
         .u-zIndexMetabar.u-fixed, .subscription-tout,
         .widget_rssiconwidget, .zr_alerts_widget_link,
         .ad400, .check-also-box,
-        #TB_overlay, #TB_window
+        #TB_overlay, #TB_window,
+        ${(blockedCSS as string[]).join(',\n        ')}
         { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
 
         /* Restore body scroll */
