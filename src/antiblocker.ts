@@ -37,6 +37,12 @@ import blockedScripts from './blocked_scripts.json';
         'hotjar.com', 'mouseflow.com', 'luckyorange.com',
         'fullstory.com', 'crazyegg.com', 'inspectlet.com',
         'logrocket.com', 'clarity.ms',
+        // Shein & AliExpress
+        'shein.com', 'sheinsz.ltwebstatic.com', 'shein.co', 'shein.fr',
+        'sheinside.com', 'sheingsp.ltwebstatic.com',
+        'aliexpress.com', 'aliexpress.ru', 'aliexpress.us',
+        'alicdn.com', 'aliapp.org', 'alibaba.com',
+        'ae01.alicdn.com', 'gw.alicdn.com',
     ];
     extraDomains.forEach(d => blockedDomains.add(d));
 
