@@ -402,17 +402,17 @@ a {
     .navbar { padding: 1.2rem 1.5rem; }
     .navbar.scrolled { padding: 0.8rem 1.5rem; }
     .nav-links { display: none; } 
-    .hero { height: 85vh; }
+    .hero { height: auto; min-height: 75vh; padding-bottom: 40px; }
     .hero-content { padding-left: 1.5rem; padding-right: 1.5rem; width: 100%; padding-top: 12vh; }
-    .hero h1 { font-size: 32px; margin-bottom: 12px; }
-    .hero-synopsis { font-size: 14px; margin-bottom: 20px; max-width: 100%; }
-    .hero-meta { font-size: 12px; margin-bottom: 12px; flex-wrap: wrap; }
-    .hero-buttons { flex-direction: column; gap: 10px; }
+    .hero h1 { font-size: 28px; margin-bottom: 10px; }
+    .hero-synopsis { font-size: 14px; margin-bottom: 15px; max-width: 100%; -webkit-line-clamp: 3; }
+    .hero-meta { font-size: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+    .hero-buttons { flex-direction: column; gap: 10px; max-width: 280px; }
     .btn { padding: 12px 24px; font-size: 14px; width: 100%; }
     .section-title { padding-left: 1.5rem; font-size: 18px; margin-bottom: 15px; }
     .carousel-container { padding: 10px 1.5rem 2rem 1.5rem; gap: 12px; }
     .movie-card { flex: 0 0 140px; min-width: 130px; }
-    .popular { margin-top: -100px; }
+    .popular { margin-top: -50px; }
     .logo { font-size: 20px; letter-spacing: 2px; }
     .nav-actions { gap: 12px; }
     .icon { width: 18px; height: 18px; }
@@ -454,11 +454,13 @@ a {
 }
 
 @media (max-width: 480px) {
-    .hero { height: 80vh; }
-    .hero-content { padding-top: 15vh; }
-    .hero h1 { font-size: 26px; }
-    .hero-synopsis { -webkit-line-clamp: 2; font-size: 13px; }
+    .hero { min-height: 70vh; }
+    .hero-content { padding-top: 13vh; }
+    .hero h1 { font-size: 24px; }
+    .hero-synopsis { -webkit-line-clamp: 2; font-size: 13px; margin-bottom: 12px; }
     .hero-meta { font-size: 11px; }
+    .hero-buttons { max-width: 240px; gap: 8px; }
+    .popular { margin-top: -30px; }
     .movie-card { flex: 0 0 120px; min-width: 110px; }
     .section-title { font-size: 16px; padding-left: 1rem; }
     .carousel-container { padding-left: 1rem; padding-right: 1rem; gap: 10px; }
