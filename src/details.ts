@@ -350,8 +350,8 @@ function updateTvIframe() {
     if (!videoIframe || !seasonSelect || !episodeSelect) return;
     const s = seasonSelect.value || "1";
     const e = episodeSelect.value || "1";
-    // vidsrc.cc uses its own CDN (not cloudnestra) and allows iframe embedding
-    videoIframe.src = `https://vidsrc.cc/v2/embed/tv/${mediaId}/${s}/${e}`;
+    // player.videasy.net - tested and confirmed working, uses TMDB IDs
+    videoIframe.src = `https://player.videasy.net/tv/${mediaId}/${s}/${e}`;
 }
 
 if (watchMovieBtn && playerSection && videoIframe) {
@@ -363,7 +363,7 @@ if (watchMovieBtn && playerSection && videoIframe) {
 
         if (mediaType === 'movie') {
             if (playerControls) playerControls.style.display = 'none';
-            videoIframe.src = `https://vidsrc.cc/v2/embed/movie/${mediaId}`;
+            videoIframe.src = `https://player.videasy.net/movie/${mediaId}`;
         } else {
             if (playerControls) playerControls.style.display = 'flex';
             // It's a TV show, initialize season select if not already done
