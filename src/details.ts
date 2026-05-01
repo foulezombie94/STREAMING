@@ -343,15 +343,58 @@ const seasonSelect = document.getElementById('season-select') as HTMLSelectEleme
 const episodeSelect = document.getElementById('episode-select') as HTMLSelectElement | null;
 const videoIframe = document.getElementById('video-iframe') as HTMLIFrameElement | null;
 const closePlayerBtn = document.getElementById('close-player-btn');
+const serverButtons = document.querySelectorAll('.server-btn');
 
 let currentSeasonsCount = 0;
+let currentServer = 'videasy'; // Default server
+
+// Server URL builders
+function getMovieUrl(server: string, id: string | null): string {
+    switch (server) {
+        case 'multiembed':
+            return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
+        case 'moviesapi':
+            return `https://moviesapi.club/movie/${id}`;
+        case 'videasy':
+        default:
+            return `https://player.videasy.net/movie/${id}`;
+    }
+}
+
+function getTvUrl(server: string, id: string | null, season: string, episode: string): string {
+    switch (server) {
+        case 'multiembed':
+            return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
+        case 'moviesapi':
+            return `https://moviesapi.club/tv/${id}-${season}-${episode}`;
+        case 'videasy':
+        default:
+            return `https://player.videasy.net/tv/${id}/${season}/${episode}`;
+    }
+}
+
+// Server button click handlers
+serverButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        serverButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentServer = (btn as HTMLElement).dataset.server || 'videasy';
+        // Reload current content with new server
+        if (videoIframe && videoIframe.src && videoIframe.src !== '') {
+            if (mediaType === 'movie') {
+                videoIframe.src = getMovieUrl(currentServer, mediaId);
+            } else {
+                updateTvIframe();
+            }
+        }
+    });
+});
 
 function updateTvIframe() {
     if (!videoIframe || !seasonSelect || !episodeSelect) return;
     const s = seasonSelect.value || "1";
     const e = episodeSelect.value || "1";
-    // player.videasy.net - tested and confirmed working, uses TMDB IDs
-    videoIframe.src = `https://player.videasy.net/tv/${mediaId}/${s}/${e}`;
+    videoIframe.src = getTvUrl(currentServer, mediaId, s, e);
 }
 
 if (watchMovieBtn && playerSection && videoIframe) {
@@ -363,7 +406,7 @@ if (watchMovieBtn && playerSection && videoIframe) {
 
         if (mediaType === 'movie') {
             if (playerControls) playerControls.style.display = 'none';
-            videoIframe.src = `https://player.videasy.net/movie/${mediaId}`;
+            videoIframe.src = getMovieUrl(currentServer, mediaId);
         } else {
             if (playerControls) playerControls.style.display = 'flex';
             // It's a TV show, initialize season select if not already done
