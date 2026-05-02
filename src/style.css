@@ -469,58 +469,28 @@ a {
         gap: 12px;
     }
 
-    /* 2. Style du conteneur de recherche */
+    /* 2. Recherche sur mobile : juste l'icône, pas d'animation */
     .search-container { 
-        padding: 6px 12px;
-        background: rgba(239, 68, 68, 0.1);
-        border: 1px solid rgba(239, 68, 68, 0.2);
-        width: 44px; /* Taille exacte pour l'icône + padding */
-        height: 38px;
-        border-radius: 50px;
-        overflow: hidden;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: none;
+        border: none;
+        padding: 0;
         display: flex;
         align-items: center;
-        justify-content: center;
     }
 
-    /* 3. Icône loupe toujours visible */
+    /* 3. Icône SVG visible et fixe */
     .nav-actions .search-icon { 
         display: block; 
-        width: 20px; 
-        height: 20px; 
-        min-width: 20px; 
-        flex-shrink: 0; 
-        fill: none !important; /* La loupe utilise stroke, pas fill */
+        width: 24px; 
+        height: 24px; 
+        min-width: 24px; 
+        flex-shrink: 0;
+        cursor: pointer;
     }
 
-    /* 4. Animation de l'input */
+    /* 4. Cacher complètement l'input sur mobile */
     .search-input { 
-        width: 0; 
-        opacity: 0; 
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        border: none;
-        outline: none;
-        color: white; 
-        font-family: inherit;
-        font-size: 16px;
-        margin: 0;
-        padding: 0;
-    }
-
-    /* Quand on clique sur l'icône (ou dans le container) */
-    .search-container:focus-within {
-        width: 140px; 
-        background: rgba(5, 5, 5, 0.7);
-        border-color: rgba(239, 68, 68, 0.5);
-        justify-content: flex-start;
-        padding-left: 12px;
-    }
-
-    .search-container:focus-within .search-input { 
-        width: 85px; 
-        opacity: 1; 
-        margin-left: 8px; 
+        display: none !important;
     }
 
     .bottom-nav { display: flex; }
