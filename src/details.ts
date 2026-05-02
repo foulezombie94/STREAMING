@@ -118,6 +118,9 @@ async function fetchDetails() {
             extraInfo.push({ label: 'Studio', value: data.production_companies[0].name });
         }
 
+        // Watch Button Logic - Store season count
+        currentSeasonsCount = data.number_of_seasons || 0;
+
         if (extraInfoGrid && extraInfo.length > 0) {
             extraInfoGrid.innerHTML = extraInfo.map(info => `
                 <div class="info-block">
@@ -148,6 +151,7 @@ async function fetchDetails() {
             const hoverBio = document.getElementById('hover-card-bio');
             
             const actorCache: Record<string, any> = {};
+            (window as any).actorCache = actorCache; // Partager le cache avec la modale
             let hoverTimeout: any;
 
             // Attach click listeners to actor cards
@@ -294,8 +298,16 @@ async function openActorModal(actorId: string) {
     if (actorModalBio) actorModalBio.textContent = '';
 
     try {
-        const response = await fetch(`${BASE_URL}/person/${actorId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
-        const data = await response.json();
+        const cache = (window as any).actorCache || {};
+        let data;
+        
+        if (cache[actorId]) {
+            data = cache[actorId];
+        } else {
+            const response = await fetch(`${BASE_URL}/person/${actorId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
+            data = await response.json();
+            cache[actorId] = data;
+        }
 
         if (actorModalImg) {
             actorModalImg.src = data.profile_path ? `${IMAGE_W500_URL}${data.profile_path}` : 'https://i.pravatar.cc/100?img=11';
@@ -414,16 +426,10 @@ if (watchMovieBtn && playerSection && videoIframe) {
             videoIframe.src = getMovieUrl(currentServer, mediaId);
         } else {
             if (playerControls) playerControls.style.display = 'flex';
-            // It's a TV show, initialize season select if not already done
-            if (seasonSelect && seasonSelect.options.length <= 1) {
-                fetch(`${BASE_URL}/tv/${mediaId}?api_key=${TMDB_API_KEY}&language=fr-FR`)
-                    .then(res => res.json())
-                    .then(data => {
-                        currentSeasonsCount = data.number_of_seasons || 1;
-                        populateSeasonSelect();
-                    });
+            // On a déjà récupéré le nombre de saisons lors du fetchDetails initial
+            if (seasonSelect && seasonSelect.options.length === 0 && currentSeasonsCount > 0) {
+                populateSeasonSelect();
             } else if (seasonSelect) {
-                // Already populated, just load the current selection
                 updateTvIframe();
             }
         }
