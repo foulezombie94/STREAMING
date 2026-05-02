@@ -502,12 +502,13 @@ a {
 
     /* Quand on clique sur l'icône (ou dans le container) */
     .search-container:focus-within {
-        max-width: 160px;
-        background: rgba(5, 5, 5, 0.5);
+        max-width: 135px; /* Limite pour ne pas sortir de l'écran */
+        background: rgba(5, 5, 5, 0.6);
+        border-color: rgba(239, 68, 68, 0.5);
     }
 
     .search-container:focus-within .search-input { 
-        width: 100px; 
+        width: 85px; 
         opacity: 1; 
         margin-left: 8px; 
     }
