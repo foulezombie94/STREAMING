@@ -93,7 +93,7 @@ export const ProgressManager = {
     /**
      * Génère un identifiant unique (Rule 1)
      */
-    private generateId(mediaId: string, mediaType: string, season?: number, episode?: number): string {
+    generateId(mediaId: string, mediaType: string, season?: number, episode?: number): string {
         let id = `${mediaType}_${mediaId}`;
         if (mediaType === 'tv') {
             id += `_s${season || 1}_e${episode || 1}`;
@@ -104,7 +104,7 @@ export const ProgressManager = {
     /**
      * Helper pour lire le stockage
      */
-    private getAllProgress(): Record<string, VideoProgress> {
+    getAllProgress(): Record<string, VideoProgress> {
         try {
             const data = localStorage.getItem(STORAGE_KEY);
             return data ? JSON.parse(data) : {};
