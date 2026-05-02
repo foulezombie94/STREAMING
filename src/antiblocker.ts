@@ -2,25 +2,8 @@
  * MOVIEVERSE Anti-Annoyance Shield v2.0 (Mobile Compatible)
  */
 
-import blacklist from './blacklist.json';
-import blockedScripts from './blocked_scripts.json';
-import blockedCSS from './blocked_css.json';
-
 (() => {
     'use strict';
-
-    const blockedDomains: Set<string> = new Set(blacklist as string[]);
-    const scriptPatterns: string[] = blockedScripts as string[];
-    const whitelist = new Set([
-        'player.videasy.net', 'videasy.net',
-        'multiembed.mov', 'multiembed.cc',
-        'moviesapi.club', 'vidfast.pro',
-        'themoviedb.org', 'tmdb.org',
-        'vidsrc.me', 'vidsrc.to', 'vidsrc.cc', 'vidsrc.xyz', 'vidsrc.in', 'vidsrc.pm', 'vidsrc.net', 'vidsrc.vip',
-        'superembed.stream', 'embed.su', '2embed.me', '2embed.cc',
-        'cloudflare.com', 'fastly.net', 'akamaihd.net', 'amazonaws.com', 'azureedge.net',
-        'google.com', 'gstatic.com', 'googleapis.com'
-    ]);
 
     function injectCSS() {
         const ANNOYANCE_CSS = `
