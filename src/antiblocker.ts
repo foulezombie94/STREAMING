@@ -268,10 +268,6 @@ import blockedCSS from './blocked_css.json';
     };
 
     // ===== BLOCK REDIRECTS (on mobile especially) =====
-    window.onbeforeunload = function() {
-        return "Voulez-vous vraiment quitter cette page ?";
-    };
-    
     // Prevent common redirect tricks
     const originalLocation = window.location.href;
     setInterval(() => {
