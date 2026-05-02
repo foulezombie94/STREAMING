@@ -165,7 +165,7 @@ mobileGenreOverlay?.addEventListener('click', (e) => {
 });
 
 // 5. Gestion Drag Carrousel fluide
-// 5. Gestion Drag Carrousel ultra-fluide
+// 5. Gestion Drag Carrousel ultra-fluide (Inertie + Correction Jitter)
 if (carousel) {
     let isDown = false;
     let startX: number;
@@ -177,16 +177,19 @@ if (carousel) {
     let isDragging = false;
 
     const beginDrag = (e: MouseEvent | TouchEvent) => {
+        // Uniquement clic gauche pour éviter les conflits avec le clic droit
+        if ('button' in e && e.button !== 0) return;
+        
         isDown = true;
         isDragging = false;
         carousel.style.cursor = 'grabbing';
-        carousel.style.scrollBehavior = 'auto'; // Désactive le smooth scroll natif pendant le drag
         
-        const pageX = 'touches' in e ? e.touches[0].pageX : e.pageX;
-        startX = pageX - carousel.offsetLeft;
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        startX = clientX;
         scrollLeft = carousel.scrollLeft;
-        lastX = pageX;
-        lastTime = Date.now();
+        lastX = clientX;
+        lastTime = performance.now();
+        
         cancelAnimationFrame(rafId);
     };
 
@@ -195,47 +198,53 @@ if (carousel) {
         isDown = false;
         carousel.style.cursor = 'grab';
         
-        // Appliquer un effet d'inertie
+        // Appliquer un effet d'inertie fluide
         const step = () => {
-            if (Math.abs(velocity) > 0.5) {
+            if (Math.abs(velocity) > 0.2) {
                 carousel.scrollLeft -= velocity;
-                velocity *= 0.95; // Friction
+                velocity *= 0.95; // Friction constante
                 rafId = requestAnimationFrame(step);
-            } else {
-                carousel.style.scrollBehavior = 'smooth'; // Réactive le smooth scroll
             }
         };
         rafId = requestAnimationFrame(step);
         
-        // Petit délai pour éviter de déclencher un clic à la fin d'un drag
+        // Petit délai pour valider la fin du drag
         setTimeout(() => isDragging = false, 50);
     };
 
     const moveDrag = (e: MouseEvent | TouchEvent) => {
         if (!isDown) return;
         
-        const pageX = 'touches' in e ? e.touches[0].pageX : e.pageX;
-        const x = pageX - carousel.offsetLeft;
-        const walk = (x - startX); 
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const walk = (clientX - startX); 
         
-        if (Math.abs(walk) > 5) isDragging = true; // Détecte si c'est vraiment un drag
+        // Détecter si c'est vraiment un mouvement significatif
+        if (Math.abs(walk) > 3) isDragging = true;
         
-        const currentTime = Date.now();
+        const currentTime = performance.now();
         const deltaTime = currentTime - lastTime;
+        
         if (deltaTime > 0) {
-            velocity = (pageX - lastX) / deltaTime * 15; // Calcul de la vélocité
+            // Calcul de la vélocité avec lissage
+            const instantVelocity = (clientX - lastX) / deltaTime * 16;
+            velocity = velocity * 0.2 + instantVelocity * 0.8;
         }
         
+        // Mise à jour immédiate de la position
         carousel.scrollLeft = scrollLeft - walk;
-        lastX = pageX;
+        
+        lastX = clientX;
         lastTime = currentTime;
     };
 
     carousel.addEventListener('mousedown', beginDrag);
-    
     window.addEventListener('mousemove', moveDrag);
-    
     window.addEventListener('mouseup', endDrag);
+    
+    // Support Touch
+    carousel.addEventListener('touchstart', beginDrag, { passive: true });
+    carousel.addEventListener('touchmove', moveDrag, { passive: true });
+    carousel.addEventListener('touchend', endDrag);
     
     // Empêcher le clic si on était en train de dragger
     carousel.addEventListener('click', (e) => {
