@@ -108,7 +108,7 @@ const mobileGenreGrid = document.getElementById('mobile-genre-grid');
 const closeGenreOverlay = document.getElementById('close-genre-overlay');
 
 function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre') {
-    if (!genreFiltersEl || !genreFiltersContainer) return;
+    if (!genreFiltersContainer) return;
     
     if (type === 'trending' || type === 'reprendre') {
         genreFiltersContainer.style.display = 'none';
@@ -118,15 +118,7 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre') {
     genreFiltersContainer.style.display = 'block';
     const genres = type === 'movie' ? movieGenres : tvGenres;
     
-    // Rendre pour Desktop (pills horizontales)
-    genreFiltersEl.style.display = window.innerWidth > 768 ? 'flex' : 'none';
-    genreFiltersEl.innerHTML = `
-        <div class="genre-label">Genres :</div>
-        <button class="genre-btn ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</button>
-        ${genres.map(g => `<button class="genre-btn ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</button>`).join('')}
-    `;
-
-    // Rendre pour Mobile (grid dans l'overlay)
+    // Rendre pour tous les supports (grid dans l'overlay)
     if (mobileGenreGrid) {
         mobileGenreGrid.innerHTML = `
             <div class="mobile-genre-item ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</div>
@@ -147,18 +139,6 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre') {
             });
         });
     }
-
-    // Click listener pour desktop
-    genreFiltersEl.querySelectorAll('.genre-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const idStr = btn.getAttribute('data-id');
-            activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
-            renderGenres(type);
-            heroContent?.classList.add('animating');
-            if (carousel) carousel.style.opacity = '0.5';
-            fetchPopularData(type, activeGenreId);
-        });
-    });
 }
 
 // Event listeners pour le mobile
