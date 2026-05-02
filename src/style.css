@@ -126,7 +126,11 @@ a {
 }
 
 .search-icon {
-    pointer-events: none; /* Let the container handle clicks */
+    pointer-events: none;
+    color: #FFF;
+    fill: #FFF;
+    width: 24px;
+    height: 24px;
 }
 
 /* 3. Section HÃ©ros */
