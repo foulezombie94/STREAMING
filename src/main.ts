@@ -332,10 +332,9 @@ function updateHeroSection(item: any, isInitialLoad = false) {
     activeId = item.id;
 
     const applyUpdate = () => {
-        // Déterminer le type d'affichage pour l'item actuel
         let displayType = currentType;
-        if (currentType === 'trending') {
-            displayType = item.media_type; // L'API trending renvoie un champ media_type ('movie' ou 'tv')
+        if (currentType === 'trending' || currentType === 'reprendre') {
+            displayType = item.media_type; // L'API trending et notre stockage Reprendre utilisent media_type
         }
         activeMediaType = displayType as 'movie' | 'tv';
 
@@ -389,7 +388,7 @@ function populateCarousel(items: any[]) {
         card.dataset.id = item.id;
 
         let displayType = currentType;
-        if (currentType === 'trending') {
+        if (currentType === 'trending' || currentType === 'reprendre') {
             displayType = item.media_type;
         }
         const title = displayType === 'tv' ? item.name : item.title;
@@ -410,7 +409,7 @@ function populateCarousel(items: any[]) {
             
             if (delay < 350 && delay > 0) {
                 // Double clic / Double tap
-                let displayType = currentType === 'trending' ? item.media_type : currentType;
+                let displayType = (currentType === 'trending' || currentType === 'reprendre') ? item.media_type : currentType;
                 window.location.href = `/details.html?id=${item.id}&type=${displayType}`;
             } else {
                 // Simple clic
@@ -443,6 +442,22 @@ async function fetchGenres() {
 async function initApp() {
     await fetchGenres();
     fetchPopularData('trending');
+    setupHeroButtons();
+}
+
+function setupHeroButtons() {
+    const watchBtn = document.getElementById('watch-btn');
+    const seeMoreBtn = document.getElementById('see-more-btn');
+
+    const handleAction = () => {
+        if (!currentData || currentData.length === 0) return;
+        const currentItem = currentData.find(i => i.id === activeId) || currentData[0];
+        const displayType = (currentType === 'trending' || currentType === 'reprendre') ? currentItem.media_type : currentType;
+        window.location.href = `/details.html?id=${currentItem.id}&type=${displayType}`;
+    };
+
+    watchBtn?.addEventListener('click', handleAction);
+    seeMoreBtn?.addEventListener('click', handleAction);
 }
 
 initApp();
