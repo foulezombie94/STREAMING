@@ -1067,10 +1067,14 @@ a {
     display: flex;
     gap: 15px;
     margin-bottom: 10px;
+    flex-wrap: wrap;
 }
 
 .select-wrapper {
     position: relative;
+    flex: 1;
+    min-width: 140px;
+    max-width: 100%;
 }
 
 .select-wrapper::after {
@@ -1096,6 +1100,9 @@ a {
     cursor: pointer;
     transition: all 0.3s ease;
     min-width: 150px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .player-select:hover, .player-select:focus {
