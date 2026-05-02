@@ -1048,7 +1048,8 @@ a {
     color: #ef4444;
 }
 
-/* --- MOBILE FILTER STYLES --- */
+
+/* --- UNIVERSAL FILTER STYLES --- */
 .filter-btn {
     display: flex;
     background: rgba(255, 255, 255, 0.05);
@@ -1089,7 +1090,7 @@ a {
     transition: all 0.3s ease;
 }
 
-.mobile-genre-overlay.active {
+.genre-overlay.active {
     opacity: 1;
     pointer-events: auto;
 }
@@ -1105,15 +1106,8 @@ a {
     transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1.1);
 }
 
-.genre-overlay-content {
-    width: 90%;
-    max-width: 600px;
-    background: #0a0a0a;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 24px;
-    padding: 40px;
-    transform: scale(0.9) translateY(20px);
-    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1.1);
+.genre-overlay.active .genre-overlay-content {
+    transform: scale(1) translateY(0);
 }
 
 .mobile-genre-header {
@@ -1151,8 +1145,22 @@ a {
     transform: scale(1.02);
 }
 
-.genre-filters {
-    display: none !important;
-}
+@media (max-width: 768px) {
+    .filter-btn {
+        margin-left: 1.5rem;
+        padding: 10px 18px;
+        font-size: 13px;
+    }
     .genre-filters-container { margin-top: 60px; }
+    .genre-overlay { align-items: flex-end; }
+    .genre-overlay-content {
+        width: 100%;
+        border-radius: 24px 24px 0 0;
+        padding: 25px;
+        transform: translateY(100%);
+    }
+    .genre-overlay.active .genre-overlay-content {
+        transform: translateY(0);
+    }
+    .genre-grid { grid-template-columns: repeat(2, 1fr); }
 }
