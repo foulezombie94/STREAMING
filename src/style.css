@@ -305,7 +305,8 @@ a {
     -ms-overflow-style: none;
     scrollbar-width: none;
     cursor: grab;
-    scroll-behavior: smooth;
+    scroll-behavior: auto; /* Changé de smooth à auto pour éviter les tremblements lors du drag JS */
+    user-select: none; /* Évite de sélectionner du texte pendant le drag */
 }
 
 .carousel-container:active {
@@ -324,7 +325,7 @@ a {
     overflow: hidden;
     cursor: pointer;
     box-shadow: 0 10px 20px rgba(0,0,0,0.6);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease; /* Plus fluide */
     position: relative;
 }
 
@@ -531,15 +532,6 @@ a {
     
     /* Grille 3 colonnes au lieu du carrousel */
     .carousel-container { 
-        display: grid; 
-        grid-template-columns: repeat(3, 1fr); 
-        gap: 10px; 
-        padding: 0 1.5rem;
-        overflow-x: hidden;
-    }
-    
-    /* Grille 3 colonnes au lieu du carrousel */
-    .carousel-container { 
         display: grid !important; 
         grid-template-columns: repeat(3, 1fr) !important; 
         gap: 8px !important; 
@@ -579,6 +571,7 @@ a {
         gap: 8px !important; 
         grid-template-columns: repeat(3, 1fr) !important;
     }
+    .movie-card { width: 100% !important; min-width: 0 !important; }
     .logo { font-size: 16px; }
     .navbar { padding: 1rem; }
     .navbar.scrolled { padding: 0.7rem 1rem; }
