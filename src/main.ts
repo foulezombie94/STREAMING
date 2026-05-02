@@ -16,7 +16,6 @@ let currentType: 'movie' | 'tv' | 'trending' = 'trending';
 let movieGenres: any[] = [];
 let tvGenres: any[] = [];
 let activeGenreId: number | null = null;
-const genreFiltersEl = document.getElementById('genre-filters');
 
 // Éléments du DOM
 const navbar = document.getElementById('navbar');
