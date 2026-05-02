@@ -387,6 +387,49 @@ a {
 .hero-content p { animation-delay: 0.3s; }
 .hero-content .hero-buttons { animation-delay: 0.4s; }
 
+/* --- BOTTOM NAV MOBILE --- */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 75px;
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(25px) saturate(180%);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: none;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 9999;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+}
+
+.bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: #A3A3A3;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.bottom-nav-item svg {
+    width: 24px;
+    height: 24px;
+    fill: currentColor;
+}
+
+.bottom-nav-item span {
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.bottom-nav-item.active {
+    color: #ef4444;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
     .hero-content { width: 70%; padding-top: 10vh; }
@@ -1198,49 +1241,6 @@ a {
     .genre-filters-container { margin-top: 60px; }
 }
 
-
-/* --- BOTTOM NAV MOBILE --- */
-.bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    height: 75px;
-    background: rgba(10, 10, 10, 0.95);
-    backdrop-filter: blur(25px) saturate(180%);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    display: none;
-    justify-content: space-around;
-    align-items: center;
-    z-index: 9999;
-    box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
-}
-
-.bottom-nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    color: #A3A3A3;
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.bottom-nav-item svg {
-    width: 24px;
-    height: 24px;
-    fill: currentColor;
-}
-
-.bottom-nav-item span {
-    font-size: 10px;
-    font-weight: 600;
-}
-
-.bottom-nav-item.active {
-    color: #ef4444;
-}
 
 @media (max-width: 480px) {
     .hero h1 { font-size: 28px; }
