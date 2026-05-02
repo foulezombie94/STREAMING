@@ -512,6 +512,8 @@ a {
         font-size: 16px;
         background: transparent;
         transition: all 0.3s ease;
+        visibility: hidden; /* Totalement invisible au repos */
+        pointer-events: none;
     }
 
     /* Quand ouvert : s'allonge vers la gauche et la bulle apparaît */
@@ -526,6 +528,8 @@ a {
     .search-container:focus-within .search-input { 
         width: 100px; 
         opacity: 1; 
+        visibility: visible;
+        pointer-events: auto;
         margin-right: 8px;
     }
 
