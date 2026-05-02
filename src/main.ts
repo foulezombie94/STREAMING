@@ -321,7 +321,7 @@ function populateCarousel(items: any[]) {
 
         // Gestion du clic & double-clic (Mobile & Desktop)
         let lastClick = 0;
-        card.addEventListener('click', (e) => {
+        card.addEventListener('click', () => {
             const now = Date.now();
             const delay = now - lastClick;
             
