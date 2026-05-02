@@ -1176,7 +1176,7 @@ a {
 }
 
 @media (max-width: 768px) {
-    .navbar { padding: 1rem 1.5rem; justify-content: flex-start; gap: 15px; }
+    .navbar { padding: 1rem 2rem; justify-content: space-between; }
     .nav-links { display: none !important; }
     .nav-actions .icon:first-of-type { display: none; } /* Hide bell */
     .nav-actions .search-icon { display: flex; width: 24px; height: 24px; }
