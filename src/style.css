@@ -117,9 +117,10 @@ a {
     opacity: 0;
 }
 
+.search-container:hover .search-input,
 .search-container:focus-within .search-input,
 .search-input:not(:placeholder-shown) {
-    width: 150px;
+    width: 180px;
     padding-left: 10px;
     opacity: 1;
 }
@@ -1210,8 +1211,8 @@ a {
     
     main { padding-bottom: 20px; }
     
-    .search-container { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 5px 12px; }
-    .search-input { width: 100px; font-size: 13px; }
+    .search-container { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 5px 12px; opacity: 1 !important; }
+    .search-input { width: 100px; font-size: 13px; opacity: 1 !important; transition: none !important; padding-left: 5px !important; }
 }
 
 @media (max-width: 480px) {
