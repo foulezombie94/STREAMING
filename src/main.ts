@@ -1,5 +1,6 @@
 import './style.css';
 import './antiblocker';
+import { ProgressManager } from './storage';
 
 // 1. Constantes TMDB
 const TMDB_API_KEY = 'e1a2bb6a3ed288feb5d767908732e751';
@@ -10,7 +11,7 @@ const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 // 2. Éléments du DOM
 let currentData: any[] = []; // Stocke les données actuelles
 let activeId: number | null = null; // ID du film actuellement mis en avant
-let currentType: 'movie' | 'tv' | 'trending' = 'trending';
+let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' = 'trending';
 
 // Genre globals
 let movieGenres: any[] = [];
@@ -65,22 +66,32 @@ function handleNavigation(type: any) {
         });
     });
 
-    currentType = type as 'movie' | 'tv' | 'trending';
+    currentType = type as 'movie' | 'tv' | 'trending' | 'reprendre';
     activeGenreId = null; 
 
     if (sectionTitle) {
         if (currentType === 'trending') sectionTitle.textContent = 'Tendances Actuelles';
         else if (currentType === 'tv') sectionTitle.textContent = 'Séries Populaires';
+        else if (currentType === 'reprendre') sectionTitle.textContent = 'Reprendre la lecture';
         else sectionTitle.textContent = 'Films Populaires';
     }
 
-    renderGenres(currentType);
-    fetchPopularData(currentType);
+    if (currentType === 'reprendre') {
+        renderResumePage();
+    } else {
+        renderGenres(currentType);
+        fetchPopularData(currentType);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 [navItems, bottomNavItems].forEach(collection => {
     collection.forEach(item => {
+        // Ajouter le data-type="reprendre" si c'est le bouton reprendre
+        if (item.textContent?.trim() === 'Reprendre') {
+            item.setAttribute('data-type', 'reprendre');
+        }
+
         item.addEventListener('click', (e) => {
             e.preventDefault();
             const type = item.getAttribute('data-type');
@@ -98,7 +109,7 @@ const closeGenreOverlay = document.getElementById('close-genre-overlay');
 function renderGenres(type: 'movie' | 'tv' | 'trending') {
     if (!genreFiltersEl || !genreFiltersContainer) return;
     
-    if (type === 'trending') {
+    if (type === 'trending' || type === 'reprendre') {
         genreFiltersContainer.style.display = 'none';
         return;
     }
@@ -499,5 +510,69 @@ async function performSearch(query: string) {
         }
     } catch (error) {
         console.error('Erreur recherche:', error);
+    }
+}
+
+// 11. Fonction pour la page "Reprendre"
+function renderResumePage() {
+    if (genreFiltersContainer) genreFiltersContainer.style.display = 'none';
+    if (carousel) carousel.style.opacity = '0.5';
+
+    const history = ProgressManager.getHistory();
+    
+    // Transformer l'historique en format TMDB-like pour réutiliser populateCarousel
+    const items = history.map(h => ({
+        id: h.mediaId,
+        media_type: h.mediaType,
+        poster_path: h.poster,
+        title: h.title,
+        name: h.title, // Pour les séries
+        season: h.season,
+        episode: h.episode,
+        time: h.time,
+        duration: h.duration
+    }));
+
+    if (items.length > 0) {
+        currentData = items;
+        if (carousel) carousel.style.opacity = '1';
+        activeId = null;
+        updateHeroSection(items[0], false);
+        
+        // On modifie légèrement populateCarousel pour afficher le badge de progression
+        populateCarousel(currentData);
+        
+        // Ajouter des badges de progression sur les cartes (Optionnel mais premium)
+        setTimeout(() => {
+            document.querySelectorAll('.movie-card').forEach((card, index) => {
+                const item = items[index];
+                if (item.time && item.duration) {
+                    const percent = (item.time / item.duration) * 100;
+                    const progressDiv = document.createElement('div');
+                    progressDiv.className = 'progress-bar-mini';
+                    progressDiv.innerHTML = `<div class="progress-fill" style="width: ${percent}%"></div>`;
+                    card.appendChild(progressDiv);
+                }
+                
+                // Si c'est une série, ajouter le badge S01E01
+                if (item.media_type === 'tv' && item.season) {
+                    const epBadge = document.createElement('div');
+                    epBadge.className = 'episode-badge';
+                    epBadge.textContent = `S${item.season}E${item.episode}`;
+                    card.appendChild(epBadge);
+                }
+            });
+        }, 100);
+
+    } else {
+        if (heroTitle) heroTitle.textContent = "Aucun historique";
+        if (heroSynopsis) heroSynopsis.textContent = "Vous n'avez pas encore commencé de films ou de séries. Vos contenus apparaîtront ici dès que vous lancerez la lecture.";
+        if (heroMeta) heroMeta.innerHTML = "<span>Commencez à regarder !</span>";
+        if (heroSection) heroSection.style.backgroundImage = 'none';
+        if (carousel) {
+            carousel.innerHTML = '<div class="no-results">Votre historique est vide.</div>';
+            carousel.style.opacity = '1';
+        }
+        heroContent?.classList.remove('animating');
     }
 }

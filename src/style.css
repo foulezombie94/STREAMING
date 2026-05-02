@@ -1287,3 +1287,56 @@ a {
 @media (max-width: 480px) {
     .hero h1 { font-size: 28px; }
 }
+
+/* --- REPRENDRE PAGE STYLES --- */
+.progress-bar-mini {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    z-index: 3;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #ef4444;
+    box-shadow: 0 0 10px #ef4444;
+}
+
+.episode-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 3;
+}
+
+.no-results {
+    width: 100%;
+    padding: 4rem 2rem;
+    text-align: center;
+    color: #A3A3A3;
+    font-style: italic;
+    font-size: 16px;
+    grid-column: 1 / -1;
+}
+
+/* Animations additionnelles pour le carrousel */
+.movie-card .progress-bar-mini {
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.movie-card:hover .progress-bar-mini {
+    opacity: 1;
+    height: 6px;
+}

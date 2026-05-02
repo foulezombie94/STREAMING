@@ -1,5 +1,6 @@
 import './style.css';
 import './antiblocker';
+import { ProgressManager } from './storage';
 
 // 1. Constantes TMDB
 const TMDB_API_KEY = 'e1a2bb6a3ed288feb5d767908732e751';
@@ -28,6 +29,7 @@ const trailerIframe = document.getElementById('trailer-iframe') as HTMLIFrameEle
 const navbar = document.getElementById('navbar');
 
 let trailerKey = '';
+let currentMediaData: any = null; // Stocker les infos pour le storage
 
 // Gestion Navbar
 window.addEventListener('scroll', () => {
@@ -48,6 +50,7 @@ async function fetchDetails() {
         // Fetch details + credits + videos en Français
         const response = await fetch(`${BASE_URL}/${mediaType}/${mediaId}?api_key=${TMDB_API_KEY}&language=fr-FR&append_to_response=credits,videos`);
         const data = await response.json();
+        currentMediaData = data;
         
         // Background
         if (heroSection && data.backdrop_path) {
@@ -421,6 +424,18 @@ if (watchMovieBtn && playerSection && videoIframe) {
         // Scroll smoothly to the player
         playerSection.scrollIntoView({ behavior: 'smooth' });
 
+        // Sauvegarder dans l'historique (Reprendre)
+        if (currentMediaData) {
+            ProgressManager.saveProgress({
+                mediaId: mediaId!,
+                mediaType: mediaType as any,
+                title: currentMediaData.title || currentMediaData.name,
+                poster: currentMediaData.poster_path,
+                season: mediaType === 'tv' ? parseInt(seasonSelect?.value || '1') : undefined,
+                episode: mediaType === 'tv' ? parseInt(episodeSelect?.value || '1') : undefined
+            });
+        }
+
         if (mediaType === 'movie') {
             if (playerControls) playerControls.style.display = 'none';
             videoIframe.src = getMovieUrl(currentServer, mediaId);
@@ -429,11 +444,33 @@ if (watchMovieBtn && playerSection && videoIframe) {
             // On a déjà récupéré le nombre de saisons lors du fetchDetails initial
             if (seasonSelect && seasonSelect.options.length === 0 && currentSeasonsCount > 0) {
                 populateSeasonSelect();
+                
+                // Charger la dernière progression si elle existe
+                const lastProgress = ProgressManager.getProgress(mediaId!, 'tv');
+                if (lastProgress && lastProgress.season) {
+                    seasonSelect.value = lastProgress.season.toString();
+                    fetchEpisodes(lastProgress.season, lastProgress.episode);
+                } else {
+                    fetchEpisodes(1);
+                }
             } else if (seasonSelect) {
                 updateTvIframe();
             }
         }
     });
+}
+
+function updateTvProgress() {
+    if (mediaType === 'tv' && currentMediaData) {
+        ProgressManager.saveProgress({
+            mediaId: mediaId!,
+            mediaType: 'tv',
+            title: currentMediaData.title || currentMediaData.name,
+            poster: currentMediaData.poster_path,
+            season: parseInt(seasonSelect?.value || '1'),
+            episode: parseInt(episodeSelect?.value || '1')
+        });
+    }
 }
 
 function populateSeasonSelect() {
@@ -452,10 +489,11 @@ function populateSeasonSelect() {
     seasonSelect.addEventListener('change', (e) => {
         const selectedSeason = parseInt((e.target as HTMLSelectElement).value);
         fetchEpisodes(selectedSeason);
+        updateTvProgress();
     });
 }
 
-function fetchEpisodes(seasonNumber: number) {
+function fetchEpisodes(seasonNumber: number, targetEpisode: number | null = null) {
     if (!episodeSelect) return;
     episodeSelect.innerHTML = '<option value="">Chargement...</option>';
     
@@ -468,6 +506,9 @@ function fetchEpisodes(seasonNumber: number) {
                     const option = document.createElement('option');
                     option.value = ep.episode_number.toString();
                     option.textContent = `Ép. ${ep.episode_number} - ${ep.name}`;
+                    if (targetEpisode && ep.episode_number === targetEpisode) {
+                        option.selected = true;
+                    }
                     episodeSelect.appendChild(option);
                 });
                 updateTvIframe();
@@ -484,7 +525,10 @@ function fetchEpisodes(seasonNumber: number) {
 }
 
 if (episodeSelect) {
-    episodeSelect.addEventListener('change', updateTvIframe);
+    episodeSelect.addEventListener('change', () => {
+        updateTvIframe();
+        updateTvProgress();
+    });
 }
 
 if (closePlayerBtn && playerSection && videoIframe) {
