@@ -84,6 +84,12 @@ import blockedCSS from './blocked_css.json';
         'tumblr.com', 'vk.com', 'vkontakte.ru',
         'weibo.com', 'wechat.com', 'line.me',
         'threads.net', 'bsky.app', 'mastodon.social',
+        // Ad networks often seen on mobile
+        'creativecdn.com', 'dnacdn.net', 'adnuntius.delivery',
+        'mndsrv.com', 'onclickalgo.com', 'onclickperformance.com',
+        'wig671.com', 'highrevenuegate.com', 'vdtv.io', 'vidoza.net',
+        'upstream.to', 'doodstream.com', 'dood.to', 'mixdrop.co',
+        'rabbitstream.net', 'megacloud.tv', 'vizcloud.online'
     ];
     extraDomains.forEach(d => blockedDomains.add(d));
 
@@ -260,6 +266,25 @@ import blockedCSS from './blocked_css.json';
         }
         return originalOpen.apply(this, args);
     };
+
+    // ===== BLOCK REDIRECTS (on mobile especially) =====
+    window.onbeforeunload = function() {
+        return "Voulez-vous vraiment quitter cette page ?";
+    };
+    
+    // Prevent common redirect tricks
+    const originalLocation = window.location.href;
+    setInterval(() => {
+        if (window.location.href !== originalLocation && !window.location.href.startsWith(window.location.origin)) {
+            console.log('[Shield] Tentative de redirection bloquée');
+            window.location.href = originalLocation;
+        }
+    }, 1000);
+
+    // Block alerts/confirms that are often fake
+    window.alert = () => {};
+    window.confirm = () => true;
+    window.prompt = () => null;
 
     // ===== DOM MUTATION OBSERVER (block injected scripts/iframes/overlays) =====
     const observer = new MutationObserver((mutations) => {
