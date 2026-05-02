@@ -236,6 +236,7 @@ import blockedCSS from './blocked_css.json';
         (document.head || document.documentElement).appendChild(style);
     }
 
+    /* Overrides désactivés car ils cassent certains lecteurs sur mobile (chargement infini)
     // ===== OVERRIDE FETCH =====
     const originalFetch = window.fetch;
     window.fetch = function (...args: Parameters<typeof fetch>) {
@@ -255,6 +256,7 @@ import blockedCSS from './blocked_css.json';
         }
         return originalXHROpen.apply(this, [method, url, ...rest] as any);
     };
+    */
 
     // ===== BLOCK POPUPS =====
     const originalOpen = window.open;
@@ -268,7 +270,8 @@ import blockedCSS from './blocked_css.json';
     };
 
     // ===== BLOCK REDIRECTS (on mobile especially) =====
-    // Prevent common redirect tricks
+    // Désactivé temporairement pour éviter les faux positifs qui bloquent le chargement
+    /*
     const originalLocation = window.location.href;
     setInterval(() => {
         if (window.location.href !== originalLocation && !window.location.href.startsWith(window.location.origin)) {
@@ -276,11 +279,14 @@ import blockedCSS from './blocked_css.json';
             window.location.href = originalLocation;
         }
     }, 1000);
+    */
 
-    // Block alerts/confirms that are often fake
+    // Désactivé pour permettre aux lecteurs de fonctionner normalement
+    /*
     window.alert = () => {};
     window.confirm = () => true;
     window.prompt = () => null;
+    */
 
     // ===== DOM MUTATION OBSERVER (block injected scripts/iframes/overlays) =====
     const observer = new MutationObserver((mutations) => {
