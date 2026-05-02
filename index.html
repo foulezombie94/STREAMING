@@ -38,8 +38,10 @@
     <main>
         <!-- Barre de filtres par genre (déplacée pour défiler avec la page) -->
         <div class="genre-filters-container" id="genre-filters-container">
-            <!-- Bouton Filtre (Maintenant pour tous les appareils) -->
-            <button class="filter-btn" id="filter-btn" style="display: none;">
+            <div class="genre-filters" id="genre-filters" style="display: none;"></div>
+            
+            <!-- Bouton Filtre pour Mobile -->
+            <button class="mobile-filter-btn" id="mobile-filter-btn" style="display: none;">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
                 </svg>
@@ -79,14 +81,14 @@
         </section>
     </main>
 
-    <!-- Overlay pour le choix de genre (Universal) -->
-    <div class="genre-overlay" id="genre-overlay">
-        <div class="genre-overlay-content">
+    <!-- Overlay pour le choix de genre sur mobile -->
+    <div class="mobile-genre-overlay" id="mobile-genre-overlay">
+        <div class="mobile-genre-content">
             <div class="mobile-genre-header">
                 <h3>Choisir un Genre</h3>
                 <button class="close-overlay" id="close-genre-overlay">&times;</button>
             </div>
-            <div class="genre-grid" id="genre-grid">
+            <div class="mobile-genre-grid" id="mobile-genre-grid">
                 <!-- Injecté par JS -->
             </div>
         </div>
