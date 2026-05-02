@@ -45,6 +45,7 @@ a {
     letter-spacing: 3px;
     background: linear-gradient(90deg, #ffffff, #a3a3a3);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     text-transform: uppercase;
 }
@@ -155,10 +156,12 @@ a {
 
 .hero-content {
     position: relative;
-    z-index: 20; /* Elevate above latest-release to keep buttons clickable */
-    width: 55%;
-    padding-left: 4rem;
+    z-index: 20; 
+    width: 90%;
+    max-width: 800px;
+    margin: 0 auto;
     padding-top: 8vh;
+    text-align: center;
     opacity: 1;
     transition: opacity 0.4s ease, transform 0.4s ease;
 }
@@ -182,12 +185,13 @@ a {
 .hero-meta {
     font-size: 14px;
     font-weight: 600;
-    color: #4ade80; /* Vert premium pour les infos */
+    color: #4ade80; 
     margin-bottom: 20px;
     letter-spacing: 1px;
     text-shadow: 0 2px 10px rgba(0,0,0,0.5);
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
 }
 
@@ -202,11 +206,12 @@ a {
     font-size: 16px;
     color: #D4D4D4;
     line-height: 1.7;
-    margin-bottom: 35px;
     max-width: 85%;
+    margin: 0 auto 35px auto;
     text-shadow: 0 2px 10px rgba(0,0,0,0.8);
     display: -webkit-box;
-    -webkit-line-clamp: 3; /* Limite la description Ã  3 lignes */
+    -webkit-line-clamp: 3; 
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -214,6 +219,7 @@ a {
 
 .hero-buttons {
     display: flex;
+    justify-content: center;
     gap: 20px;
 }
 
@@ -392,7 +398,8 @@ a {
     .hero { height: auto; min-height: 75vh; padding-bottom: 40px; }
     .hero-content { padding-left: 1.5rem; padding-right: 1.5rem; width: 100%; padding-top: 12vh; }
     .hero h1 { font-size: 28px; margin-bottom: 10px; }
-    .hero-synopsis { font-size: 14px; margin-bottom: 15px; max-width: 100%; -webkit-line-clamp: 3; }
+    .hero-synopsis { font-size: 14px; margin-bottom: 15px; max-width: 100%; -webkit-line-clamp: 3;
+    line-clamp: 3; }
     .hero-meta { font-size: 12px; margin-bottom: 10px; flex-wrap: wrap; }
     .hero-buttons { flex-direction: column; gap: 10px; max-width: 280px; }
     .btn { padding: 12px 24px; font-size: 14px; width: 100%; }
@@ -444,7 +451,8 @@ a {
     .hero { min-height: 70vh; }
     .hero-content { padding-top: 13vh; }
     .hero h1 { font-size: 24px; }
-    .hero-synopsis { -webkit-line-clamp: 2; font-size: 13px; margin-bottom: 12px; }
+    .hero-synopsis { -webkit-line-clamp: 2;
+    line-clamp: 2; font-size: 13px; margin-bottom: 12px; }
     .hero-meta { font-size: 11px; }
     .hero-buttons { max-width: 240px; gap: 8px; }
     .popular { margin-top: -30px; }
@@ -758,6 +766,7 @@ a {
     line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 4;
+    line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
