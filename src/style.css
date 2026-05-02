@@ -449,7 +449,6 @@ a {
     .actor-info h2 { font-size: 22px; text-align: center; }
     .actor-meta { justify-content: center; }
     .actor-bio { text-align: left; padding-right: 0; font-size: 13px; }
-}
 
 @media (max-width: 480px) {
     .hero { min-height: 70vh; }
