@@ -431,6 +431,11 @@ if (watchMovieBtn && playerSection && videoIframe) {
                 mediaType: mediaType as any,
                 title: currentMediaData.title || currentMediaData.name,
                 poster: currentMediaData.poster_path,
+                backdrop: currentMediaData.backdrop_path,
+                overview: currentMediaData.overview,
+                rating: currentMediaData.vote_average,
+                year: currentMediaData.release_date || currentMediaData.first_air_date,
+                tagline: currentMediaData.tagline,
                 season: mediaType === 'tv' ? parseInt(seasonSelect?.value || '1') : undefined,
                 episode: mediaType === 'tv' ? parseInt(episodeSelect?.value || '1') : undefined
             });
@@ -467,6 +472,11 @@ function updateTvProgress() {
             mediaType: 'tv',
             title: currentMediaData.title || currentMediaData.name,
             poster: currentMediaData.poster_path,
+            backdrop: currentMediaData.backdrop_path,
+            overview: currentMediaData.overview,
+            rating: currentMediaData.vote_average,
+            year: currentMediaData.release_date || currentMediaData.first_air_date,
+            tagline: currentMediaData.tagline,
             season: parseInt(seasonSelect?.value || '1'),
             episode: parseInt(episodeSelect?.value || '1')
         });

@@ -25,6 +25,7 @@ const carousel = document.getElementById('carousel') as HTMLElement | null;
 const heroSection = document.getElementById('hero-section');
 const heroTitle = document.getElementById('hero-title');
 const heroMeta = document.getElementById('hero-meta');
+const heroTagline = document.getElementById('hero-tagline');
 const heroSynopsis = document.getElementById('hero-synopsis');
 const heroContent = document.querySelector('.hero-content');
 const navItems = document.querySelectorAll('.nav-item');
@@ -346,6 +347,7 @@ function updateHeroSection(item: any, isInitialLoad = false) {
         const mediaLabel = displayType === 'tv' ? 'TV Show' : 'Movie';
 
         if (heroTitle) heroTitle.textContent = title;
+        if (heroTagline) heroTagline.textContent = item.tagline ? `"${item.tagline}"` : '';
         if (heroSynopsis) heroSynopsis.textContent = item.overview || "Aucun synopsis disponible.";
         
         if (heroMeta) {
@@ -544,8 +546,14 @@ function renderResumePage() {
         id: h.mediaId,
         media_type: h.mediaType,
         poster_path: h.poster,
+        backdrop_path: h.backdrop,
         title: h.title,
         name: h.title, // Pour les séries
+        overview: h.overview,
+        vote_average: h.rating,
+        release_date: h.year,
+        first_air_date: h.year,
+        tagline: h.tagline,
         season: h.season,
         episode: h.episode,
         time: h.time,

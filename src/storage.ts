@@ -12,6 +12,11 @@ interface VideoProgress {
     lastUpdated: number;
     title: string;
     poster: string;
+    backdrop: string;
+    overview: string;
+    rating: number;
+    year: string;
+    tagline: string;
 }
 
 const STORAGE_KEY = 'movieverse_progress';
@@ -36,6 +41,11 @@ export const ProgressManager = {
             episode: data.episode !== undefined ? data.episode : allProgress[id]?.episode,
             title: data.title || allProgress[id]?.title || '',
             poster: data.poster || allProgress[id]?.poster || '',
+            backdrop: data.backdrop || allProgress[id]?.backdrop || '',
+            overview: data.overview || allProgress[id]?.overview || '',
+            rating: data.rating !== undefined ? data.rating : (allProgress[id]?.rating || 0),
+            year: data.year || allProgress[id]?.year || '',
+            tagline: data.tagline || allProgress[id]?.tagline || '',
             lastUpdated: Date.now()
         };
 
