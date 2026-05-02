@@ -359,34 +359,34 @@ const closePlayerBtn = document.getElementById('close-player-btn');
 const serverButtons = document.querySelectorAll('.server-btn');
 
 let currentSeasonsCount = 0;
-let currentServer = 'vidsrcme'; // Default server
+let currentServer = 'videasy'; // Default server
 
 // Server URL builders
 function getMovieUrl(server: string, id: string | null): string {
     switch (server) {
-        case 'superembed':
-            return `https://superembed.stream/movie/${id}`;
-        case 'embedsu':
-            return `https://embed.su/embed/movie/${id}`;
+        case 'multiembed':
+            return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
         case 'moviesapi':
             return `https://moviesapi.club/movie/${id}`;
-        case 'vidsrcme':
+        case 'vidfast':
+            return `https://vidfast.pro/movie/${id}`;
+        case 'videasy':
         default:
-            return `https://vidsrc.me/embed/movie/${id}`;
+            return `https://player.videasy.net/movie/${id}`;
     }
 }
 
 function getTvUrl(server: string, id: string | null, season: string, episode: string): string {
     switch (server) {
-        case 'superembed':
-            return `https://superembed.stream/tv/${id}/${season}/${episode}`;
-        case 'embedsu':
-            return `https://embed.su/embed/tv/${id}/${season}/${episode}`;
+        case 'multiembed':
+            return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
         case 'moviesapi':
             return `https://moviesapi.club/tv/${id}/${season}/${episode}`;
-        case 'vidsrcme':
+        case 'vidfast':
+            return `https://vidfast.pro/tv/${id}/${season}/${episode}`;
+        case 'videasy':
         default:
-            return `https://vidsrc.me/embed/tv/${id}/${season}/${episode}`;
+            return `https://player.videasy.net/tv/${id}/${season}/${episode}`;
     }
 }
 
@@ -395,7 +395,7 @@ serverButtons.forEach(btn => {
     btn.addEventListener('click', () => {
         serverButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        currentServer = (btn as HTMLElement).dataset.server || 'vidsrcme';
+        currentServer = (btn as HTMLElement).dataset.server || 'videasy';
         // Reload current content with new server
         if (videoIframe && videoIframe.src && videoIframe.src !== '') {
             if (mediaType === 'movie') {
