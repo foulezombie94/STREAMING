@@ -88,54 +88,79 @@ navItems.forEach(item => {
 });
 
 const genreFiltersContainer = document.getElementById('genre-filters-container');
+const mobileFilterBtn = document.getElementById('mobile-filter-btn');
+const mobileGenreOverlay = document.getElementById('mobile-genre-overlay');
+const mobileGenreGrid = document.getElementById('mobile-genre-grid');
+const closeGenreOverlay = document.getElementById('close-genre-overlay');
 
 function renderGenres(type: 'movie' | 'tv' | 'trending') {
     if (!genreFiltersEl || !genreFiltersContainer) return;
     
     if (type === 'trending') {
-        genreFiltersContainer.style.opacity = '0';
-        genreFiltersContainer.style.pointerEvents = 'none';
-        setTimeout(() => {
-            if (currentType === 'trending') genreFiltersEl.style.display = 'none';
-        }, 300);
+        genreFiltersContainer.style.display = 'none';
         return;
     }
     
-    genreFiltersEl.style.display = 'flex';
-    genreFiltersContainer.style.opacity = '1';
-    genreFiltersContainer.style.pointerEvents = 'auto';
-    
+    genreFiltersContainer.style.display = 'block';
     const genres = type === 'movie' ? movieGenres : tvGenres;
     
+    // Rendre pour Desktop (pills horizontales)
+    genreFiltersEl.style.display = window.innerWidth > 768 ? 'flex' : 'none';
     genreFiltersEl.innerHTML = `
         <div class="genre-label">Genres :</div>
-        <button class="genre-btn ${activeGenreId === null ? 'active' : ''}" data-id="all">
-            Tous les genres
-        </button>
-        ${genres.map(g => `
-            <button class="genre-btn ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">
-                ${g.name}
-            </button>
-        `).join('')}
+        <button class="genre-btn ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</button>
+        ${genres.map(g => `<button class="genre-btn ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</button>`).join('')}
     `;
 
-    // Click listener pour les genres
+    // Rendre pour Mobile (grid dans l'overlay)
+    if (mobileGenreGrid) {
+        mobileGenreGrid.innerHTML = `
+            <div class="mobile-genre-item ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</div>
+            ${genres.map(g => `<div class="mobile-genre-item ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</div>`).join('')}
+        `;
+        
+        mobileGenreGrid.querySelectorAll('.mobile-genre-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const idStr = item.getAttribute('data-id');
+                activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
+                
+                closeGenreOverlay?.click();
+                renderGenres(type);
+                
+                heroContent?.classList.add('animating');
+                if (carousel) carousel.style.opacity = '0.5';
+                fetchPopularData(type, activeGenreId);
+            });
+        });
+    }
+
+    // Click listener pour desktop
     genreFiltersEl.querySelectorAll('.genre-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const idStr = btn.getAttribute('data-id');
             activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
-            
-            // Animation de feedback immédiat
-            btn.classList.add('active');
-            
-            renderGenres(type); // Update classes active
-            
+            renderGenres(type);
             heroContent?.classList.add('animating');
             if (carousel) carousel.style.opacity = '0.5';
             fetchPopularData(type, activeGenreId);
         });
     });
 }
+
+// Event listeners pour le mobile
+mobileFilterBtn?.addEventListener('click', () => {
+    mobileGenreOverlay?.classList.add('active');
+    document.body.style.overflow = 'hidden'; // Bloquer le scroll
+});
+
+closeGenreOverlay?.addEventListener('click', () => {
+    mobileGenreOverlay?.classList.remove('active');
+    document.body.style.overflow = '';
+});
+
+mobileGenreOverlay?.addEventListener('click', (e) => {
+    if (e.target === mobileGenreOverlay) closeGenreOverlay?.click();
+});
 
 // 5. Gestion Drag Carrousel fluide
 if (carousel) {
