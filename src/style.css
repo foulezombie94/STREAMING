@@ -467,72 +467,69 @@ a {
     }
 
     /* Cacher la cloche sur mobile */
-    .nav-actions .icon:not(.search-icon) {
-        display: none !important;
-    }
-
-    /* 2. Recherche : Bulle qui s'allonge et icône fixe */
+    /* REWRITTEN SEARCH MOBILE - FORCE FIX */
     .search-container { 
-        position: relative;
-        background: transparent;
-        border: 1px solid transparent;
-        padding: 0;
-        width: 40px; 
-        height: 40px;
-        border-radius: 50px;
-        display: flex;
-        align-items: center;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Animation avec petit rebond */
-        overflow: hidden;
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        width: 38px !important; /* Plus petit au repos */
+        height: 38px !important;
+        background: transparent !important;
+        border: 1px solid transparent !important;
+        border-radius: 50px !important;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        overflow: hidden !important;
+        margin-left: auto !important;
     }
 
     .search-container:focus-within { 
-        width: 170px; 
-        background: rgba(255, 255, 255, 0.12);
-        border-color: rgba(255, 255, 255, 0.2);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        width: 180px !important; 
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-color: rgba(255, 255, 255, 0.2) !important;
+        padding-right: 0 !important;
     }
 
-    /* 3. Icône SVG Toujours à sa place */
     .nav-actions .search-icon { 
-        position: absolute;
-        right: 0;
-        width: 40px; 
-        height: 40px; 
+        position: absolute !important;
+        right: 0 !important;
+        top: 0 !important;
+        width: 38px !important; 
+        height: 38px !important; 
         display: flex !important; 
-        align-items: center;
-        justify-content: center;
-        z-index: 5;
-        cursor: pointer;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: 10 !important;
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
 
     .nav-actions .search-icon svg {
-        width: 22px; /* Taille légèrement réduite pour le look "premium" */
-        height: 22px;
-        transition: transform 0.3s ease;
+        width: 18px !important; /* Vraiment plus petit */
+        height: 18px !important;
+        transition: transform 0.3s ease !important;
     }
 
-    /* 4. Input avec dégagement pour l'icône */
     .search-input { 
-        width: 0; 
-        opacity: 0; 
-        padding: 0 40px 0 15px; 
-        margin: 0;
-        border: none;
-        outline: none;
-        color: white;
-        font-family: inherit;
-        font-size: 16px;
-        background: transparent;
-        transition: all 0.3s ease;
-        visibility: hidden;
+        width: 0 !important; 
+        opacity: 0 !important; 
+        padding: 0 38px 0 12px !important; 
+        margin: 0 !important;
+        border: none !important;
+        outline: none !important;
+        color: white !important;
+        font-family: inherit !important;
+        font-size: 16px !important;
+        background: transparent !important;
+        transition: all 0.3s ease !important;
+        visibility: hidden !important;
     }
 
     .search-container:focus-within .search-input { 
-        width: 100%; 
-        opacity: 1; 
-        visibility: visible;
-        pointer-events: auto;
+        width: 100% !important; 
+        opacity: 1 !important; 
+        visibility: visible !important;
     }
 
     .bottom-nav { display: flex; }
