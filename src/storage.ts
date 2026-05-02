@@ -29,7 +29,7 @@ export const ProgressManager = {
         if (!data.mediaId) return;
 
         const allProgress = this.getAllProgress();
-        const id = this.generateId(data.mediaId, data.mediaType as string, data.season, data.episode);
+        const id = this.generateId(data.mediaId, data.mediaType as string);
 
         const progress: VideoProgress = {
             ...allProgress[id],
@@ -66,9 +66,9 @@ export const ProgressManager = {
     /**
      * Récupère la progression pour une vidéo spécifique
      */
-    getProgress(mediaId: string, mediaType: string, season?: number, episode?: number): VideoProgress | null {
+    getProgress(mediaId: string, mediaType: string): VideoProgress | null {
         const allProgress = this.getAllProgress();
-        const id = this.generateId(mediaId, mediaType, season, episode);
+        const id = this.generateId(mediaId, mediaType);
         
         const data = allProgress[id];
         if (!data) return null;
@@ -90,9 +90,9 @@ export const ProgressManager = {
     /**
      * Supprime la progression (quand la vidéo est terminée)
      */
-    clearProgress(mediaId: string, mediaType: string, season?: number, episode?: number) {
+    clearProgress(mediaId: string, mediaType: string) {
         const allProgress = this.getAllProgress();
-        const id = this.generateId(mediaId, mediaType, season, episode);
+        const id = this.generateId(mediaId, mediaType);
         
         if (allProgress[id]) {
             delete allProgress[id];
@@ -103,12 +103,8 @@ export const ProgressManager = {
     /**
      * Génère un identifiant unique (Rule 1)
      */
-    generateId(mediaId: string, mediaType: string, season?: number, episode?: number): string {
-        let id = `${mediaType}_${mediaId}`;
-        if (mediaType === 'tv') {
-            id += `_s${season || 1}_e${episode || 1}`;
-        }
-        return id;
+    generateId(mediaId: string, mediaType: string): string {
+        return `${mediaType}_${mediaId}`;
     },
 
     /**
