@@ -1212,7 +1212,7 @@ a {
 
 /* --- MOBILE FILTER STYLES --- */
 .mobile-filter-btn {
-    display: none;
+    display: flex;
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
     color: #ef4444;
