@@ -1228,6 +1228,7 @@ a {
     backdrop-filter: blur(10px);
     transition: all 0.3s ease;
     width: fit-content;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
 }
 
 .mobile-filter-btn:active {
