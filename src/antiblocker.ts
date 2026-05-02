@@ -40,10 +40,10 @@
     };
 
     // ===== 2. REDIRECTION BLOCKING (Mobile focus) =====
-    const originalHref = window.location.href;
+    // const originalHref = window.location.href;
     
     // Intercept beforeunload to detect quick exits
-    window.addEventListener('beforeunload', (event) => {
+    window.addEventListener('beforeunload', () => {
         // If we are being redirected to a known bad domain, try to stop it
         console.log('[Shield] Tentative de quitter la page détectée');
         // On modern mobile browsers, we can't truly "block" navigation without user confirmation
