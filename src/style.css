@@ -398,8 +398,6 @@ a {
     .poster-container { flex: 0 0 240px; }
 }
 
-@media (max-width: 768px) {
-    .navbar { padding: 1.2rem 1.5rem; }
     .navbar.scrolled { padding: 0.8rem 1.5rem; }
     .nav-links { display: none; } 
     .hero { height: auto; min-height: 75vh; padding-bottom: 40px; }
@@ -606,14 +604,7 @@ a {
 }
 
 .genre-filters {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    padding: 0 4rem;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
-    pointer-events: auto;
+    display: none !important;
 }
 
 .genre-filters::-webkit-scrollbar {
@@ -1058,33 +1049,44 @@ a {
 }
 
 /* --- MOBILE FILTER STYLES --- */
-.mobile-filter-btn {
-    display: none;
+.filter-btn {
+    display: flex;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #fff;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    margin: 0 1.5rem;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    margin-left: 4rem;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     cursor: pointer;
     backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-.mobile-genre-overlay {
+.filter-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #ef4444;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.2);
+}
+
+.genre-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.8);
-    backdrop-filter: blur(10px);
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(12px);
     z-index: 2000;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
+    justify-content: center;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .mobile-genre-overlay.active {
@@ -1092,19 +1094,26 @@ a {
     pointer-events: auto;
 }
 
-.mobile-genre-content {
-    width: 100%;
-    background: #111;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    border-top-left-radius: 20px;
-    border-top-right-radius: 20px;
-    padding: 25px;
-    transform: translateY(100%);
-    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+.genre-overlay-content {
+    width: 90%;
+    max-width: 600px;
+    background: #0a0a0a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 40px;
+    transform: scale(0.9) translateY(20px);
+    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1.1);
 }
 
-.mobile-genre-overlay.active .mobile-genre-content {
-    transform: translateY(0);
+.genre-overlay-content {
+    width: 90%;
+    max-width: 600px;
+    background: #0a0a0a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 40px;
+    transform: scale(0.9) translateY(20px);
+    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1.1);
 }
 
 .mobile-genre-header {
@@ -1114,32 +1123,36 @@ a {
     margin-bottom: 20px;
 }
 
-.mobile-genre-grid {
+.genre-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    max-height: 60vh;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    max-height: 70vh;
     overflow-y: auto;
+    padding-right: 10px;
 }
 
-.mobile-genre-item {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: #fff;
-    padding: 15px;
+.genre-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #A3A3A3;
+    padding: 18px;
     border-radius: 12px;
     text-align: center;
     font-weight: 600;
     cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.mobile-genre-item.active {
+.genre-item.active, .genre-item:hover {
     background: #ef4444;
     border-color: #ef4444;
+    color: #fff;
+    transform: scale(1.02);
 }
 
-@media (max-width: 768px) {
-    .genre-filters { display: none; }
-    .mobile-filter-btn { display: flex; }
+.genre-filters {
+    display: none !important;
+}
     .genre-filters-container { margin-top: 60px; }
 }

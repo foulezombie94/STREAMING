@@ -88,13 +88,13 @@ navItems.forEach(item => {
 });
 
 const genreFiltersContainer = document.getElementById('genre-filters-container');
-const mobileFilterBtn = document.getElementById('mobile-filter-btn');
-const mobileGenreOverlay = document.getElementById('mobile-genre-overlay');
-const mobileGenreGrid = document.getElementById('mobile-genre-grid');
+const filterBtn = document.getElementById('filter-btn');
+const genreOverlay = document.getElementById('genre-overlay');
+const genreGrid = document.getElementById('genre-grid');
 const closeGenreOverlay = document.getElementById('close-genre-overlay');
 
 function renderGenres(type: 'movie' | 'tv' | 'trending') {
-    if (!genreFiltersEl || !genreFiltersContainer) return;
+    if (!genreFiltersContainer || !filterBtn) return;
     
     if (type === 'trending') {
         genreFiltersContainer.style.display = 'none';
@@ -102,24 +102,18 @@ function renderGenres(type: 'movie' | 'tv' | 'trending') {
     }
     
     genreFiltersContainer.style.display = 'block';
+    filterBtn.style.display = 'flex';
+    
     const genres = type === 'movie' ? movieGenres : tvGenres;
     
-    // Rendre pour Desktop (pills horizontales)
-    genreFiltersEl.style.display = window.innerWidth > 768 ? 'flex' : 'none';
-    genreFiltersEl.innerHTML = `
-        <div class="genre-label">Genres :</div>
-        <button class="genre-btn ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</button>
-        ${genres.map(g => `<button class="genre-btn ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</button>`).join('')}
-    `;
-
-    // Rendre pour Mobile (grid dans l'overlay)
-    if (mobileGenreGrid) {
-        mobileGenreGrid.innerHTML = `
-            <div class="mobile-genre-item ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</div>
-            ${genres.map(g => `<div class="mobile-genre-item ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</div>`).join('')}
+    // Rendre la grille de genres dans l'overlay
+    if (genreGrid) {
+        genreGrid.innerHTML = `
+            <div class="genre-item ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous les Genres</div>
+            ${genres.map(g => `<div class="genre-item ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</div>`).join('')}
         `;
         
-        mobileGenreGrid.querySelectorAll('.mobile-genre-item').forEach(item => {
+        genreGrid.querySelectorAll('.genre-item').forEach(item => {
             item.addEventListener('click', () => {
                 const idStr = item.getAttribute('data-id');
                 activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
@@ -133,33 +127,21 @@ function renderGenres(type: 'movie' | 'tv' | 'trending') {
             });
         });
     }
-
-    // Click listener pour desktop
-    genreFiltersEl.querySelectorAll('.genre-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const idStr = btn.getAttribute('data-id');
-            activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
-            renderGenres(type);
-            heroContent?.classList.add('animating');
-            if (carousel) carousel.style.opacity = '0.5';
-            fetchPopularData(type, activeGenreId);
-        });
-    });
 }
 
-// Event listeners pour le mobile
-mobileFilterBtn?.addEventListener('click', () => {
-    mobileGenreOverlay?.classList.add('active');
-    document.body.style.overflow = 'hidden'; // Bloquer le scroll
+// Event listeners pour l'overlay (Universal)
+filterBtn?.addEventListener('click', () => {
+    genreOverlay?.classList.add('active');
+    document.body.style.overflow = 'hidden';
 });
 
 closeGenreOverlay?.addEventListener('click', () => {
-    mobileGenreOverlay?.classList.remove('active');
+    genreOverlay?.classList.remove('active');
     document.body.style.overflow = '';
 });
 
-mobileGenreOverlay?.addEventListener('click', (e) => {
-    if (e.target === mobileGenreOverlay) closeGenreOverlay?.click();
+genreOverlay?.addEventListener('click', (e) => {
+    if (e.target === genreOverlay) closeGenreOverlay?.click();
 });
 
 // 5. Gestion Drag Carrousel fluide
