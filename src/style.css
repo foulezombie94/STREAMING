@@ -28,26 +28,29 @@ a {
     justify-content: space-between;
     align-items: center;
     z-index: 1000;
-    transition: all 0.3s ease;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(5, 5, 5, 0.4);
+    backdrop-filter: blur(15px); 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .navbar.scrolled {
-    background-color: rgba(5, 5, 5, 0.85);
-    padding: 1rem 4rem;
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 0.8rem 4rem;
+    background: rgba(5, 5, 5, 0.95);
+    border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
 .logo {
-    font-weight: 800;
     font-size: 26px;
-    letter-spacing: 3px;
-    background: linear-gradient(90deg, #ffffff, #a3a3a3);
+    font-weight: 800;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     text-transform: uppercase;
+    cursor: pointer;
 }
 
 .nav-links {
@@ -90,19 +93,21 @@ a {
 }
 
 .search-container {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px 16px;
+    border-radius: 50px;
     display: flex;
     align-items: center;
-    background: transparent;
-    border: none;
-    padding: 0;
-    transition: all 0.3s ease;
+    gap: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
 }
 
-.search-container:focus-within {
+.search-container:hover, .search-container:focus-within {
     background: rgba(255, 255, 255, 0.1);
-    border-color: #ef4444;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.5);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
 }
 
 .search-input {
@@ -392,59 +397,106 @@ a {
 }
 
 @media (max-width: 768px) {
-    .navbar { padding: 1.2rem 1.5rem; }
-    .navbar.scrolled { padding: 0.8rem 1.5rem; }
-    .nav-links { display: none; } 
-    .hero { height: auto; min-height: 75vh; padding-bottom: 40px; }
-    .hero-content { padding-left: 1.5rem; padding-right: 1.5rem; width: 100%; padding-top: 12vh; }
-    .hero h1 { font-size: 28px; margin-bottom: 10px; }
-    .hero-synopsis { font-size: 14px; margin-bottom: 15px; max-width: 100%; -webkit-line-clamp: 3;
-    line-clamp: 3; }
-    .hero-meta { font-size: 12px; margin-bottom: 10px; flex-wrap: wrap; }
-    .hero-buttons { flex-direction: column; gap: 10px; max-width: 280px; }
-    .btn { padding: 12px 24px; font-size: 14px; width: 100%; }
-    .section-title { padding-left: 1.5rem; font-size: 18px; margin-bottom: 15px; }
-    .carousel-container { padding: 10px 1.5rem 2rem 1.5rem; gap: 12px; }
-    .movie-card { flex: 0 0 140px; min-width: 130px; }
-    .popular { margin-top: -50px; }
-    .logo { font-size: 20px; letter-spacing: 2px; }
-    .nav-actions { gap: 12px; }
-    .icon { width: 18px; height: 18px; }
-    .profile-pic { width: 32px; height: 32px; }
-    .search-container { padding: 4px 10px; }
-    .search-container:focus-within .search-input,
-    .search-input:not(:placeholder-shown) { width: 100px; }
-
-    /* Details page mobile */
-    .details-content-wrapper {
-        flex-direction: column;
-        padding: 10vh 1.5rem 3rem 1.5rem;
-        gap: 25px;
-        align-items: center;
+    /* 1. Navbar responsive */
+    .navbar { 
+        padding: 0.8rem 1.2rem; 
+        display: flex;
+        justify-content: space-between; 
+        gap: 15px; 
+        align-items: center; 
+        flex-wrap: nowrap;
+        background: rgba(5, 5, 5, 0.8);
+        backdrop-filter: blur(20px);
     }
-    .poster-container { flex: none; width: 200px; }
-    .info-container { text-align: center; }
-    .genres { justify-content: center; }
-    .hero-buttons { align-items: stretch; }
-    .tagline { font-size: 16px; }
-    .synopsis { font-size: 14px; }
-    .cast-list { justify-content: center; }
 
-    /* Player mobile */
-    .player-section { padding: 30px 1.5rem; }
-    .player-controls { flex-direction: column; gap: 8px; }
-    .player-select { width: 100%; min-width: unset; }
-    .server-selector { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .server-buttons { width: 100%; }
-    .server-btn { flex: 1; text-align: center; padding: 10px 12px; font-size: 12px; }
+    .logo {
+        font-size: 20px;
+        letter-spacing: 1px;
+    }
 
-    /* Modals mobile */
-    .modal-content { width: 95%; }
-    .actor-details-container { flex-direction: column; padding: 20px; gap: 20px; }
-    .actor-details-container img { width: 150px; height: 225px; margin: 0 auto; }
-    .actor-info h2 { font-size: 22px; text-align: center; }
-    .actor-meta { justify-content: center; }
-    .actor-bio { text-align: left; padding-right: 0; font-size: 13px; }
+    /* Cache les menus texte (Accueil, Séries...) */
+    .nav-links { 
+        display: none !important; 
+    }
+
+    /* S'assurer que le conteneur des actions s'affiche bien */
+    .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    /* 2. Style du conteneur de recherche */
+    .search-container { 
+        padding: 6px 12px;
+        background: rgba(239, 68, 68, 0.1);
+        border-color: rgba(239, 68, 68, 0.3);
+        max-width: 42px; /* On garde l'aspect bulle au début */
+        overflow: hidden;
+    }
+
+    /* 3. LE CORRECTIF POUR L'ICÔNE QUI DISPARAÎT */
+    .nav-actions .search-icon { 
+        display: block; 
+        width: 20px; 
+        height: 20px; 
+        min-width: 20px; 
+        flex-shrink: 0; 
+    }
+
+    /* 4. Animation de l'input */
+    .search-input { 
+        width: 0; 
+        opacity: 0; 
+        transition: all 0.3s ease;
+        border: none;
+        outline: none;
+        color: white; 
+        font-family: inherit;
+    }
+
+    /* Quand on clique sur l'icône (ou dans le container) */
+    .search-container:focus-within {
+        max-width: 160px;
+        background: rgba(5, 5, 5, 0.5);
+    }
+
+    .search-container:focus-within .search-input { 
+        width: 100px; 
+        opacity: 1; 
+        margin-left: 8px; 
+    }
+
+    .bottom-nav { display: flex; }
+    
+    .hero-content { width: 90%; padding-left: 0; padding-top: 15vh; }
+    .hero h1 { font-size: 32px; line-height: 1.2; }
+    
+    .genre-filters-container { margin-top: 60px; padding: 10px 1.5rem; }
+    .mobile-filter-btn { 
+        width: 100%; 
+        justify-content: center; 
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+    }
+    
+    main { padding-bottom: 20px; }
+    
+    /* Grille 3 colonnes au lieu du carrousel */
+    .carousel-container { 
+        display: grid; 
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 10px; 
+        padding: 0 1.5rem;
+        overflow-x: hidden;
+    }
+    
+    .movie-card { 
+        flex: none; 
+        width: 100%; 
+        min-width: unset; 
+        border-radius: 8px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1182,77 +1234,6 @@ a {
 
 .bottom-nav-item.active {
     color: #ef4444;
-}
-
-@media (max-width: 768px) {
-    .navbar { padding: 1rem 1.5rem; justify-content: flex-start; gap: 25px; align-items: center; flex-wrap: nowrap; }
-    .nav-links { display: none !important; }
-    .nav-actions .icon:first-of-type { display: none; } /* Hide bell */
-    .nav-actions .search-icon { 
-        display: block; 
-        width: 24px; 
-        height: 24px; 
-        min-width: 24px; 
-        flex-shrink: 0; 
-    }
-    .profile-pic { width: 32px; height: 32px; }
-    
-    .bottom-nav { display: flex; }
-    
-    .hero-content { width: 90%; padding-left: 1.5rem; padding-top: 15vh; }
-    .hero h1 { font-size: 32px; line-height: 1.2; }
-    
-    .genre-filters-container { margin-top: 60px; padding: 10px 1.5rem; }
-    .mobile-filter-btn { 
-        width: 100%; 
-        justify-content: center; 
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.15);
-    }
-    
-    main { padding-bottom: 20px; }
-    
-    /* Grille 3 colonnes au lieu du carrousel */
-    .carousel-container { 
-        display: grid; 
-        grid-template-columns: repeat(3, 1fr); 
-        gap: 10px; 
-        padding: 0 1.5rem;
-        overflow-x: hidden;
-    }
-    
-    .movie-card { 
-        flex: none; 
-        width: 100%; 
-        min-width: unset; 
-        border-radius: 8px;
-    }
-    
-    .search-container { 
-        background: transparent; 
-        border: none; 
-        padding: 0; 
-        display: flex; 
-        align-items: center; 
-        cursor: pointer; 
-    }
-    .search-input { 
-        width: 0; 
-        opacity: 0; 
-        transition: all 0.3s ease;
-        border: none;
-        outline: none;
-        color: white; 
-        font-family: inherit;
-    }
-    .search-container:focus-within .search-input { 
-        width: 120px; 
-        opacity: 1; 
-        background: rgba(255, 255, 255, 0.1); 
-        border-radius: 20px; 
-        padding: 6px 12px; 
-        margin-left: 10px; 
-    }
 }
 
 @media (max-width: 480px) {
