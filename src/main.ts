@@ -319,19 +319,23 @@ function populateCarousel(items: any[]) {
 
         card.appendChild(img);
 
-        // Gestion du clic
-        card.addEventListener('click', () => {
-            document.querySelectorAll('.movie-card').forEach(c => c.classList.remove('active'));
-            card.classList.add('active');
-
-            updateHeroSection(item);
+        // Gestion du clic & double-clic (Mobile & Desktop)
+        let lastClick = 0;
+        card.addEventListener('click', (e) => {
+            const now = Date.now();
+            const delay = now - lastClick;
             
-            // Centrage horizontal manuel pour éviter le saut vertical de la page
-            const scrollPos = card.offsetLeft - (carousel.clientWidth / 2) + (card.clientWidth / 2);
-            carousel.scrollTo({
-                left: scrollPos,
-                behavior: 'smooth'
-            });
+            if (delay < 350 && delay > 0) {
+                // Double clic / Double tap
+                let displayType = currentType === 'trending' ? item.media_type : currentType;
+                window.location.href = `/details.html?id=${item.id}&type=${displayType}`;
+            } else {
+                // Simple clic
+                document.querySelectorAll('.movie-card').forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                updateHeroSection(item);
+            }
+            lastClick = now;
         });
 
         carousel.appendChild(card);
