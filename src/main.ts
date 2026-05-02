@@ -88,7 +88,6 @@ function handleNavigation(type: any) {
         });
     });
 });
-});
 
 const genreFiltersContainer = document.getElementById('genre-filters-container');
 const mobileFilterBtn = document.getElementById('mobile-filter-btn');
