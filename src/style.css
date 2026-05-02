@@ -1188,7 +1188,13 @@ a {
     .navbar { padding: 1rem 1.5rem; justify-content: flex-start; gap: 25px; align-items: center; flex-wrap: nowrap; }
     .nav-links { display: none !important; }
     .nav-actions .icon:first-of-type { display: none; } /* Hide bell */
-    .nav-actions .search-icon { display: flex; width: 24px; height: 24px; }
+    .nav-actions .search-icon { 
+        display: block; 
+        width: 24px; 
+        height: 24px; 
+        min-width: 24px; 
+        flex-shrink: 0; 
+    }
     .profile-pic { width: 32px; height: 32px; }
     
     .bottom-nav { display: flex; }
@@ -1222,9 +1228,31 @@ a {
         border-radius: 8px;
     }
     
-    .search-container { background: transparent; border: none; padding: 0; display: flex; align-items: center; }
-    .search-input { width: 0; opacity: 0; transition: all 0.3s ease; }
-    .search-container:focus-within .search-input { width: 80px; opacity: 1; background: rgba(255,255,255,0.1); border-radius: 20px; padding: 4px 8px; margin-left: 5px; }
+    .search-container { 
+        background: transparent; 
+        border: none; 
+        padding: 0; 
+        display: flex; 
+        align-items: center; 
+        cursor: pointer; 
+    }
+    .search-input { 
+        width: 0; 
+        opacity: 0; 
+        transition: all 0.3s ease;
+        border: none;
+        outline: none;
+        color: white; 
+        font-family: inherit;
+    }
+    .search-container:focus-within .search-input { 
+        width: 120px; 
+        opacity: 1; 
+        background: rgba(255, 255, 255, 0.1); 
+        border-radius: 20px; 
+        padding: 6px 12px; 
+        margin-left: 10px; 
+    }
 }
 
 @media (max-width: 480px) {
