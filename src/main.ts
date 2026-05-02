@@ -54,37 +54,40 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// 4. Gestion de la Navigation (Home / Séries / Films)
-navItems.forEach(item => {
-    item.addEventListener('click', (e) => {
-        e.preventDefault();
-        const type = item.getAttribute('data-type');
-        if (!type) return;
+// 4. Gestion de la Navigation (Top & Bottom)
+const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
 
-        // Reset class
-        navItems.forEach(nav => nav.classList.remove('active'));
-        item.classList.add('active');
-
-        // Changer le type global et refetch
-        currentType = type as 'movie' | 'tv' | 'trending';
-        activeGenreId = null; // Reset genre when switching tabs
-        
-        // Mettre à jour le titre de section
-        if (sectionTitle) {
-            if (currentType === 'trending') sectionTitle.textContent = 'Tendances Actuelles';
-            else if (currentType === 'tv') sectionTitle.textContent = 'Séries Populaires';
-            else sectionTitle.textContent = 'Films Populaires';
-        }
-
-        // Mettre à jour les filtres
-        renderGenres(currentType);
-
-        // Effacer doucement l'écran principal le temps du chargement
-        heroContent?.classList.add('animating');
-        if (carousel) carousel.style.opacity = '0.5';
-
-        fetchPopularData(currentType);
+function handleNavigation(type: any) {
+    [navItems, bottomNavItems].forEach(collection => {
+        collection.forEach(i => {
+            if (i.getAttribute('data-type') === type) i.classList.add('active');
+            else i.classList.remove('active');
+        });
     });
+
+    currentType = type as 'movie' | 'tv' | 'trending';
+    activeGenreId = null; 
+
+    if (sectionTitle) {
+        if (currentType === 'trending') sectionTitle.textContent = 'Tendances Actuelles';
+        else if (currentType === 'tv') sectionTitle.textContent = 'Séries Populaires';
+        else sectionTitle.textContent = 'Films Populaires';
+    }
+
+    renderGenres(currentType);
+    fetchPopularData(currentType);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+[navItems, bottomNavItems].forEach(collection => {
+    collection.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+            const type = item.getAttribute('data-type');
+            if (type) handleNavigation(type);
+        });
+    });
+});
 });
 
 const genreFiltersContainer = document.getElementById('genre-filters-container');
