@@ -462,20 +462,20 @@ a {
         display: none !important; 
     }
 
-    /* S'assurer que le conteneur des actions s'affiche bien */
-    .nav-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
+    /* Cacher la cloche sur mobile */
+    .nav-actions .icon:not(.search-icon) {
+        display: none !important;
     }
 
-    /* 2. Recherche sur mobile : juste l'icône, pas d'animation */
+    /* 2. Recherche : icône à droite, barre s'allonge vers la gauche */
     .search-container { 
         background: none;
         border: none;
         padding: 0;
         display: flex;
+        flex-direction: row-reverse; /* L'icône reste à droite, l'input pousse vers la gauche */
         align-items: center;
+        gap: 0;
     }
 
     /* 3. Icône SVG visible et fixe */
@@ -488,9 +488,27 @@ a {
         cursor: pointer;
     }
 
-    /* 4. Cacher complètement l'input sur mobile */
+    /* 4. Input caché par défaut, s'ouvre vers la gauche au clic */
     .search-input { 
-        display: none !important;
+        width: 0; 
+        opacity: 0; 
+        padding: 0;
+        border: none;
+        outline: none;
+        color: white;
+        font-family: inherit;
+        font-size: 16px;
+        background: transparent;
+        transition: width 0.3s ease, opacity 0.2s ease, padding 0.3s ease;
+    }
+
+    .search-container:focus-within .search-input { 
+        width: 120px; 
+        opacity: 1; 
+        padding: 6px 12px;
+        margin-right: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
     }
 
     .bottom-nav { display: flex; }
