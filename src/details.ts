@@ -359,7 +359,7 @@ const closePlayerBtn = document.getElementById('close-player-btn');
 const serverButtons = document.querySelectorAll('.server-btn');
 
 let currentSeasonsCount = 0;
-let currentServer = 'vidsrc'; // Default server
+let currentServer = 'videasy'; // Default server
 
 // Server URL builders
 function getMovieUrl(server: string, id: string | null): string {
@@ -371,10 +371,8 @@ function getMovieUrl(server: string, id: string | null): string {
         case 'vidfast':
             return `https://vidfast.pro/movie/${id}`;
         case 'videasy':
-            return `https://player.videasy.net/movie/${id}`;
-        case 'vidsrc':
         default:
-            return `https://vidsrc.to/embed/movie/${id}`;
+            return `https://player.videasy.net/movie/${id}`;
     }
 }
 
@@ -387,10 +385,8 @@ function getTvUrl(server: string, id: string | null, season: string, episode: st
         case 'vidfast':
             return `https://vidfast.pro/tv/${id}/${season}/${episode}`;
         case 'videasy':
-            return `https://player.videasy.net/tv/${id}/${season}/${episode}`;
-        case 'vidsrc':
         default:
-            return `https://vidsrc.to/embed/tv/${id}/${season}/${episode}`;
+            return `https://player.videasy.net/tv/${id}/${season}/${episode}`;
     }
 }
 
@@ -399,7 +395,7 @@ serverButtons.forEach(btn => {
     btn.addEventListener('click', () => {
         serverButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        currentServer = (btn as HTMLElement).dataset.server || 'vidsrc';
+        currentServer = (btn as HTMLElement).dataset.server || 'videasy';
         // Reload current content with new server
         if (videoIframe && videoIframe.src && videoIframe.src !== '') {
             if (mediaType === 'movie') {
