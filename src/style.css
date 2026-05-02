@@ -471,39 +471,55 @@ a {
         display: none !important;
     }
 
-    /* 2. Recherche : bulle invisible au repos, centrée parfaitement */
+    /* 2. Recherche : position absolue pour l'icône pour qu'elle ne bouge JAMAIS */
     .search-container { 
+        position: relative;
         background: transparent;
         border: 1px solid transparent;
         padding: 0;
-        width: 40px; /* Cercle parfait au repos */
+        width: 40px; 
         height: 40px;
         border-radius: 50px;
         display: flex;
-        flex-direction: row-reverse; /* Icône à droite */
         align-items: center;
-        justify-content: center; /* Centrage absolu au repos */
+        justify-content: flex-end;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         overflow: hidden;
+        cursor: pointer;
     }
 
-    /* 3. Icône SVG TOUJOURS visible */
+    .search-container:focus-within { 
+        width: 160px; 
+        background: rgba(10, 10, 10, 0.95);
+        border-color: rgba(239, 68, 68, 0.5);
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    /* 3. Icône SVG Fixée à droite */
     .nav-actions .search-icon { 
-        display: block !important; 
-        visibility: visible !important;
-        opacity: 1 !important;
-        width: 24px; 
-        height: 24px; 
-        min-width: 24px; 
-        flex-shrink: 0;
+        position: absolute;
+        right: 0;
+        top: 0;
+        display: flex !important; 
+        align-items: center;
+        justify-content: center;
+        width: 40px; 
+        height: 40px; 
+        z-index: 5;
         cursor: pointer;
+        background: transparent;
+    }
+
+    .nav-actions .search-icon svg {
+        width: 24px;
+        height: 24px;
     }
 
     /* 4. Input caché par défaut */
     .search-input { 
         width: 0; 
         opacity: 0; 
-        padding: 0;
+        padding: 0 40px 0 12px; /* 40px de padding à droite pour laisser place à l'icône */
         margin: 0;
         border: none;
         outline: none;
@@ -512,25 +528,15 @@ a {
         font-size: 16px;
         background: transparent;
         transition: all 0.3s ease;
-        visibility: hidden; /* Totalement invisible au repos */
+        visibility: hidden;
         pointer-events: none;
     }
 
-    /* Quand ouvert : s'allonge vers la gauche et la bulle apparaît */
-    .search-container:focus-within { 
-        width: 150px; 
-        justify-content: flex-end;
-        padding: 0 10px;
-        background: rgba(10, 10, 10, 0.9);
-        border-color: rgba(239, 68, 68, 0.4);
-    }
-
     .search-container:focus-within .search-input { 
-        width: 100px; 
+        width: 100%; 
         opacity: 1; 
         visibility: visible;
         pointer-events: auto;
-        margin-right: 8px;
     }
 
     .bottom-nav { display: flex; }
