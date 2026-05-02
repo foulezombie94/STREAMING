@@ -129,9 +129,6 @@ a {
     pointer-events: none; /* Let the container handle clicks */
 }
 
-}
-
-
 /* 3. Section HÃ©ros */
 .hero {
     position: relative;
