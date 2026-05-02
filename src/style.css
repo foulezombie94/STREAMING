@@ -440,17 +440,20 @@ a {
 }
 
 @media (max-width: 768px) {
-    /* 1. Navbar responsive */
+    /* 1. Navbar responsive - fond jaune fluo translucide */
     .navbar { 
         padding: 0.8rem 1.2rem; 
         display: flex;
         justify-content: space-between; 
-        gap: 15px; 
         align-items: center; 
         flex-wrap: nowrap;
-        background: rgba(5, 5, 5, 0.8);
+        background: rgba(155, 255, 0, 0.15); /* Jaune fluo subtil */
         backdrop-filter: blur(20px);
-        overflow: hidden; /* Rien ne sort de la barre */
+        border-bottom: 1px solid rgba(155, 255, 0, 0.2);
+    }
+
+    .navbar.scrolled {
+        background: rgba(155, 255, 0, 0.1);
     }
 
     .logo {
@@ -458,7 +461,7 @@ a {
         letter-spacing: 1px;
     }
 
-    /* Cache les menus texte (Accueil, Séries...) */
+    /* Cache les menus texte */
     .nav-links { 
         display: none !important; 
     }
@@ -468,20 +471,21 @@ a {
         display: none !important;
     }
 
-    /* 2. Recherche : icône à droite, barre s'allonge vers la gauche */
+    /* 2. Recherche : l'input s'allonge vers la gauche */
     .search-container { 
         background: none;
         border: none;
         padding: 0;
         display: flex;
-        flex-direction: row-reverse; /* L'icône reste à droite, l'input pousse vers la gauche */
+        flex-direction: row-reverse;
         align-items: center;
-        gap: 0;
     }
 
-    /* 3. Icône SVG visible et fixe */
+    /* 3. Icône SVG TOUJOURS visible */
     .nav-actions .search-icon { 
-        display: block; 
+        display: block !important; 
+        visibility: visible !important;
+        opacity: 1 !important;
         width: 24px; 
         height: 24px; 
         min-width: 24px; 
@@ -489,11 +493,12 @@ a {
         cursor: pointer;
     }
 
-    /* 4. Input caché par défaut, s'ouvre vers la gauche au clic */
+    /* 4. Input caché par défaut */
     .search-input { 
         width: 0; 
         opacity: 0; 
         padding: 0;
+        margin: 0;
         border: none;
         outline: none;
         color: white;
@@ -503,12 +508,13 @@ a {
         transition: width 0.3s ease, opacity 0.2s ease, padding 0.3s ease;
     }
 
+    /* Quand ouvert : s'allonge vers la gauche */
     .search-container:focus-within .search-input { 
         width: 80px; 
         opacity: 1; 
         padding: 4px 10px;
         margin-right: 6px;
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.15);
         border-radius: 20px;
     }
 
