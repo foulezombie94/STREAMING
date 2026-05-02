@@ -538,10 +538,20 @@ a {
         overflow-x: hidden;
     }
     
+    /* Grille 3 colonnes au lieu du carrousel */
+    .carousel-container { 
+        display: grid !important; 
+        grid-template-columns: repeat(3, 1fr) !important; 
+        gap: 8px !important; 
+        padding: 0 1rem !important;
+        overflow: hidden !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
     .movie-card { 
-        flex: none; 
-        width: 100%; 
-        min-width: unset; 
+        width: 100% !important; 
+        min-width: 0 !important; 
         border-radius: 8px;
     }
 }
@@ -561,9 +571,14 @@ a {
         align-items: center;
     }
     .popular { margin-top: -30px; }
-    .movie-card { flex: 0 0 120px; min-width: 110px; }
+    .movie-card { width: 100% !important; min-width: 0 !important; }
     .section-title { font-size: 16px; padding-left: 1rem; }
-    .carousel-container { padding-left: 1rem; padding-right: 1rem; gap: 10px; }
+    .carousel-container { 
+        padding-left: 1rem !important; 
+        padding-right: 1rem !important; 
+        gap: 8px !important; 
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
     .logo { font-size: 16px; }
     .navbar { padding: 1rem; }
     .navbar.scrolled { padding: 0.7rem 1rem; }
