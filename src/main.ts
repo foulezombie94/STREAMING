@@ -119,6 +119,11 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre') {
     
     // Rendre pour tous les supports (grid dans l'overlay)
     if (mobileGenreGrid) {
+        if (genres.length === 0) {
+            mobileGenreGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #a3a3a3; padding: 20px;">Chargement des catégories...</div>`;
+            return;
+        }
+
         mobileGenreGrid.innerHTML = `
             <div class="mobile-genre-item ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</div>
             ${genres.map(g => `<div class="mobile-genre-item ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</div>`).join('')}
