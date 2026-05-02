@@ -102,8 +102,8 @@ import blockedCSS from './blocked_css.json';
         'multiembed.mov', 'multiembed.cc',
         'moviesapi.club', 'vidfast.pro',
         'themoviedb.org', 'tmdb.org',
-        'vidsrc.me', 'vidsrc.to', 'vidsrc.cc', 'vidsrc.xyz',
-        'cloudflare.com', 'fastly.net', 'akamaihd.net',
+        'vidsrc.me', 'vidsrc.to', 'vidsrc.cc', 'vidsrc.xyz', 'vidsrc.in', 'vidsrc.pm', 'vidsrc.net',
+        'cloudflare.com', 'fastly.net', 'akamaihd.net', 'amazonaws.com', 'azureedge.net',
         'google.com', 'gstatic.com', 'googleapis.com'
     ]);
 
