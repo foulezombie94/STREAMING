@@ -447,7 +447,7 @@ if (watchMovieBtn && playerSection && videoIframe) {
         } else {
             if (playerControls) playerControls.style.display = 'flex';
             // On a déjà récupéré le nombre de saisons lors du fetchDetails initial
-            if (seasonSelect && seasonSelect.options.length === 0 && currentSeasonsCount > 0) {
+            if (seasonSelect && (seasonSelect.value === '' || seasonSelect.options.length <= 1) && currentSeasonsCount > 0) {
                 populateSeasonSelect();
                 
                 // Charger la dernière progression si elle existe
