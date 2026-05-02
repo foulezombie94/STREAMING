@@ -484,13 +484,14 @@ a {
         justify-content: center;
     }
 
-    /* 3. LE CORRECTIF POUR L'ICÔNE QUI DISPARAÎT */
+    /* 3. Icône loupe toujours visible */
     .nav-actions .search-icon { 
         display: block; 
         width: 20px; 
         height: 20px; 
         min-width: 20px; 
         flex-shrink: 0; 
+        fill: none !important; /* La loupe utilise stroke, pas fill */
     }
 
     /* 4. Animation de l'input */
