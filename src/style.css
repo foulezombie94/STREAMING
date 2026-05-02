@@ -127,8 +127,6 @@ a {
 
 .search-icon {
     pointer-events: none;
-    color: #FFF;
-    fill: #FFF;
     width: 24px;
     height: 24px;
 }
@@ -1181,7 +1179,7 @@ a {
     .navbar { padding: 1rem 1.5rem; justify-content: flex-start; gap: 15px; }
     .nav-links { display: none !important; }
     .nav-actions .icon:first-of-type { display: none; } /* Hide bell */
-    .nav-actions .search-icon { display: flex; width: 20px; height: 20px; }
+    .nav-actions .search-icon { display: flex; width: 24px; height: 24px; }
     .profile-pic { width: 32px; height: 32px; }
     
     .bottom-nav { display: flex; }
