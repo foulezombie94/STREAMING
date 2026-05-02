@@ -425,10 +425,11 @@ if (watchMovieBtn && playerSection && videoIframe) {
         playerSection.scrollIntoView({ behavior: 'smooth' });
 
         // Sauvegarder dans l'historique (Reprendre)
-        if (currentMediaData) {
+        // On ne sauvegarde pas ici pour les séries si on n'a pas encore chargé les sélecteurs
+        if (mediaType === 'movie' && currentMediaData) {
             ProgressManager.saveProgress({
                 mediaId: mediaId!,
-                mediaType: mediaType as any,
+                mediaType: 'movie',
                 title: currentMediaData.title || currentMediaData.name,
                 poster: currentMediaData.poster_path,
                 backdrop: currentMediaData.backdrop_path,
@@ -436,8 +437,7 @@ if (watchMovieBtn && playerSection && videoIframe) {
                 rating: currentMediaData.vote_average,
                 year: currentMediaData.release_date || currentMediaData.first_air_date,
                 tagline: currentMediaData.tagline,
-                season: mediaType === 'tv' ? parseInt(seasonSelect?.value || '1') : undefined,
-                episode: mediaType === 'tv' ? parseInt(episodeSelect?.value || '1') : undefined
+                lastUpdated: Date.now()
             });
         }
 
@@ -448,14 +448,13 @@ if (watchMovieBtn && playerSection && videoIframe) {
             if (playerControls) playerControls.style.display = 'flex';
             // On a déjà récupéré le nombre de saisons lors du fetchDetails initial
             if (seasonSelect && (seasonSelect.value === '' || seasonSelect.options.length <= 1) && currentSeasonsCount > 0) {
-                populateSeasonSelect();
-                
                 // Charger la dernière progression si elle existe
                 const lastProgress = ProgressManager.getProgress(mediaId!, 'tv');
                 if (lastProgress && lastProgress.season) {
-                    seasonSelect.value = lastProgress.season.toString();
+                    populateSeasonSelect(lastProgress.season);
                     fetchEpisodes(lastProgress.season, lastProgress.episode);
                 } else {
+                    populateSeasonSelect(1);
                     fetchEpisodes(1);
                 }
             } else if (seasonSelect) {
@@ -483,18 +482,16 @@ function updateTvProgress() {
     }
 }
 
-function populateSeasonSelect() {
+function populateSeasonSelect(targetSeason: number = 1) {
     if (!seasonSelect) return;
     seasonSelect.innerHTML = '';
     for (let i = 1; i <= currentSeasonsCount; i++) {
         const option = document.createElement('option');
         option.value = i.toString();
         option.textContent = `Saison ${i}`;
+        if (i === targetSeason) option.selected = true;
         seasonSelect.appendChild(option);
     }
-    
-    // Auto fetch episodes for season 1
-    fetchEpisodes(1);
     
     seasonSelect.addEventListener('change', (e) => {
         const selectedSeason = parseInt((e.target as HTMLSelectElement).value);
