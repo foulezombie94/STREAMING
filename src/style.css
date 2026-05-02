@@ -473,10 +473,15 @@ a {
     .search-container { 
         padding: 6px 12px;
         background: rgba(239, 68, 68, 0.1);
-        border-color: rgba(239, 68, 68, 0.3);
-        max-width: 42px; 
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        width: 44px; /* Taille exacte pour l'icône + padding */
+        height: 38px;
+        border-radius: 50px;
         overflow: hidden;
-        transition: all 0.2s ease-out;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     /* 3. LE CORRECTIF POUR L'ICÔNE QUI DISPARAÎT */
@@ -492,19 +497,23 @@ a {
     .search-input { 
         width: 0; 
         opacity: 0; 
-        transition: all 0.2s ease-out;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         border: none;
         outline: none;
         color: white; 
         font-family: inherit;
-        font-size: 16px; /* Empêche le zoom automatique sur iPhone */
+        font-size: 16px;
+        margin: 0;
+        padding: 0;
     }
 
     /* Quand on clique sur l'icône (ou dans le container) */
     .search-container:focus-within {
-        max-width: 135px; /* Limite pour ne pas sortir de l'écran */
-        background: rgba(5, 5, 5, 0.6);
+        width: 140px; 
+        background: rgba(5, 5, 5, 0.7);
         border-color: rgba(239, 68, 68, 0.5);
+        justify-content: flex-start;
+        padding-left: 12px;
     }
 
     .search-container:focus-within .search-input { 
