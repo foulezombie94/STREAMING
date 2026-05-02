@@ -87,20 +87,36 @@ navItems.forEach(item => {
     });
 });
 
+const genreFiltersContainer = document.getElementById('genre-filters-container');
+
 function renderGenres(type: 'movie' | 'tv' | 'trending') {
-    if (!genreFiltersEl) return;
+    if (!genreFiltersEl || !genreFiltersContainer) return;
     
     if (type === 'trending') {
-        genreFiltersEl.style.display = 'none';
+        genreFiltersContainer.style.opacity = '0';
+        genreFiltersContainer.style.pointerEvents = 'none';
+        setTimeout(() => {
+            if (currentType === 'trending') genreFiltersEl.style.display = 'none';
+        }, 300);
         return;
     }
     
     genreFiltersEl.style.display = 'flex';
+    genreFiltersContainer.style.opacity = '1';
+    genreFiltersContainer.style.pointerEvents = 'auto';
+    
     const genres = type === 'movie' ? movieGenres : tvGenres;
     
     genreFiltersEl.innerHTML = `
-        <button class="genre-btn ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</button>
-        ${genres.map(g => `<button class="genre-btn ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</button>`).join('')}
+        <div class="genre-label">Genres :</div>
+        <button class="genre-btn ${activeGenreId === null ? 'active' : ''}" data-id="all">
+            Tous les genres
+        </button>
+        ${genres.map(g => `
+            <button class="genre-btn ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">
+                ${g.name}
+            </button>
+        `).join('')}
     `;
 
     // Click listener pour les genres
@@ -108,6 +124,9 @@ function renderGenres(type: 'movie' | 'tv' | 'trending') {
         btn.addEventListener('click', () => {
             const idStr = btn.getAttribute('data-id');
             activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
+            
+            // Animation de feedback immédiat
+            btn.classList.add('active');
             
             renderGenres(type); // Update classes active
             
