@@ -466,70 +466,52 @@ a {
         display: none !important; 
     }
 
-    /* Cacher la cloche sur mobile */
-    /* REWRITTEN SEARCH MOBILE - FORCE FIX */
+    /* Cache les notifications et l'icône de recherche sur mobile */
+    .nav-actions .icon:not(.search-icon),
+    .nav-actions .search-icon {
+        display: none !important;
+    }
+
+    /* REWRITTEN SEARCH MOBILE - SIMPLE BAR WITHOUT SVG */
     .search-container { 
         position: relative !important;
         display: flex !important;
         align-items: center !important;
-        justify-content: flex-end !important;
-        width: 38px !important; /* Plus petit au repos */
+        width: 160px !important; /* Barre fixe */
         height: 38px !important;
-        background: transparent !important;
-        border: 1px solid transparent !important;
-        border-radius: 50px !important;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 8px !important; /* Bordures légèrement arrondies comme sur l'image */
+        transition: all 0.3s ease !important;
         overflow: hidden !important;
-        margin-left: auto !important;
+        margin-left: 10px !important;
     }
 
     .search-container:focus-within { 
         width: 180px !important; 
-        background: rgba(255, 255, 255, 0.1) !important;
-        border-color: rgba(255, 255, 255, 0.2) !important;
-        padding-right: 0 !important;
-    }
-
-    .nav-actions .search-icon { 
-        position: absolute !important;
-        right: 0 !important;
-        top: 0 !important;
-        width: 38px !important; 
-        height: 38px !important; 
-        display: flex !important; 
-        align-items: center !important;
-        justify-content: center !important;
-        z-index: 10 !important;
-        background: transparent !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    .nav-actions .search-icon svg {
-        width: 18px !important; /* Vraiment plus petit */
-        height: 18px !important;
-        transition: transform 0.3s ease !important;
+        background: rgba(255, 255, 255, 0.12) !important;
+        border-color: rgba(239, 68, 68, 0.4) !important;
     }
 
     .search-input { 
-        width: 0 !important; 
-        opacity: 0 !important; 
-        padding: 0 38px 0 12px !important; 
+        width: 100% !important; 
+        opacity: 1 !important; 
+        visibility: visible !important;
+        padding: 0 12px !important; 
         margin: 0 !important;
         border: none !important;
         outline: none !important;
         color: white !important;
         font-family: inherit !important;
-        font-size: 16px !important;
+        font-size: 14px !important;
         background: transparent !important;
-        transition: all 0.3s ease !important;
-        visibility: hidden !important;
+        pointer-events: auto !important;
     }
 
-    .search-container:focus-within .search-input { 
-        width: 100% !important; 
-        opacity: 1 !important; 
-        visibility: visible !important;
+    /* Placeholder spécifique mobile */
+    .search-input::placeholder {
+        color: rgba(255, 255, 255, 0.5) !important;
+        font-size: 13px;
     }
 
     .bottom-nav { display: flex; }
