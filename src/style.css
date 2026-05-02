@@ -1213,18 +1213,26 @@ a {
 /* --- MOBILE FILTER STYLES --- */
 .mobile-filter-btn {
     display: none;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fff;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    margin: 0 1.5rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    padding: 10px 18px;
+    border-radius: 25px;
+    font-size: 13px;
+    font-weight: 700;
+    margin: 15px auto;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    gap: 8px;
     cursor: pointer;
     backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    width: fit-content;
+}
+
+.mobile-filter-btn:active {
+    transform: scale(0.95);
+    background: rgba(239, 68, 68, 0.2);
 }
 
 .mobile-genre-overlay {
