@@ -210,7 +210,7 @@ async function fetchPopularData(type: 'movie' | 'tv' | 'trending', genreId: numb
             queryParams += `&with_genres=${genreId}&sort_by=popularity.desc`;
         } else {
             if (type === 'trending') {
-                endpoint = 'trending/all/week'; // Mélange séries et films tendance
+                endpoint = 'trending/all/week';
             } else if (type === 'tv') {
                 endpoint = 'tv/popular';
             } else {
@@ -218,29 +218,43 @@ async function fetchPopularData(type: 'movie' | 'tv' | 'trending', genreId: numb
             }
         }
 
+        const cacheKey = `cache_${endpoint}_${genreId || 'all'}`;
+        const cachedData = sessionStorage.getItem(cacheKey);
+
+        if (cachedData) {
+            const parsedData = JSON.parse(cachedData);
+            processData(parsedData);
+            return;
+        }
+
         const response = await fetch(`${BASE_URL}/${endpoint}?${queryParams}`);
         const data = await response.json();
         
         if (data.results && data.results.length > 0) {
-            currentData = data.results;
-            
-            // Remettre le carrousel opaque
-            if (carousel) carousel.style.opacity = '1';
-
-            // Forcer le rechargement de l'ID actif pour être sûr que l'animation joue
-            activeId = null;
-
-            // Initialiser avec le premier élément
-            const heroItem = currentData[0];
-            updateHeroSection(heroItem, true); // initial load animation logic changed slightly below
-
-            // Remplir le carrousel
-            populateCarousel(currentData);
+            sessionStorage.setItem(cacheKey, JSON.stringify(data.results));
+            processData(data.results);
         }
     } catch (error) {
         console.error('Erreur:', error);
         if (heroTitle) heroTitle.textContent = "Erreur de connexion";
     }
+}
+
+function processData(results: any[]) {
+    currentData = results;
+    
+    // Remettre le carrousel opaque
+    if (carousel) carousel.style.opacity = '1';
+
+    // Forcer le rechargement de l'ID actif
+    activeId = null;
+
+    // Initialiser avec le premier élément
+    const heroItem = currentData[0];
+    updateHeroSection(heroItem, true);
+
+    // Remplir le carrousel
+    populateCarousel(currentData);
 }
 
 // 7. Mise à jour fluide de la section Héros

@@ -590,6 +590,36 @@ a {
 
 /* --- DETAILS PAGE STYLES --- */
 
+.back-home-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    color: #fff !important;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    z-index: 1002;
+    cursor: pointer;
+}
+
+.back-home-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.back-home-btn:active {
+    transform: scale(0.95);
+}
+
 .details-hero {
     position: relative;
     min-height: 100vh;
