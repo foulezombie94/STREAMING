@@ -24,19 +24,19 @@ export const ProgressManager = {
         if (!data.mediaId) return;
 
         const allProgress = this.getAllProgress();
-        const id = this.generateId(data.mediaId, data.mediaType, data.season, data.episode);
+        const id = this.generateId(data.mediaId, data.mediaType as string, data.season, data.episode);
 
         const progress: VideoProgress = {
+            ...allProgress[id],
             mediaId: data.mediaId,
-            mediaType: data.mediaType as any,
-            time: data.time || 0,
-            duration: data.duration || 0,
-            season: data.season,
-            episode: data.episode,
-            title: data.title || '',
-            poster: data.poster || '',
-            lastUpdated: Date.now(),
-            ...allProgress[id] // Garder les infos existantes si non fournies
+            mediaType: (data.mediaType || allProgress[id]?.mediaType) as any,
+            time: data.time !== undefined ? data.time : (allProgress[id]?.time || 0),
+            duration: data.duration !== undefined ? data.duration : (allProgress[id]?.duration || 0),
+            season: data.season !== undefined ? data.season : allProgress[id]?.season,
+            episode: data.episode !== undefined ? data.episode : allProgress[id]?.episode,
+            title: data.title || allProgress[id]?.title || '',
+            poster: data.poster || allProgress[id]?.poster || '',
+            lastUpdated: Date.now()
         };
 
         // Mettre à jour avec les nouvelles valeurs

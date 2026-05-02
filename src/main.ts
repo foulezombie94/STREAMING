@@ -106,7 +106,7 @@ const mobileGenreOverlay = document.getElementById('mobile-genre-overlay');
 const mobileGenreGrid = document.getElementById('mobile-genre-grid');
 const closeGenreOverlay = document.getElementById('close-genre-overlay');
 
-function renderGenres(type: 'movie' | 'tv' | 'trending') {
+function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre') {
     if (!genreFiltersEl || !genreFiltersContainer) return;
     
     if (type === 'trending' || type === 'reprendre') {
@@ -467,7 +467,11 @@ if (searchInput) {
                 else if (currentType === 'tv') sectionTitle.textContent = 'Séries Populaires';
                 else sectionTitle.textContent = 'Films Populaires';
             }
-            fetchPopularData(currentType);
+            if (currentType === 'reprendre') {
+                renderResumePage();
+            } else {
+                fetchPopularData(currentType);
+            }
         }
     });
 }
