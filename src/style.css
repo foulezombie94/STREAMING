@@ -440,20 +440,20 @@ a {
 }
 
 @media (max-width: 768px) {
-    /* 1. Navbar responsive - fond jaune fluo translucide */
+    /* 1. Navbar responsive - Retour au noir premium */
     .navbar { 
         padding: 0.8rem 1.2rem; 
         display: flex;
         justify-content: space-between; 
         align-items: center; 
         flex-wrap: nowrap;
-        background: rgba(155, 255, 0, 0.15); /* Jaune fluo subtil */
-        backdrop-filter: blur(20px);
-        border-bottom: 1px solid rgba(155, 255, 0, 0.2);
+        background: rgba(5, 5, 5, 0.85);
+        backdrop-filter: blur(25px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
     .navbar.scrolled {
-        background: rgba(155, 255, 0, 0.1);
+        background: rgba(0, 0, 0, 0.95);
     }
 
     .logo {
@@ -471,14 +471,20 @@ a {
         display: none !important;
     }
 
-    /* 2. Recherche : l'input s'allonge vers la gauche */
+    /* 2. Recherche : bulle qui s'allonge vers la gauche */
     .search-container { 
-        background: none;
-        border: none;
-        padding: 0;
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        padding: 0 8px;
+        width: 40px; /* Cercle parfait au repos */
+        height: 40px;
+        border-radius: 50px;
         display: flex;
-        flex-direction: row-reverse;
+        flex-direction: row-reverse; /* Icône à droite */
         align-items: center;
+        justify-content: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
     }
 
     /* 3. Icône SVG TOUJOURS visible */
@@ -505,17 +511,21 @@ a {
         font-family: inherit;
         font-size: 16px;
         background: transparent;
-        transition: width 0.3s ease, opacity 0.2s ease, padding 0.3s ease;
+        transition: all 0.3s ease;
     }
 
     /* Quand ouvert : s'allonge vers la gauche */
+    .search-container:focus-within { 
+        width: 140px; 
+        justify-content: flex-start;
+        background: rgba(5, 5, 5, 0.7);
+        border-color: rgba(239, 68, 68, 0.5);
+    }
+
     .search-container:focus-within .search-input { 
-        width: 80px; 
+        width: 90px; 
         opacity: 1; 
-        padding: 4px 10px;
-        margin-right: 6px;
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 20px;
+        margin-right: 8px;
     }
 
     .bottom-nav { display: flex; }
