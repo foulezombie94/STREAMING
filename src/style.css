@@ -471,7 +471,7 @@ a {
         display: none !important;
     }
 
-    /* 2. Recherche : position absolue pour l'icône pour qu'elle ne bouge JAMAIS */
+    /* 2. Recherche : Bulle qui s'allonge et icône fixe */
     .search-container { 
         position: relative;
         background: transparent;
@@ -482,44 +482,41 @@ a {
         border-radius: 50px;
         display: flex;
         align-items: center;
-        justify-content: flex-end;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Animation avec petit rebond */
         overflow: hidden;
-        cursor: pointer;
     }
 
     .search-container:focus-within { 
-        width: 160px; 
-        background: rgba(10, 10, 10, 0.95);
-        border-color: rgba(239, 68, 68, 0.5);
-        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        width: 170px; 
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
 
-    /* 3. Icône SVG Fixée à droite */
+    /* 3. Icône SVG Toujours à sa place */
     .nav-actions .search-icon { 
         position: absolute;
         right: 0;
-        top: 0;
+        width: 40px; 
+        height: 40px; 
         display: flex !important; 
         align-items: center;
         justify-content: center;
-        width: 40px; 
-        height: 40px; 
         z-index: 5;
         cursor: pointer;
-        background: transparent;
     }
 
     .nav-actions .search-icon svg {
-        width: 24px;
-        height: 24px;
+        width: 22px; /* Taille légèrement réduite pour le look "premium" */
+        height: 22px;
+        transition: transform 0.3s ease;
     }
 
-    /* 4. Input caché par défaut */
+    /* 4. Input avec dégagement pour l'icône */
     .search-input { 
         width: 0; 
         opacity: 0; 
-        padding: 0 40px 0 12px; /* 40px de padding à droite pour laisser place à l'icône */
+        padding: 0 40px 0 15px; 
         margin: 0;
         border: none;
         outline: none;
@@ -529,7 +526,6 @@ a {
         background: transparent;
         transition: all 0.3s ease;
         visibility: hidden;
-        pointer-events: none;
     }
 
     .search-container:focus-within .search-input { 
