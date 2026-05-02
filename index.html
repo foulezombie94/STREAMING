@@ -19,12 +19,12 @@
             <li><a href="#" class="nav-item">Ma Liste</a></li>
         </ul>
         <div class="nav-actions">
-            <!-- Icône Cloche -->
-            <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <!-- Icône Cloche (Cachée sur mobile via CSS) -->
+            <svg class="icon bell-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
             </svg>
-            <!-- Barre de recherche (Icône uniquement) -->
-            <label class="search-container" for="search-input">
+            <!-- Barre de recherche -->
+            <label class="search-container" id="search-container">
                 <svg class="icon search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 40 40" height="24" width="24">
                   <g clip-path="url(#search-clip)">
                     <path fill="#00034a" stroke="#00034a" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="M5.66201 5.653C12.914 -1.571 20.85 -0.847996 27.361 5.653c0.465 0.466 0.957 0.903 1.424 1.369 5.503 5.512 6.85 12.057 2.766 18.319 0.385 0.289 0.786 0.601 1.213 0.941 3.426 2.715 9.263 7.274 5.045 11.491 -4.171 4.171 -8.858 -1.611 -11.536 -5.01 -0.3216 -0.4082 -0.6396 -0.8192 -0.954 -1.233 -6.242 4.022 -12.75 2.664 -18.23299 -2.82 -0.466 -0.465 -0.958 -0.902 -1.424 -1.368 -6.500001 -6.501 -7.252 -14.465 0 -21.689Z" stroke-width="1"></path>
@@ -45,7 +45,7 @@
     </header>
 
     <main>
-        <!-- Barre de filtres par genre (déplacée pour défiler avec la page) -->
+        <!-- Barre de filtres par genre -->
         <div class="genre-filters-container" id="genre-filters-container">
             <div class="genre-filters" id="genre-filters" style="display: none;"></div>
             
@@ -109,17 +109,9 @@
             <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
             <span>Accueil</span>
         </a>
-        <a href="#" class="bottom-nav-item" data-type="tv">
-            <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
-            <span>Séries</span>
-        </a>
         <a href="#" class="bottom-nav-item" data-type="movie">
             <svg viewBox="0 0 24 24"><path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>
             <span>Films</span>
-        </a>
-        <a href="#" class="bottom-nav-item">
-            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            <span>Ma Liste</span>
         </a>
     </nav>
 
