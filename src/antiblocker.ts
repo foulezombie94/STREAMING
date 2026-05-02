@@ -108,49 +108,30 @@ import blockedCSS from './blocked_css.json';
         'google.com', 'gstatic.com', 'googleapis.com'
     ]);
 
-    // ===== 5. DOMAIN CHECK (with subdomain matching) =====
+    // ===== 5. HELPERS =====
     function isDomainBlocked(url: string): boolean {
-        try {
-            const urlObj = new URL(url);
-            const hostname = urlObj.hostname;
-
-            // Check whitelist first
-            if (whitelist.has(hostname)) return false;
-            for (const d of whitelist) {
-                if (hostname.endsWith('.' + d)) return false;
-            }
-
-            if (blockedDomains.has(hostname)) return true;
-            // Check parent domains
-            const parts = hostname.split('.');
-            for (let i = 1; i < parts.length - 1; i++) {
-                if (blockedDomains.has(parts.slice(i).join('.'))) return true;
-            }
-            return false;
-        } catch {
-            return false;
-        }
-    }
-
-    // ===== 6. SCRIPT PATH CHECK =====
-    function isScriptBlocked(url: string): boolean {
         try {
             const hostname = new URL(url).hostname;
             if (whitelist.has(hostname)) return false;
             for (const d of whitelist) {
                 if (hostname.endsWith('.' + d)) return false;
             }
-        } catch {}
-
-        const urlLower = url.toLowerCase();
-        return scriptPatterns.some(p => urlLower.includes(p.toLowerCase()));
+            if (blockedDomains.has(hostname)) return true;
+            const parts = hostname.split('.');
+            for (let i = 1; i < parts.length - 1; i++) {
+                if (blockedDomains.has(parts.slice(i).join('.'))) return true;
+            }
+            return false;
+        } catch { return false; }
     }
 
     function shouldBlock(url: string): boolean {
-        return isDomainBlocked(url) || isScriptBlocked(url);
+        if (!url) return false;
+        const urlLower = url.toLowerCase();
+        return isDomainBlocked(url) || scriptPatterns.some(p => urlLower.includes(p.toLowerCase()));
     }
 
-    // ===== 6. ANNOYANCE-HIDING CSS =====
+    // ===== 6. CSS INJECTION =====
     const ANNOYANCE_CSS = `
         /* Cookie / GDPR / Consent banners */
         #cookie-banner, #cookie-consent, #cookie-notice, #cookie-bar,
@@ -184,52 +165,19 @@ import blockedCSS from './blocked_css.json';
         [class*="push-notification"], [class*="web-push"],
         [id*="push-notification"],
 
-        /* Social proof / FOMO popups */
-        .yo-notification, .fomo-notification, .social-proof,
-        [class*="fomo-"], [class*="social-proof"],
-
-        /* Scroll-triggered annoyances */
-        .slide-dock-on, .sticky-widget,
-        [class*="scroll-triggered"],
-
         /* App install banners */
         .app-banner, .smart-banner, .smartbanner,
         [class*="app-banner"], [class*="smart-banner"],
 
-        /* Chat widget auto-popups */
-        .drift-widget-welcome-message,
-        .intercom-lightweight-app-launcher,
-
-        /* Paywalls */
-        .paywall-overlay, .paywall-modal,
-        [class*="paywall"], [class*="login-wall"],
-
-        /* Video overlay ads */
+        /* Video overlay ads (careful not to hide player controls) */
         .video-ad-overlay, .player-ad,
-        [class*="ad-overlay"], [class*="vast-"],
-        [class*="preroll"], [class*="midroll"],
-
-        /* Misc Fanboy selectors */
-        .preezie-widget-modal, .es-badge-container,
-        .vjs-pip-y-bottom, [name="bridged-flipcard-div"],
-        .pm-follow-wrap, .bp-banner,
-        .u-zIndexMetabar.u-fixed, .subscription-tout,
-        .widget_rssiconwidget, .zr_alerts_widget_link,
-        .ad400, .check-also-box,
-        #TB_overlay, #TB_window,
-        ${(blockedCSS as string[]).join(',\n        ')}
+        [class*="vast-"], [class*="preroll"], [class*="midroll"],
+        
+        /* Misc */
+        ${(blockedCSS as string[]).slice(0, 100).join(',\n        ')}
         { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
-
-        /* Restore body scroll */
-        body.no-scroll, body.modal-open, body.popup-open,
-        body.overflow-hidden, body.locked,
-        html.no-scroll, html.modal-open, html.popup-open {
-            overflow: auto !important;
-            position: static !important;
-        }
     `;
 
-    // ===== INJECT CSS =====
     function injectCSS() {
         const style = document.createElement('style');
         style.id = 'mv-shield-css';
@@ -237,157 +185,22 @@ import blockedCSS from './blocked_css.json';
         (document.head || document.documentElement).appendChild(style);
     }
 
-    /* Overrides désactivés car ils cassent certains lecteurs sur mobile (chargement infini)
-    // ===== OVERRIDE FETCH =====
-    const originalFetch = window.fetch;
-    window.fetch = function (...args: Parameters<typeof fetch>) {
-        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request)?.url || '';
-        if (shouldBlock(url)) {
-            return Promise.resolve(new Response('', { status: 200 }));
-        }
-        return originalFetch.apply(this, args);
-    };
-
-    // ===== OVERRIDE XMLHttpRequest =====
-    const originalXHROpen = XMLHttpRequest.prototype.open;
-    XMLHttpRequest.prototype.open = function (method: string, url: string | URL, ...rest: any[]) {
-        const urlStr = url.toString();
-        if (shouldBlock(urlStr)) {
-            return originalXHROpen.apply(this, [method, 'data:text/plain,', ...rest] as any);
-        }
-        return originalXHROpen.apply(this, [method, url, ...rest] as any);
-    };
-    */
-
-    // ===== BLOCK POPUPS =====
+    // ===== 7. POPUP BLOCKING =====
     const originalOpen = window.open;
-    window.open = function (...args: Parameters<typeof window.open>) {
+    window.open = function (...args: any[]) {
         const url = args[0]?.toString() || '';
         if (url && !url.startsWith(window.location.origin) && !url.startsWith('about:')) {
             console.log('[Shield] Popup bloqué:', url);
             return null;
         }
-        return originalOpen.apply(this, args);
+        return originalOpen.apply(this, args as any);
     };
 
-    // ===== BLOCK REDIRECTS (on mobile especially) =====
-    // Désactivé temporairement pour éviter les faux positifs qui bloquent le chargement
-    /*
-    const originalLocation = window.location.href;
-    setInterval(() => {
-        if (window.location.href !== originalLocation && !window.location.href.startsWith(window.location.origin)) {
-            console.log('[Shield] Tentative de redirection bloquée');
-            window.location.href = originalLocation;
-        }
-    }, 1000);
-    */
-
-    // Désactivé pour permettre aux lecteurs de fonctionner normalement
-    /*
-    window.alert = () => {};
-    window.confirm = () => true;
-    window.prompt = () => null;
-    */
-
-    // ===== DOM MUTATION OBSERVER (block injected scripts/iframes/overlays) =====
-    const observer = new MutationObserver((mutations) => {
-        for (const mutation of mutations) {
-            for (const node of mutation.addedNodes) {
-                if (!(node instanceof HTMLElement)) continue;
-
-                // Block injected scripts
-                if (node.tagName === 'SCRIPT') {
-                    const src = node.getAttribute('src') || '';
-                    if (src && shouldBlock(src)) {
-                        node.remove();
-                        continue;
-                    }
-                    // Block inline anti-devtools
-                    const txt = node.textContent || '';
-                    if (/debugger|devtools|right.?click|context.?menu.*prevent|disable.*console/i.test(txt) && txt.length < 5000) {
-                        node.remove();
-                        continue;
-                    }
-                }
-
-                // Block injected ad iframes
-                if (node.tagName === 'IFRAME') {
-                    const src = node.getAttribute('src') || '';
-                    if (src && shouldBlock(src)) {
-                        node.remove();
-                        continue;
-                    }
-                }
-
-                // Block injected link/stylesheets from ad networks
-                if (node.tagName === 'LINK') {
-                    const href = node.getAttribute('href') || '';
-                    if (href && isDomainBlocked(href)) {
-                        node.remove();
-                        continue;
-                    }
-                }
-
-                // Hide cookie/popup overlays
-                const el = node as HTMLElement;
-                const id = (el.id || '').toLowerCase();
-                const cls = (el.className?.toString() || '').toLowerCase();
-                if (
-                    /cookie|gdpr|consent|newsletter.*popup|subscribe.*popup|push.*notif|paywall/i.test(id + ' ' + cls) &&
-                    !el.closest('.player-section') && !el.closest('#player-section')
-                ) {
-                    el.style.display = 'none';
-                }
-
-                // Block fullscreen ad overlays (z-index > 9000, fixed position, full width)
-                if (el.style?.position === 'fixed' || el.style?.position === 'absolute') {
-                    const cs = window.getComputedStyle(el);
-                    if (
-                        cs.zIndex && parseInt(cs.zIndex) > 9000 &&
-                        !el.closest('.player-section') &&
-                        !el.id?.includes('player') &&
-                        !el.classList.contains('modal') &&
-                        !el.closest('.modal')
-                    ) {
-                        setTimeout(() => {
-                            if (el.parentNode) el.style.display = 'none';
-                        }, 50);
-                    }
-                }
-            }
-        }
-    });
-
-    // ===== PREVENT ANTI-DEVTOOLS =====
-    document.addEventListener('contextmenu', (e) => e.stopPropagation(), true);
-
-    // Prevent visibility tricks
-    Object.defineProperty(document, 'hidden', { get: () => false, configurable: true });
-    Object.defineProperty(document, 'visibilityState', { get: () => 'visible', configurable: true });
-
-    // Block beforeunload annoyances
-    window.addEventListener('beforeunload', (e) => e.stopImmediatePropagation(), true);
-
-    // ===== RESTORE SCROLL =====
-    function unlockScroll() {
-        document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.documentElement.style.overflow = '';
-        document.documentElement.style.position = '';
-        ['no-scroll', 'modal-open', 'popup-open', 'overflow-hidden', 'locked'].forEach(c => {
-            document.body.classList.remove(c);
-            document.documentElement.classList.remove(c);
-        });
-    }
-    setInterval(unlockScroll, 3000);
-
-    // ===== INIT =====
+    // ===== 8. INIT =====
     function init() {
         injectCSS();
-        observer.observe(document.documentElement, { childList: true, subtree: true });
-        const totalRules = blockedDomains.size + scriptPatterns.length;
         console.log(
-            `%c[MOVIEVERSE Shield v2.0] ✅ Actif — ${blockedDomains.size} domaines + ${scriptPatterns.length} patterns = ${totalRules} règles`,
+            `%c[MOVIEVERSE Shield v2.0] ✅ Actif — Mode Sécurisé Mobile`,
             'color: #4ade80; font-weight: bold; font-size: 13px;'
         );
     }
