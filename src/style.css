@@ -450,6 +450,7 @@ a {
         flex-wrap: nowrap;
         background: rgba(5, 5, 5, 0.8);
         backdrop-filter: blur(20px);
+        overflow: hidden; /* Rien ne sort de la barre */
     }
 
     .logo {
@@ -503,10 +504,10 @@ a {
     }
 
     .search-container:focus-within .search-input { 
-        width: 120px; 
+        width: 80px; 
         opacity: 1; 
-        padding: 6px 12px;
-        margin-right: 8px;
+        padding: 4px 10px;
+        margin-right: 6px;
         background: rgba(255, 255, 255, 0.1);
         border-radius: 20px;
     }
