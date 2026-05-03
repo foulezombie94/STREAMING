@@ -661,7 +661,6 @@ function renderResumePage() {
 }
 
 // --- LIVE TV SECTION (iptv-org) ---
-let allChannels: any[] = [];
 let currentCategory = 'all';
 
 // --- LIVE TV SECTION (M3U Parser) ---
