@@ -549,8 +549,8 @@ a {
 }
 
 @media (max-width: 480px) {
-    .hero { min-height: 70vh; }
-    .hero-content { padding-top: 13vh; }
+    .hero { min-height: 55vh; }
+    .hero-content { padding-top: 10vh; }
     .hero h1 { font-size: 24px; }
     .hero-synopsis { -webkit-line-clamp: 2;
     line-clamp: 2; font-size: 13px; margin-bottom: 12px; }
@@ -737,21 +737,35 @@ a {
 .genre-filters-container {
     position: relative;
     width: 100%;
-    z-index: 90;
+    z-index: 100;
     background: transparent;
-    padding: 20px 0 0 0;
-    margin-top: 80px; /* Espace pour la navbar fixe */
+    padding: 0;
+    margin-top: -120px; /* Overlap with hero for premium look */
+    margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+    .genre-filters-container {
+        margin-top: -60px; /* Less overlap on mobile */
+        margin-bottom: 15px;
+    }
 }
 
 .genre-filters {
     display: flex;
     gap: 12px;
     overflow-x: auto;
-    padding: 0 4rem;
+    padding: 20px 4rem;
     scrollbar-width: none;
     -ms-overflow-style: none;
     mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
     pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+    .genre-filters {
+        display: none; /* Hide desktop version on mobile */
+    }
 }
 
 .genre-filters::-webkit-scrollbar {
@@ -1212,13 +1226,13 @@ a {
 
 /* --- MOBILE FILTER STYLES --- */
 .mobile-filter-btn {
-    display: flex;
+    display: none; /* Hidden by default (desktop) */
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
     color: #ef4444;
-    padding: 10px 18px;
+    padding: 10px 22px;
     border-radius: 25px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     margin: 15px auto;
     align-items: center;
@@ -1228,7 +1242,13 @@ a {
     backdrop-filter: blur(10px);
     transition: all 0.3s ease;
     width: fit-content;
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+@media (max-width: 768px) {
+    .mobile-filter-btn {
+        display: flex; /* Show only on mobile */
+    }
 }
 
 .mobile-filter-btn:active {
@@ -1315,8 +1335,7 @@ a {
 
 @media (min-width: 769px) {
     .mobile-filter-btn {
-        display: flex !important;
-        margin: 20px auto;
+        display: none !important; /* Force hide on desktop */
     }
 }
 

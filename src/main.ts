@@ -101,6 +101,7 @@ function handleNavigation(type: any) {
 });
 
 const genreFiltersContainer = document.getElementById('genre-filters-container');
+const desktopGenres = document.getElementById('desktop-genres');
 const mobileFilterBtn = document.getElementById('mobile-filter-btn');
 const mobileGenreOverlay = document.getElementById('mobile-genre-overlay');
 const mobileGenreGrid = document.getElementById('mobile-genre-grid');
@@ -117,7 +118,33 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre') {
     genreFiltersContainer.style.display = 'block';
     const genres = type === 'movie' ? movieGenres : tvGenres;
     
-    // Rendre pour tous les supports (grid dans l'overlay)
+    // Rendre pour Desktop
+    if (desktopGenres) {
+        if (genres.length === 0) {
+            desktopGenres.innerHTML = `<div class="genre-label">Chargement...</div>`;
+        } else {
+            desktopGenres.innerHTML = `
+                <div class="genre-label">${type === 'movie' ? 'Genres Films' : 'Genres Séries'}</div>
+                <button class="genre-btn ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</button>
+                ${genres.map(g => `<button class="genre-btn ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</button>`).join('')}
+            `;
+
+            desktopGenres.querySelectorAll('.genre-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idStr = btn.getAttribute('data-id');
+                    activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
+                    
+                    renderGenres(type);
+                    
+                    heroContent?.classList.add('animating');
+                    if (carousel) carousel.style.opacity = '0.5';
+                    fetchPopularData(type, activeGenreId);
+                });
+            });
+        }
+    }
+
+    // Rendre pour Mobile Overlay
     if (mobileGenreGrid) {
         if (genres.length === 0) {
             mobileGenreGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #a3a3a3; padding: 20px;">Chargement des catégories...</div>`;
