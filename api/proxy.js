@@ -27,13 +27,29 @@ export default async function handler(request) {
       return new Response('Access Denied: Domain not whitelisted', { status: 403 });
     }
 
+    // Préparation des headers à envoyer à la cible
+    const forwardHeaders = {
+      'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
+      'Accept': '*/*',
+      'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Accept-Encoding': 'gzip, deflate',
+      'Connection': 'keep-alive',
+    };
+
+    // Transmettre le header Range pour le support du seeking (important pour la vidéo)
+    const range = request.headers.get('range');
+    if (range) {
+      forwardHeaders['Range'] = range;
+    }
+
+    // Tenter de passer l'IP réelle du client (certains serveurs l'acceptent)
+    const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip');
+    if (clientIp) {
+      forwardHeaders['X-Forwarded-For'] = clientIp;
+    }
+
     const response = await fetch(targetUrl, {
-      headers: {
-        'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
-        'Accept': '*/*',
-        'Connection': 'keep-alive',
-        'Referer': '', // Supprimer le Referer pour masquer l'origine Movieverse
-      },
+      headers: forwardHeaders,
       cache: 'no-store',
       redirect: 'follow',
     });
