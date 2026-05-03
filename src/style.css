@@ -1587,7 +1587,8 @@ a {
 .live-card:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: #ef4444;
-    transform: translateY(-5px);
+    transform: scale(1.05);
+    z-index: 10;
 }
 
 .live-badge {
@@ -1604,22 +1605,42 @@ a {
     box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
 }
 
-.live-title {
-    margin-top: 8px;
-    font-size: 11px !important;
-    font-weight: 700;
-    color: #fff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: center;
+.live-tv-categories {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px 0 20px;
+    scrollbar-width: none;
 }
 
-.live-cat {
-    font-size: 9px !important;
-    color: rgba(255, 255, 255, 0.4);
-    text-align: center;
-    margin-top: 2px;
+.live-tv-categories::-webkit-scrollbar {
+    display: none;
+}
+
+.live-tv-categories .cat-btn {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.live-tv-categories .cat-btn.active {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+
+#xtream-login input:focus {
+    outline: none;
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
 }
 
 .player-wrapper {
@@ -1634,11 +1655,11 @@ a {
     margin-bottom: 20px;
 }
 
-.player-wrapper iframe {
+#live-video {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    border: none;
+    object-fit: contain;
 }

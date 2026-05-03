@@ -660,129 +660,179 @@ function renderResumePage() {
     }
 }
 
-// --- LIVE TV SECTION (iptv-org) ---
-let currentCategory = 'all';
+// --- LIVE TV SECTION (Xtream Codes API) ---
+let liveTVInitialized = false;
+let allLiveChannels: any[] = [];
+let liveCategories: any[] = [];
+let xtreamConfig = {
+    host: localStorage.getItem('xtream_host') || '',
+    user: localStorage.getItem('xtream_user') || '',
+    pass: localStorage.getItem('xtream_pass') || ''
+};
 
 // Declare Hls for TypeScript
 declare const Hls: any;
 
-// --- LIVE TV SECTION (M3U Parser) ---
-let allLiveChannels: any[] = [];
-let liveTVInitialized = false;
-
 async function initLiveTV() {
+    const liveContent = document.getElementById('live-tv-content');
+    const loginForm = document.getElementById('xtream-login');
     const liveGrid = document.getElementById('live-grid');
-    if (!liveGrid) return;
+    const categoriesContainer = document.getElementById('live-categories');
+    
+    if (!liveContent || !loginForm || !liveGrid || !categoriesContainer) return;
 
-    if (liveTVInitialized) return;
-    
-    liveGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px; color: #ef4444;">Chargement des serveurs TV Direct...</div>';
-    
+    // Si on a déjà des identifiants, on tente de charger
+    if (xtreamConfig.host && xtreamConfig.user && xtreamConfig.pass) {
+        loginForm.style.display = 'none';
+        liveContent.style.display = 'block';
+        if (!liveTVInitialized) await loadXtreamData();
+    } else {
+        loginForm.style.display = 'block';
+        liveContent.style.display = 'none';
+    }
+}
+
+// Gestionnaire de Login
+document.getElementById('xtream-submit')?.addEventListener('click', async () => {
+    const hostInput = document.getElementById('xtream-host') as HTMLInputElement;
+    const userInput = document.getElementById('xtream-user') as HTMLInputElement;
+    const passInput = document.getElementById('xtream-pass') as HTMLInputElement;
+    const errorMsg = document.getElementById('login-error');
+
+    const host = hostInput.value.trim().replace(/\/$/, ""); // Enlever le slash final
+    const user = userInput.value.trim();
+    const pass = passInput.value.trim();
+
+    if (!host || !user || !pass) return;
+
+    if (errorMsg) errorMsg.style.display = 'none';
+    const btn = document.getElementById('xtream-submit');
+    if (btn) btn.textContent = "CONNEXION EN COURS...";
+
     try {
-        // Diversification des sources (LaneSh44 pour FR, Fmstrat pour Global)
-        // On évite iptv-org comme demandé
-        const sources = [
-            'https://raw.githubusercontent.com/LaneSh44/French-IPTV/main/france.m3u',
-            'https://raw.githubusercontent.com/Fmstrat/iptv-links/master/index.m3u'
-        ];
-        
-        const fetchPromises = sources.map(url => fetch(url).then(res => res.text()));
-        const results = await Promise.all(fetchPromises);
-        
-        let combinedM3U = results.join('\n');
-        
-        allLiveChannels = parseM3U(combinedM3U);
+        // Test de connexion via l'API player_api.php
+        const testUrl = `${host}/player_api.php?username=${user}&password=${pass}`;
+        const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(testUrl)}`);
+        const data = await response.json();
+
+        if (data.user_info && data.user_info.auth === 1) {
+            // Success ! Sauvegarde
+            localStorage.setItem('xtream_host', host);
+            localStorage.setItem('xtream_user', user);
+            localStorage.setItem('xtream_pass', pass);
+            xtreamConfig = { host, user, pass };
+            
+            initLiveTV(); // Recharger l'UI
+        } else {
+            throw new Error("Auth Failed");
+        }
+    } catch (err) {
+        console.error("Login failed:", err);
+        if (errorMsg) errorMsg.style.display = 'block';
+    } finally {
+        if (btn) btn.textContent = "SE CONNECTER";
+    }
+});
+
+async function loadXtreamData() {
+    const liveGrid = document.getElementById('live-grid');
+    const catsContainer = document.getElementById('live-categories');
+    if (!liveGrid || !catsContainer) return;
+
+    liveGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px; color: #ef4444;">Chargement des chaînes...</div>';
+
+    const { host, user, pass } = xtreamConfig;
+
+    try {
+        // 1. Récupérer les catégories
+        const catUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_categories`;
+        const catRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(catUrl)}`);
+        liveCategories = await catRes.json();
+
+        // 2. Récupérer toutes les chaînes
+        const streamUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_streams`;
+        const streamRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(streamUrl)}`);
+        allLiveChannels = await streamRes.json();
+
         liveTVInitialized = true;
         
-        console.log(`Parsed ${allLiveChannels.length} channels from alternative sources.`);
+        // Rendre les catégories
+        renderCategories();
+        // Rendre les chaînes
         renderLiveTV();
     } catch (err) {
-        console.error("Erreur M3U:", err);
-        liveGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Erreur de connexion aux serveurs TV.</div>';
+        console.error("Failed to load Xtream data:", err);
+        liveGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Erreur lors du chargement des données IPTV. Vérifiez vos identifiants ou le serveur.</div>';
     }
 }
 
-function parseM3U(content: string) {
-    const channels: any[] = [];
-    const lines = content.split('\n');
-    let currentChannel: any = null;
+function renderCategories() {
+    const container = document.getElementById('live-categories');
+    if (!container) return;
 
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        
-        if (line.startsWith('#EXTINF:')) {
-            currentChannel = {};
-            
-            // Extract attributes
-            const logoMatch = line.match(/tvg-logo="([^"]+)"/i);
-            const nameMatch = line.match(/#EXTINF:.*,(.*)$/i);
-            const groupMatch = line.match(/group-title="([^"]+)"/i);
-            
-            currentChannel.logo = logoMatch ? logoMatch[1] : '';
-            currentChannel.name = nameMatch ? nameMatch[1].trim() : 'Chaîne Inconnue';
-            currentChannel.category = groupMatch ? groupMatch[1] : 'Général';
-            currentChannel.id = `ch-${i}`;
-        } else if (line.startsWith('http') && currentChannel) {
-            currentChannel.url = line;
-            // Only add if it's a direct stream link (usually ends in .m3u8 or .ts or similar)
-            channels.push(currentChannel);
-            currentChannel = null;
-        }
-    }
-    return channels;
+    // On garde que les catégories qui ont des chaînes (optionnel)
+    const html = `
+        <button class="cat-btn active" data-id="all">Tout</button>
+        ${liveCategories.map(cat => `
+            <button class="cat-btn" data-id="${cat.category_id}">${cat.category_name}</button>
+        `).join('')}
+    `;
+    container.innerHTML = html;
+
+    container.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            container.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const catId = btn.getAttribute('data-id') || 'all';
+            renderLiveTV('', catId);
+        });
+    });
 }
 
-function renderLiveTV(filter: string = '') {
+function renderLiveTV(filter: string = '', categoryId: string = 'all') {
     const liveGrid = document.getElementById('live-grid');
     if (!liveGrid) return;
 
     let filtered = allLiveChannels;
 
-    // Filter by Category (Special cases for FR)
-    if (currentCategory !== 'all') {
-        const cat = currentCategory.toLowerCase();
-        if (currentCategory === 'FR') {
-            // Check in name or category
-            filtered = filtered.filter(c => c.name.toLowerCase().includes('(france)') || c.name.toLowerCase().includes(' fr ') || c.category.toLowerCase().includes('france'));
-        } else {
-            filtered = filtered.filter(c => c.category.toLowerCase().includes(cat) || c.name.toLowerCase().includes(cat));
-        }
+    // Filtre par catégorie
+    if (categoryId !== 'all') {
+        filtered = filtered.filter(c => c.category_id === categoryId);
     }
 
-    // Filter by search
+    // Filtre par recherche
     if (filter) {
         const f = filter.toLowerCase();
-        filtered = filtered.filter(c => c.name.toLowerCase().includes(f) || c.category.toLowerCase().includes(f));
+        filtered = filtered.filter(c => c.name.toLowerCase().includes(f));
     }
 
-    // Sort to put channels with logos first
-    filtered.sort((a, b) => (b.logo ? 1 : 0) - (a.logo ? 1 : 0));
-
-    // Limit to 100 for display
-    const display = filtered.slice(0, 100);
+    // Limite pour perf
+    const display = filtered.slice(0, 200);
 
     if (display.length === 0) {
-        liveGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px; color: rgba(255,255,255,0.5);">Aucun résultat pour cette recherche.</div>';
+        liveGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px; color: rgba(255,255,255,0.5);">Aucune chaîne trouvée.</div>';
         return;
     }
 
-    liveGrid.innerHTML = display.map(c => `
-        <div class="live-card" data-url="${c.url}">
-            <div class="card-img-container" style="aspect-ratio: 16/9; background: #1a1a1a; position: relative; overflow: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                <img src="${c.logo || ''}" 
-                     alt="${c.name}" 
-                     loading="lazy" 
-                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                     style="width: 100%; height: 100%; object-fit: contain; padding: 10px;">
-                <div class="fallback-logo" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(45deg, #050505, #111); color: #ef4444; font-weight: 800; font-size: 18px; text-align: center; padding: 5px;">
-                    ${c.name.split(' ').map((w: string) => w[0]).join('').substring(0, 3).toUpperCase()}
+    liveGrid.innerHTML = display.map(c => {
+        const streamUrl = `${xtreamConfig.host}/live/${xtreamConfig.user}/${xtreamConfig.pass}/${c.stream_id}.ts`;
+        return `
+            <div class="live-card" data-url="${streamUrl}">
+                <div class="card-img-container" style="aspect-ratio: 16/9; background: #1a1a1a; position: relative; overflow: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <img src="${c.stream_icon || ''}" 
+                         alt="${c.name}" 
+                         loading="lazy" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                         style="width: 100%; height: 100%; object-fit: contain; padding: 10px;">
+                    <div class="fallback-logo" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(45deg, #050505, #111); color: #ef4444; font-weight: 800; font-size: 14px; text-align: center; padding: 5px;">
+                        ${c.name.substring(0, 10)}
+                    </div>
+                    <div class="live-badge">LIVE</div>
                 </div>
-                <div class="live-badge">LIVE</div>
+                <div class="live-title" style="font-size: 11px; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;">${c.name}</div>
             </div>
-            <div class="live-title">${c.name}</div>
-            <div class="live-cat">${c.category}</div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
     liveGrid.querySelectorAll('.live-card').forEach(card => {
         card.addEventListener('click', () => {
@@ -865,19 +915,21 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
     }
 }
 
-// Events for Live TV
+// Search event synchronized with current active category
 document.getElementById('live-search')?.addEventListener('input', (e) => {
     const val = (e.target as HTMLInputElement).value;
-    renderLiveTV(val);
+    const activeCat = document.querySelector('#live-categories .cat-btn.active')?.getAttribute('data-id') || 'all';
+    renderLiveTV(val, activeCat);
 });
 
-document.querySelectorAll('#live-categories .cat-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('#live-categories .cat-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentCategory = btn.getAttribute('data-cat') || 'all';
-        renderLiveTV();
-    });
+// Logout feature
+document.getElementById('xtream-logout-btn')?.addEventListener('click', () => {
+    if (confirm("Voulez-vous vraiment vous déconnecter du serveur TV ?")) {
+        localStorage.removeItem('xtream_host');
+        localStorage.removeItem('xtream_user');
+        localStorage.removeItem('xtream_pass');
+        location.reload();
+    }
 });
 
 document.getElementById('close-player')?.addEventListener('click', () => {

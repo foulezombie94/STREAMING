@@ -87,38 +87,48 @@
         <!-- Section TV Direct (LIVE) -->
         <section id="iptv-section" style="display: none; padding: 100px 20px 20px;">
             <div id="live-tv-container">
-                <div class="live-tv-header">
-                    <h2>Télévision en Direct</h2>
-                    <div class="live-tv-search">
-                        <input type="text" id="live-search" placeholder="Rechercher une chaîne...">
-                    </div>
-                </div>
-
-                <!-- Player Live (Caché par défaut) -->
-                <div id="live-player-container" style="display: none; margin-bottom: 30px;">
-                    <h3 id="current-channel-name" style="color: #ef4444; margin-bottom: 15px; font-weight: 800;"></h3>
-                    <div class="player-wrapper">
-                        <video id="live-video" controls autoplay playsinline style="width: 100%; height: 100%;"></video>
-                        <div id="player-error" style="display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; padding: 20px; z-index: 5;">
-                            <span style="font-size: 30px; margin-bottom: 10px;">⚠️</span>
-                            <p>Ce flux est protégé ou indisponible.</p>
+                <!-- Section TV Direct (LIVE) -->
+                <div id="live-tv-content">
+                    <div class="live-tv-header">
+                        <h2>Télévision en Direct</h2>
+                        <div class="live-tv-search" style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" id="live-search" placeholder="Rechercher une chaîne...">
+                            <button id="xtream-logout-btn" title="Déconnexion" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: #666; padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.3s;"><i class="fas fa-sign-out-alt"></i></button>
                         </div>
-                        <button id="close-player" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.6); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; backdrop-filter: blur(5px); z-index: 10; font-size: 18px;">&times;</button>
+                    </div>
+
+                    <!-- Player Live (Caché par défaut) -->
+                    <div id="live-player-container" style="display: none; margin-bottom: 30px;">
+                        <h3 id="current-channel-name" style="color: #ef4444; margin-bottom: 15px; font-weight: 800;"></h3>
+                        <div class="player-wrapper">
+                            <video id="live-video" controls autoplay playsinline style="width: 100%; height: 100%;"></video>
+                            <div id="player-error" style="display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; padding: 20px; z-index: 5;">
+                                <span style="font-size: 30px; margin-bottom: 10px;">⚠️</span>
+                                <p>Ce flux est protégé ou indisponible.</p>
+                            </div>
+                            <button id="close-player" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.6); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; backdrop-filter: blur(5px); z-index: 10; font-size: 18px;">&times;</button>
+                        </div>
+                    </div>
+
+                    <div class="live-tv-categories" id="live-categories">
+                        <button class="cat-btn active" data-cat="all">Mondial</button>
+                    </div>
+
+                    <div id="live-grid" class="movie-grid">
+                        <!-- Chaînes injectées ici -->
                     </div>
                 </div>
 
-                <div class="live-tv-categories" id="live-categories">
-                    <button class="cat-btn active" data-cat="all">Mondial</button>
-                    <button class="cat-btn" data-cat="FR">France</button>
-                    <button class="cat-btn" data-cat="US">USA</button>
-                    <button class="cat-btn" data-cat="UK">UK</button>
-                    <button class="cat-btn" data-cat="sport">Sport</button>
-                    <button class="cat-btn" data-cat="news">Infos</button>
-                    <button class="cat-btn" data-cat="movie">Cinéma</button>
-                </div>
-
-                <div id="live-grid" class="movie-grid">
-                    <!-- Chaînes injectées ici -->
+                <!-- Formulaire Login Xtream -->
+                <div id="xtream-login" style="display: none; max-width: 400px; margin: 40px auto; padding: 30px; background: #111; border-radius: 15px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+                    <h2 style="text-align: center; margin-bottom: 25px; color: #ef4444;">Connexion Xtream</h2>
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <input type="text" id="xtream-host" value="http://gndk28.xyz/" placeholder="Hôte" style="padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px;">
+                        <input type="text" id="xtream-user" placeholder="Nom d'utilisateur" style="padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px;">
+                        <input type="password" id="xtream-pass" placeholder="Mot de passe" style="padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px;">
+                        <button id="xtream-submit" style="padding: 12px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 10px;">SE CONNECTER</button>
+                    </div>
+                    <p id="login-error" style="color: #ef4444; font-size: 12px; margin-top: 15px; text-align: center; display: none;">Identifiants incorrects ou serveur indisponible.</p>
                 </div>
             </div>
         </section>
