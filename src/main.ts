@@ -712,7 +712,17 @@ document.getElementById('xtream-submit')?.addEventListener('click', async () => 
     try {
         // Test de connexion via l'API player_api.php
         const testUrl = `${host}/player_api.php?username=${user}&password=${pass}`;
-        const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(testUrl)}`);
+        
+        // Tentative 1: corsproxy.io
+        let response;
+        try {
+            response = await fetch(`https://corsproxy.io/?${encodeURIComponent(testUrl)}`);
+            if (!response.ok) throw new Error("Proxy 1 Failed");
+        } catch (e) {
+            // Tentative 2: allorigins (plus permissif)
+            response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(testUrl)}`);
+        }
+
         const data = await response.json();
 
         if (data.user_info && data.user_info.auth === 1) {
@@ -746,12 +756,24 @@ async function loadXtreamData() {
     try {
         // 1. Récupérer les catégories
         const catUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_categories`;
-        const catRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(catUrl)}`);
+        let catRes;
+        try {
+            catRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(catUrl)}`);
+            if (!catRes.ok) throw new Error();
+        } catch (e) {
+            catRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(catUrl)}`);
+        }
         liveCategories = await catRes.json();
 
         // 2. Récupérer toutes les chaînes
         const streamUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_streams`;
-        const streamRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(streamUrl)}`);
+        let streamRes;
+        try {
+            streamRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(streamUrl)}`);
+            if (!streamRes.ok) throw new Error();
+        } catch (e) {
+            streamRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(streamUrl)}`);
+        }
         allLiveChannels = await streamRes.json();
 
         liveTVInitialized = true;
