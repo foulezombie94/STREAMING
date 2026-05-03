@@ -663,6 +663,9 @@ function renderResumePage() {
 // --- LIVE TV SECTION (iptv-org) ---
 let currentCategory = 'all';
 
+// Declare Hls for TypeScript
+declare const Hls: any;
+
 // --- LIVE TV SECTION (M3U Parser) ---
 let allLiveChannels: any[] = [];
 let liveTVInitialized = false;
@@ -786,18 +789,42 @@ function renderLiveTV(filter: string = '') {
 
 function playLiveChannel(url: string, name: string) {
     const playerContainer = document.getElementById('live-player-container');
-    const iframe = document.getElementById('live-iframe') as HTMLIFrameElement;
+    const video = document.getElementById('live-video') as HTMLVideoElement;
     const nameLabel = document.getElementById('current-channel-name');
+    const errorOverlay = document.getElementById('player-error');
 
-    if (!playerContainer || !iframe || !nameLabel) return;
+    if (!playerContainer || !video || !nameLabel || !errorOverlay) return;
 
     playerContainer.style.display = 'block';
     nameLabel.textContent = name;
+    errorOverlay.style.display = 'none';
     
-    // Using a reliable HLS player wrapper
-    iframe.src = `https://www.hlsplayer.org/embed?url=${encodeURIComponent(url)}`;
-    
+    // Smooth scroll to player
     window.scrollTo({ top: playerContainer.offsetTop - 100, behavior: 'smooth' });
+
+    if (Hls.isSupported()) {
+        const hls = new Hls({
+            debug: false,
+            enableWorker: true,
+            lowLatencyMode: true
+        });
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.ERROR, function (_event: any, data: any) {
+            if (data.fatal) {
+                console.error("HLS Fatal Error:", data);
+                errorOverlay.style.display = 'flex';
+            }
+        });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native support (Safari)
+        video.src = url;
+        video.addEventListener('error', () => {
+            errorOverlay.style.display = 'flex';
+        });
+    } else {
+        errorOverlay.style.display = 'flex';
+    }
 }
 
 // Events for Live TV
@@ -817,9 +844,13 @@ document.querySelectorAll('#live-categories .cat-btn').forEach(btn => {
 
 document.getElementById('close-player')?.addEventListener('click', () => {
     const playerContainer = document.getElementById('live-player-container');
-    const iframe = document.getElementById('live-iframe') as HTMLIFrameElement;
+    const video = document.getElementById('live-video') as HTMLVideoElement;
     if (playerContainer) playerContainer.style.display = 'none';
-    if (iframe) iframe.src = '';
+    if (video) {
+        video.pause();
+        video.src = "";
+        video.load();
+    }
 });
 
 // Update handleNavigation to use new init
