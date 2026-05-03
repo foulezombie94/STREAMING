@@ -676,19 +676,25 @@ async function initLiveTV() {
 
     if (liveTVInitialized) return;
     
-    liveGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px; color: #ef4444;">Chargement de la base mondiale (M3U)...</div>';
+    liveGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px; color: #ef4444;">Chargement des serveurs TV Direct...</div>';
     
     try {
-        // Fetching the large index (or a combined set)
-        // For performance, we fetch the FR specific list + the global one if needed
-        const m3uUrl = 'https://iptv-org.github.io/iptv/index.m3u';
-        const response = await fetch(m3uUrl);
-        const text = await response.text();
+        // Diversification des sources (LaneSh44 pour FR, Fmstrat pour Global)
+        // On évite iptv-org comme demandé
+        const sources = [
+            'https://raw.githubusercontent.com/LaneSh44/French-IPTV/main/france.m3u',
+            'https://raw.githubusercontent.com/Fmstrat/iptv-links/master/index.m3u'
+        ];
         
-        allLiveChannels = parseM3U(text);
+        const fetchPromises = sources.map(url => fetch(url).then(res => res.text()));
+        const results = await Promise.all(fetchPromises);
+        
+        let combinedM3U = results.join('\n');
+        
+        allLiveChannels = parseM3U(combinedM3U);
         liveTVInitialized = true;
         
-        console.log(`Parsed ${allLiveChannels.length} channels from M3U.`);
+        console.log(`Parsed ${allLiveChannels.length} channels from alternative sources.`);
         renderLiveTV();
     } catch (err) {
         console.error("Erreur M3U:", err);
