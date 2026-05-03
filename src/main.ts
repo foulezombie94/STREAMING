@@ -918,74 +918,90 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
     }
 
     const isHttps = window.location.protocol === 'https:';
-    const streamUrl = (useProxy || isHttps) ? `/api/proxy?url=${encodeURIComponent(url)}` : url;
-    console.log(`Lecture du flux: ${streamUrl}`);
+    
+    const getProxyUrl = (targetUrl: string, type: 'vercel' | 'corsproxy' | 'allorigins') => {
+        const encoded = encodeURIComponent(targetUrl);
+        switch (type) {
+            case 'vercel': return `/api/proxy?url=${encoded}`;
+            case 'corsproxy': return `https://corsproxy.io/?${encoded}`;
+            case 'allorigins': return `https://api.allorigins.win/raw?url=${encoded}`;
+            default: return targetUrl;
+        }
+    };
 
-    // Afficher l'indicateur de chargement
+    let currentProxyType: 'vercel' | 'corsproxy' | 'allorigins' = 'vercel';
+    let streamUrl = getProxyUrl(url, currentProxyType);
+
+    const tryNextProxy = () => {
+        if (currentProxyType === 'vercel') {
+            currentProxyType = 'corsproxy';
+        } else if (currentProxyType === 'corsproxy') {
+            currentProxyType = 'allorigins';
+        } else {
+            return false;
+        }
+        streamUrl = getProxyUrl(url, currentProxyType);
+        console.log(`Bascule vers le proxy: ${currentProxyType}`);
+        return true;
+    };
+
+    console.log(`Lecture via ${currentProxyType}: ${streamUrl}`);
+
     errorOverlay.style.display = 'flex';
-    if (msg) msg.textContent = "Connexion au flux en cours...";
+    if (msg) msg.textContent = "Connexion au flux...";
     errorOverlay.querySelector('span')!.textContent = "⏳";
 
-    // DETECTION DU FORMAT
     if (url.includes('.m3u8')) {
-        // --- MODE HLS ---
-        if (Hls.isSupported()) {
-            const hls = new Hls({
-                debug: false,
-                manifestLoadingMaxRetry: 5,
-                levelLoadingMaxRetry: 5
-            });
-            (window as any).hls = hls;
-            hls.loadSource(streamUrl);
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                errorOverlay.style.display = 'none';
+        const loadHls = (target: string) => {
+            if (Hls.isSupported()) {
+                const hls = new Hls({ debug: false, manifestLoadingMaxRetry: 3 });
+                (window as any).hls = hls;
+                hls.loadSource(target);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    errorOverlay.style.display = 'none';
+                    video.play().catch(() => {});
+                });
+                hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
+                    if (data.fatal) {
+                        if (tryNextProxy()) {
+                            hls.destroy();
+                            loadHls(streamUrl);
+                        } else {
+                            if (msg) msg.textContent = "Flux indisponible (Erreur HLS).";
+                        }
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = target;
                 video.play().catch(() => {});
-            });
-            hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
-                if (data.fatal) {
-                    console.error("HLS Error:", data);
-                    errorOverlay.style.display = 'flex';
-                    if (msg) msg.textContent = "Erreur de flux HLS.";
-                }
-            });
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = streamUrl;
-            video.play().catch(() => {});
-        }
+            }
+        };
+        loadHls(streamUrl);
     } else {
-        // --- MODE MPEG-TS (Standard Xtream) ---
-        if (mpegts.getFeatureList().mseLivePlayback) {
-            const player = mpegts.createPlayer({
-                type: 'mse', // ou 'mpegts'
-                isLive: true,
-                url: streamUrl
-            });
-            (window as any).mpegtsPlayer = player;
-            player.attachMediaElement(video);
-            player.load();
-            
-            player.on(mpegts.Events.ERROR, (err: any) => {
-                console.error("MPEG-TS Error:", err);
-                // Si le .ts échoue, on tente la conversion automatique en .m3u8
-                if (url.endsWith('.ts')) {
-                    console.log("Bascule automatique vers .m3u8...");
-                    player.destroy();
-                    playLiveChannel(url.replace('.ts', '.m3u8'), name, useProxy);
-                }
-            });
-
-            // On considère que ça marche si le chargement avance
-            video.onplaying = () => {
-                errorOverlay.style.display = 'none';
-            };
-
-            player.play().catch(() => {});
-        } else {
-            // Fallback pour navigateurs sans MSE
-            video.src = streamUrl;
-            video.play().catch(() => {});
-        }
+        const loadTs = (target: string) => {
+            if (mpegts.getFeatureList().mseLivePlayback) {
+                const player = mpegts.createPlayer({ type: 'mse', isLive: true, url: target });
+                (window as any).mpegtsPlayer = player;
+                player.attachMediaElement(video);
+                player.load();
+                player.on(mpegts.Events.ERROR, () => {
+                    if (tryNextProxy()) {
+                        player.destroy();
+                        loadTs(streamUrl);
+                    } else if (url.endsWith('.ts')) {
+                        player.destroy();
+                        playLiveChannel(url.replace('.ts', '.m3u8'), name, useProxy);
+                    }
+                });
+                video.onplaying = () => { errorOverlay.style.display = 'none'; };
+                player.play().catch(() => {});
+            } else {
+                video.src = target;
+                video.play().catch(() => {});
+            }
+        };
+        loadTs(streamUrl);
     }
 }
 
