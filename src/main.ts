@@ -779,11 +779,18 @@ async function loadIPTVCategory(type: string) {
         if (!res.ok) throw new Error("Erreur serveur");
         const data = await res.json();
         
-        console.log(`Bouquets ${type}:`, data);
-        renderIPTVSubCategories(data, type);
+        let categories: any[] = [];
+        if (Array.isArray(data)) {
+            categories = data;
+        } else if (data && typeof data === 'object') {
+            categories = Object.values(data).filter(cat => cat && typeof cat === 'object') as any[];
+        }
+
+        console.log(`Bouquets ${type}:`, categories);
+        renderIPTVSubCategories(categories, type);
         
-        if (data && data.length > 0) {
-            loadIPTVStreams(type, data[0].category_id);
+        if (categories && categories.length > 0) {
+            loadIPTVStreams(type, categories[0].category_id);
         } else {
             loadIPTVStreams(type, 'all');
         }
@@ -793,9 +800,20 @@ async function loadIPTVCategory(type: string) {
     }
 }
 
-function renderIPTVSubCategories(categories: any[], type: string) {
+function renderIPTVSubCategories(data: any, type: string) {
     if (!iptvSubCategories) return;
-    if (!categories || !Array.isArray(categories)) return;
+    
+    let categories: any[] = [];
+    if (Array.isArray(data)) {
+        categories = data;
+    } else if (data && typeof data === 'object') {
+        categories = Object.values(data).filter(cat => cat && typeof cat === 'object') as any[];
+    }
+
+    if (!categories || categories.length === 0) {
+        console.warn(`Aucun bouquet trouvé pour ${type}`);
+        return;
+    }
 
     iptvSubCategories.innerHTML = categories.map((cat, index) => `
         <button class="iptv-sub-cat-btn ${index === 0 ? 'active' : ''}" data-id="${cat.category_id}" style="padding: 8px 15px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: white; white-space: nowrap; cursor: pointer; font-size: 13px;">
@@ -836,6 +854,7 @@ async function loadIPTVStreams(type: string, categoryId: string) {
         const res = await fetch(proxyUrl);
         const data = await res.json();
 
+        console.log(`Flux reçus pour ${type}:`, data);
         renderIPTVData(data, type);
     } catch (err) {
         console.error(`Erreur flux ${type}:`, err);
@@ -845,14 +864,17 @@ async function loadIPTVStreams(type: string, categoryId: string) {
 
 function renderIPTVData(data: any, type: string) {
     if (!iptvGrid) return;
-    console.log(`Données reçues pour ${type}:`, data);
-
     let items: any[] = [];
     if (Array.isArray(data)) {
         items = data;
     } else if (data && typeof data === 'object') {
-        // Certains serveurs encapsulent dans une propriété
-        items = data.streams || data.series || data.vod || Object.values(data).find(v => Array.isArray(v)) || [];
+        // Gérer le cas où c'est un objet (ex: Smarters Lite)
+        items = Object.values(data).filter(item => item && typeof item === 'object' && (item as any).name) as any[];
+        
+        // Si toujours rien, chercher dans des propriétés connues
+        if (items.length === 0) {
+            items = data.streams || data.series || data.vod || [];
+        }
     }
 
     if (!items || items.length === 0) {
