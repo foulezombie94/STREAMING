@@ -750,47 +750,49 @@ iptvLogout?.addEventListener('click', () => {
 
 const iptvSearch = document.getElementById('iptv-search') as HTMLInputElement;
 
-iptvSearch?.addEventListener('input', (e) => {
-    const term = (e.target as HTMLInputElement).value.trim().toLowerCase();
-    if (term.length === 0) {
-        if (iptvGrid) iptvGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px; opacity: 0.5;">Tapez le nom d\'une chaîne pour commencer...</div>';
-        return;
+iptvSearch?.addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+        const term = (e.target as HTMLInputElement).value.trim().toLowerCase();
+        if (term.length < 2) return;
+        
+        if (iptvGrid) iptvGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px;">Recherche en cours...</div>';
+        
+        await performIPTVSearch(term);
     }
-    const filtered = currentIPTVItems.filter(item => {
-        const title = (item.name || item.title || "").toLowerCase();
-        return title.includes(term);
-    });
-    renderIPTVData(filtered, 'search-result');
 });
+
+async function performIPTVSearch(term: string) {
+    if (!iptvAccount || !iptvGrid) return;
+
+    try {
+        // On ne charge QUE si on n'a pas encore les données ou si on veut forcer le rafraîchissement
+        if (currentIPTVItems.length === 0) {
+            const fetchUrl = `${iptvAccount.url}/player_api.php?username=${iptvAccount.user}&password=${iptvAccount.pass}&action=get_live_streams`;
+            const proxyUrl = `/api/proxy?url=${encodeURIComponent(fetchUrl)}`;
+            const res = await fetch(proxyUrl);
+            const data = await res.json();
+            
+            if (Array.isArray(data)) currentIPTVItems = data;
+            else if (data && typeof data === 'object') currentIPTVItems = Object.values(data).filter(item => item && typeof item === 'object') as any[];
+        }
+
+        const filtered = currentIPTVItems.filter(item => {
+            const title = (item.name || item.title || "").toLowerCase();
+            return title.includes(term);
+        });
+
+        renderIPTVData(filtered, 'search-result');
+    } catch (err) {
+        console.error("Erreur recherche IPTV:", err);
+        iptvGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Erreur lors de la recherche.</div>';
+    }
+}
 
 async function loadIPTVCategory(type: string) {
     if (!iptvGrid || !iptvAccount) return;
-    iptvGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px;">Initialisation de la liste des chaînes...</div>';
-
-    try {
-        // En mode recherche pure, on récupère tout le contenu de la catégorie choisie (Live)
-        let action = 'get_live_streams';
-        if (type === 'vod') action = 'get_vod_streams';
-        if (type === 'series') action = 'get_series';
-
-        const fetchUrl = `${iptvAccount.url}/player_api.php?username=${iptvAccount.user}&password=${iptvAccount.pass}&action=${action}`;
-        const proxyUrl = `/api/proxy?url=${encodeURIComponent(fetchUrl)}`;
-        
-        const res = await fetch(proxyUrl);
-        const data = await res.json();
-        
-        if (Array.isArray(data)) currentIPTVItems = data;
-        else if (data && typeof data === 'object') currentIPTVItems = Object.values(data).filter(item => item && typeof item === 'object') as any[];
-        else currentIPTVItems = [];
-
-        console.log(`Initialisation terminée: ${currentIPTVItems.length} items chargés.`);
-        
-        // On affiche rien au début, on attend que l'utilisateur tape
-        iptvGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px; opacity: 0.5;">Recherchez une chaîne parmi les ' + currentIPTVItems.length + ' disponibles...</div>';
-    } catch (err) {
-        console.error(`Erreur init IPTV:`, err);
-        iptvGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Erreur de connexion au serveur IPTV.</div>';
-    }
+    // On ne charge RIEN au début
+    currentIPTVItems = []; // Reset pour forcer la recherche fraîche
+    iptvGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px; opacity: 0.5;">Entrez un nom de chaîne et appuyez sur ENTRÉE pour rechercher.</div>';
 }
 
 function renderIPTVData(items: any[], type: string) {
