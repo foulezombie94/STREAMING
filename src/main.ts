@@ -659,31 +659,30 @@ const iptvLoginForm = document.getElementById('iptv-login-form') as HTMLFormElem
 const iptvGrid = document.getElementById('iptv-grid');
 const iptvLogout = document.getElementById('iptv-logout');
 const iptvProviderName = document.getElementById('iptv-provider-name');
-const iptvCatButtons = document.querySelectorAll('.iptv-cat-btn');
+const iptvSearch = document.getElementById('iptv-search') as HTMLInputElement;
 
 let iptvAccount = JSON.parse(localStorage.getItem('iptv_account') || 'null');
+let currentIPTVItems: any[] = [];
 
 function initIPTV() {
     if (iptvAccount) {
-        showIPTVContent();
+        showIPTVDashboard();
     } else {
         showIPTVLogin();
     }
 }
 
 function showIPTVLogin() {
-    if (iptvLogin) iptvLogin.style.display = 'block';
+    if (iptvLogin) iptvLogin.style.display = 'flex';
     if (iptvContent) iptvContent.style.display = 'none';
 }
 
-function showIPTVContent() {
+function showIPTVDashboard() {
     if (iptvLogin) iptvLogin.style.display = 'none';
     if (iptvContent) iptvContent.style.display = 'block';
     if (iptvProviderName) {
         iptvProviderName.textContent = iptvAccount.name || "Ma Télévision";
     }
-    
-    // Par défaut, charger le Live
     loadIPTVCategory('live');
 }
 
@@ -699,11 +698,11 @@ passToggle?.addEventListener('click', () => {
 
 iptvLoginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = iptvLoginForm.querySelector('.btn-add-playlist') as HTMLButtonElement;
-    const originalText = btn ? btn.textContent : "ADD PLAYLIST";
-
     const btn = iptvLoginForm.querySelector('button');
-    if (btn) btn.innerText = 'CONNECTION...';
+    if (btn) {
+        btn.innerText = 'CONNECTION...';
+        btn.disabled = true;
+    }
 
     const url = (document.getElementById('iptv-url') as HTMLInputElement).value.replace(/\/$/, "");
     const user = (document.getElementById('iptv-user') as HTMLInputElement).value;
@@ -727,28 +726,18 @@ iptvLoginForm?.addEventListener('submit', async (e) => {
         console.error("Erreur login IPTV:", err);
         alert("Erreur de connexion au serveur IPTV.");
     } finally {
-        if (btn) btn.innerText = 'ADD PLAYLIST';
+        if (btn) {
+            btn.innerText = 'ADD PLAYLIST';
+            btn.disabled = false;
+        }
     }
 });
-
-function showIPTVDashboard() {
-    if (iptvLoginSection) iptvLoginSection.style.display = 'none';
-    if (iptvDashboard) iptvDashboard.style.display = 'block';
-    loadIPTVCategory('live');
-}
-
-function showIPTVLogin() {
-    if (iptvLoginSection) iptvLoginSection.style.display = 'flex';
-    if (iptvDashboard) iptvDashboard.style.display = 'none';
-}
 
 iptvLogout?.addEventListener('click', () => {
     localStorage.removeItem('iptv_account');
     iptvAccount = null;
     showIPTVLogin();
 });
-
-const iptvSearch = document.getElementById('iptv-search') as HTMLInputElement;
 
 iptvSearch?.addEventListener('keydown', async (e) => {
     if (e.key === 'Enter') {
@@ -765,7 +754,6 @@ async function performIPTVSearch(term: string) {
     if (!iptvAccount || !iptvGrid) return;
 
     try {
-        // On ne charge QUE si on n'a pas encore les données ou si on veut forcer le rafraîchissement
         if (currentIPTVItems.length === 0) {
             const fetchUrl = `${iptvAccount.url}/player_api.php?username=${iptvAccount.user}&password=${iptvAccount.pass}&action=get_live_streams`;
             const proxyUrl = `/api/proxy?url=${encodeURIComponent(fetchUrl)}`;
@@ -781,40 +769,37 @@ async function performIPTVSearch(term: string) {
             return title.includes(term);
         });
 
-        renderIPTVData(filtered, 'search-result');
+        renderIPTVData(filtered, 'live');
     } catch (err) {
         console.error("Erreur recherche IPTV:", err);
         iptvGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Erreur lors de la recherche.</div>';
     }
 }
 
-async function loadIPTVCategory(type: string) {
+async function loadIPTVCategory(_type: string) {
     if (!iptvGrid || !iptvAccount) return;
-    // On ne charge RIEN au début
-    currentIPTVItems = []; // Reset pour forcer la recherche fraîche
+    currentIPTVItems = []; 
     iptvGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px; opacity: 0.5;">Entrez un nom de chaîne et appuyez sur ENTRÉE pour rechercher.</div>';
 }
 
 function renderIPTVData(items: any[], type: string) {
     if (!iptvGrid) return;
-    
     const validItems = items.filter(item => item && (item.name || item.title));
 
     if (!validItems || validItems.length === 0) {
-        iptvGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px;">Aucun résultat pour cette recherche.</div>';
+        iptvGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px;">Aucun résultat trouvé.</div>';
         return;
     }
 
-    // On limite à 20 résultats pour la performance
     const displayItems = validItems.slice(0, 20); 
 
     iptvGrid.innerHTML = displayItems.map(item => {
         const title = item.name || item.title;
-        const img = item.stream_icon || item.icon || item.series_cover || item.cover || item.thumbnail;
-        const id = item.stream_id || item.series_id || item.id;
+        const img = item.stream_icon || item.icon;
+        const id = item.stream_id || item.id;
         
         return `
-            <div class="movie-card iptv-card" data-id="${id}" data-type="${type === 'search-result' ? (item.stream_id ? 'live' : 'vod') : type}">
+            <div class="movie-card iptv-card" data-id="${id}" data-type="${type}">
                 <div class="card-img-container" style="aspect-ratio: 16/9; background: #1a1a1a; position: relative; overflow: hidden; border-radius: 12px;">
                     <img src="${img || ''}" alt="${title}" loading="lazy" onerror="this.src='https://via.placeholder.com/320x180?text=TV'" style="width: 100%; height: 100%; object-fit: cover;">
                     <div class="card-overlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.5); opacity: 0; display: flex; align-items: center; justify-content: center; transition: opacity 0.3s;">
@@ -842,14 +827,8 @@ function playIPTV(id: string, type: string) {
     let playUrl = '';
     if (type === 'live') {
         playUrl = `${iptvAccount.url}/live/${iptvAccount.user}/${iptvAccount.pass}/${id}.ts`;
-    } else if (type === 'vod') {
-        playUrl = `${iptvAccount.url}/movie/${iptvAccount.user}/${iptvAccount.pass}/${id}`;
     } else {
-        alert("Pour les séries IPTV, veuillez utiliser une application dédiée (le format est complexe en web).");
-        return;
+        playUrl = `${iptvAccount.url}/movie/${iptvAccount.user}/${iptvAccount.pass}/${id}`;
     }
-    
-    // Pour l'IPTV, on ouvre souvent dans un nouvel onglet car le format .ts/.m3u8 nécessite des lecteurs spécifiques
-    // ou on pourrait l'injecter dans notre lecteur si compatible HLS.
     window.open(playUrl, '_blank');
 }
