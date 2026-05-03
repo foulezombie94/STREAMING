@@ -723,9 +723,15 @@ document.getElementById('xtream-submit')?.addEventListener('click', async () => 
             response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(testUrl)}`);
         }
 
-        const data = await response.json();
+        const text = await response.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            throw new Error("Invalid Server Response (Not JSON)");
+        }
 
-        if (data.user_info && data.user_info.auth === 1) {
+        if (data && data.user_info && data.user_info.auth === 1) {
             // Success ! Sauvegarde
             localStorage.setItem('xtream_host', host);
             localStorage.setItem('xtream_user', user);
