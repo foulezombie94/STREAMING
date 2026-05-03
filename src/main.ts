@@ -713,14 +713,20 @@ document.getElementById('xtream-submit')?.addEventListener('click', async () => 
         // Test de connexion via l'API player_api.php
         const testUrl = `${host}/player_api.php?username=${user}&password=${pass}`;
         
-        // Tentative 1: corsproxy.io
+        // Tentative 1: Proxy local Vercel (Optimal)
         let response;
         try {
-            response = await fetch(`https://corsproxy.io/?${encodeURIComponent(testUrl)}`);
-            if (!response.ok) throw new Error("Proxy 1 Failed");
+            response = await fetch(`/api/proxy?url=${encodeURIComponent(testUrl)}`);
+            if (!response.ok) throw new Error("Vercel Proxy Failed");
         } catch (e) {
-            // Tentative 2: allorigins (plus permissif)
-            response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(testUrl)}`);
+            // Tentative 2: corsproxy.io
+            try {
+                response = await fetch(`https://corsproxy.io/?${encodeURIComponent(testUrl)}`);
+                if (!response.ok) throw new Error();
+            } catch (e2) {
+                // Tentative 3: allorigins (plus permissif)
+                response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(testUrl)}`);
+            }
         }
 
         const text = await response.text();
@@ -764,10 +770,15 @@ async function loadXtreamData() {
         const catUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_categories`;
         let catRes;
         try {
-            catRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(catUrl)}`);
+            catRes = await fetch(`/api/proxy?url=${encodeURIComponent(catUrl)}`);
             if (!catRes.ok) throw new Error();
         } catch (e) {
-            catRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(catUrl)}`);
+            try {
+                catRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(catUrl)}`);
+                if (!catRes.ok) throw new Error();
+            } catch (e2) {
+                catRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(catUrl)}`);
+            }
         }
         liveCategories = await catRes.json();
 
@@ -775,10 +786,15 @@ async function loadXtreamData() {
         const streamUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_streams`;
         let streamRes;
         try {
-            streamRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(streamUrl)}`);
+            streamRes = await fetch(`/api/proxy?url=${encodeURIComponent(streamUrl)}`);
             if (!streamRes.ok) throw new Error();
         } catch (e) {
-            streamRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(streamUrl)}`);
+            try {
+                streamRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(streamUrl)}`);
+                if (!streamRes.ok) throw new Error();
+            } catch (e2) {
+                streamRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(streamUrl)}`);
+            }
         }
         allLiveChannels = await streamRes.json();
 
@@ -892,7 +908,7 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
         (window as any).hls.destroy();
     }
 
-    const streamUrl = useProxy ? `https://corsproxy.io/?${encodeURIComponent(url)}` : url;
+    const streamUrl = useProxy ? `/api/proxy?url=${encodeURIComponent(url)}` : url;
     console.log(`Tentative de lecture (${useProxy ? 'Proxy' : 'Direct'}): ${streamUrl}`);
 
     if (Hls.isSupported()) {
