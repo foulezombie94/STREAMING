@@ -844,6 +844,18 @@ function renderIPTVSubCategories(data: any, type: string) {
     });
 }
 
+let currentIPTVItems: any[] = [];
+const iptvSearch = document.getElementById('iptv-search') as HTMLInputElement;
+
+iptvSearch?.addEventListener('input', (e) => {
+    const term = (e.target as HTMLInputElement).value.toLowerCase();
+    const filtered = currentIPTVItems.filter(item => {
+        const title = (item.name || item.title || "").toLowerCase();
+        return title.includes(term);
+    });
+    renderIPTVData(filtered, 'search-result', true);
+});
+
 async function loadIPTVStreams(type: string, categoryId: string) {
     if (!iptvGrid || !iptvAccount) return;
     iptvGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px;">Chargement des chaînes...</div>';
@@ -863,47 +875,38 @@ async function loadIPTVStreams(type: string, categoryId: string) {
         const res = await fetch(proxyUrl);
         const data = await res.json();
 
-        console.log(`Flux reçus pour ${type}:`, data);
-        renderIPTVData(data, type);
+        if (Array.isArray(data)) currentIPTVItems = data;
+        else if (data && typeof data === 'object') currentIPTVItems = Object.values(data).filter(item => item && typeof item === 'object') as any[];
+        else currentIPTVItems = [];
+
+        renderIPTVData(currentIPTVItems, type);
     } catch (err) {
         console.error(`Erreur flux ${type}:`, err);
         iptvGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Erreur de chargement des chaînes.</div>';
     }
 }
 
-function renderIPTVData(data: any, type: string) {
+function renderIPTVData(items: any[], type: string, isSearch = false) {
     if (!iptvGrid) return;
-    let items: any[] = [];
-    if (Array.isArray(data)) {
-        items = data;
-    } else if (data && typeof data === 'object') {
-        // Certains serveurs retournent un objet avec des clés numériques
-        items = Object.values(data).filter(item => item && typeof item === 'object' && ((item as any).name || (item as any).title)) as any[];
-        
-        // Si c'est vide, on cherche des clés standards
-        if (items.length === 0) {
-            items = data.streams || data.series || data.vod || [];
-        }
-    }
+    
+    // On ne garde que les vrais items avec un titre
+    const validItems = items.filter(item => item && (item.name || item.title));
 
-    if (!items || items.length === 0) {
-        console.warn(`Aucun item trouvé pour ${type}`);
-        iptvGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px;">Aucun contenu trouvé dans ce bouquet.</div>';
+    if (!validItems || validItems.length === 0) {
+        iptvGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px;">Aucun contenu trouvé.</div>';
         return;
     }
 
-    // DEBUG: Voir la structure du premier item pour corriger les noms de champs
-    console.log(`Structure 1er item ${type}:`, items[0]);
+    // LIMITER À 20 CHAÎNES comme demandé par l'utilisateur
+    const displayItems = validItems.slice(0, 20); 
 
-    // On limite l'affichage pour la performance
-    const displayItems = items.slice(0, 200); 
     iptvGrid.innerHTML = displayItems.map(item => {
-        const title = item.name || item.title || "Sans titre";
+        const title = item.name || item.title;
         const img = item.stream_icon || item.icon || item.series_cover || item.cover || item.thumbnail;
         const id = item.stream_id || item.series_id || item.id;
         
         return `
-            <div class="movie-card iptv-card" data-id="${id}" data-type="${type}">
+            <div class="movie-card iptv-card" data-id="${id}" data-type="${type === 'search-result' ? (item.stream_id ? 'live' : 'vod') : type}">
                 <div class="card-img-container" style="aspect-ratio: 16/9; background: #1a1a1a; position: relative; overflow: hidden; border-radius: 12px;">
                     <img src="${img || ''}" alt="${title}" loading="lazy" onerror="this.src='https://via.placeholder.com/320x180?text=TV'" style="width: 100%; height: 100%; object-fit: cover;">
                     <div class="card-overlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.5); opacity: 0; display: flex; align-items: center; justify-content: center; transition: opacity 0.3s;">
