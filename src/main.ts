@@ -789,16 +789,27 @@ async function loadIPTVCategory(type: string) {
     }
 }
 
-function renderIPTVData(data: any[], type: string) {
+function renderIPTVData(data: any, type: string) {
     if (!iptvGrid) return;
-    if (!data || !Array.isArray(data) || data.length === 0) {
-        iptvGrid.innerHTML = '<div class="no-results">Aucun contenu trouvé dans cette catégorie.</div>';
+    console.log(`Données reçues pour ${type}:`, data);
+
+    let items: any[] = [];
+    if (Array.isArray(data)) {
+        items = data;
+    } else if (data && typeof data === 'object') {
+        // Certains serveurs encapsulent dans une propriété
+        items = data.streams || data.series || data.vod || Object.values(data).find(v => Array.isArray(v)) || [];
+    }
+
+    if (!items || items.length === 0) {
+        console.warn(`Aucun item trouvé pour ${type}`);
+        iptvGrid.innerHTML = '<div class="no-results">Aucun contenu trouvé dans cette catégorie. Vérifiez votre abonnement.</div>';
         return;
     }
 
-    // On limite l'affichage pour la performance (les playlists IPTV peuvent être énormes)
-    const items = data.slice(0, 100); 
-    iptvGrid.innerHTML = items.map(item => {
+    // On limite l'affichage pour la performance
+    const displayItems = items.slice(0, 150); 
+    iptvGrid.innerHTML = displayItems.map(item => {
         const title = item.name;
         const img = item.stream_icon || item.icon || item.series_cover;
         const id = item.stream_id || item.series_id;
