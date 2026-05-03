@@ -3,12 +3,13 @@ export const config = {
 };
 
 export default async function handler(request) {
-  const { searchParams } = new URL(request.url);
-  const targetUrl = searchParams.get('url');
+  try {
+    const { searchParams } = new URL(request.url);
+    const targetUrl = searchParams.get('url');
 
-  if (!targetUrl) {
-    return new Response('Missing url parameter', { status: 400 });
-  }
+    if (!targetUrl) {
+      return new Response('Missing url parameter', { status: 400 });
+    }
 
     let urlObj;
     try {
@@ -92,10 +93,22 @@ export default async function handler(request) {
       const lines = m3u8Content.split('\n');
       const rewrittenLines = lines.map(line => {
         const trimmed = line.trim();
+        
+        // 1. Rewrite segment URLs
         if (trimmed && !trimmed.startsWith('#') && !trimmed.startsWith('http')) {
           const absoluteSegmentUrl = new URL(trimmed, baseUrl).href;
           return `/api/proxy?url=${encodeURIComponent(absoluteSegmentUrl)}`;
         }
+
+        // 2. Rewrite URLs in tags (e.g., EXT-X-KEY, EXT-X-MAP, EXT-X-MEDIA)
+        if (trimmed.startsWith('#') && (trimmed.includes('URI="') || trimmed.includes('URI='))) {
+            return line.replace(/URI="?([^",\s]+)"?/g, (match, p1) => {
+                if (p1.startsWith('http') || p1.startsWith('/api/proxy')) return match;
+                const absoluteUrl = new URL(p1, baseUrl).href;
+                return `URI="/api/proxy?url=${encodeURIComponent(absoluteUrl)}"`;
+            });
+        }
+        
         return line;
       });
       

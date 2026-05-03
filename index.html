@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>MOVIEVERSE</title>
+    <title>ELMAMADEKEKE</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <!-- Importation de la police Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <!-- HLS.js pour le streaming Direct TV -->
@@ -14,7 +15,7 @@
 
     <!-- En-tête -->
     <header class="navbar" id="navbar">
-        <div class="logo">MOVIEVERSE</div>
+        <div class="logo">ELMAMADEKEKE</div>
         <ul class="nav-links">
             <li><a href="#" class="nav-item active" data-type="trending">Accueil</a></li>
             <li><a href="#" class="nav-item" data-type="tv">Séries</a></li>
@@ -43,7 +44,7 @@
                     </clipPath>
                   </defs>
                 </svg>
-                <input type="text" id="search-input" class="search-input" placeholder="Tapez votre recherche...">
+                <input type="text" id="search-input" class="search-input" placeholder="Tapez votre recherche..." autocomplete="off">
             </label>
         </div>
     </header>
@@ -93,7 +94,7 @@
                     <div class="live-tv-header">
                         <h2>Télévision en Direct</h2>
                         <div class="live-tv-search" style="display: flex; gap: 10px; align-items: center;">
-                            <input type="text" id="live-search" placeholder="Rechercher une chaîne...">
+                            <input type="text" id="live-search" placeholder="Rechercher une chaîne..." autocomplete="off">
                             <button id="xtream-logout-btn" title="Déconnexion" style="background: rgba(255,255,255,0.05); border: 1px solid #333; color: #666; padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.3s;"><i class="fas fa-sign-out-alt"></i></button>
                         </div>
                     </div>
@@ -124,9 +125,9 @@
                 <div id="xtream-login" style="display: none; max-width: 400px; margin: 40px auto; padding: 30px; background: #111; border-radius: 15px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
                     <h2 style="text-align: center; margin-bottom: 25px; color: #ef4444;">Connexion Xtream</h2>
                     <div style="display: flex; flex-direction: column; gap: 15px;">
-                        <input type="text" id="xtream-host" value="http://gndk28.xyz/" placeholder="Hôte" style="padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px;">
-                        <input type="text" id="xtream-user" placeholder="Nom d'utilisateur" style="padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px;">
-                        <input type="password" id="xtream-pass" placeholder="Mot de passe" style="padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px;">
+                        <input type="text" id="xtream-host" value="" placeholder="Hôte (ex: http://votre-serveur.com/)" style="padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px;" autocomplete="off">
+                        <input type="text" id="xtream-user" placeholder="Nom d'utilisateur" style="padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px;" autocomplete="off">
+                        <input type="password" id="xtream-pass" placeholder="Mot de passe" style="padding: 12px; background: #222; border: 1px solid #444; color: white; border-radius: 8px;" autocomplete="off">
                         <button id="xtream-submit" style="padding: 12px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; margin-top: 10px;">SE CONNECTER</button>
                     </div>
                     <p id="login-error" style="color: #ef4444; font-size: 12px; margin-top: 15px; text-align: center; display: none;">Identifiants incorrects ou serveur indisponible.</p>
