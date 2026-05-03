@@ -853,7 +853,7 @@ iptvSearch?.addEventListener('input', (e) => {
         const title = (item.name || item.title || "").toLowerCase();
         return title.includes(term);
     });
-    renderIPTVData(filtered, 'search-result', true);
+    renderIPTVData(filtered, 'search-result');
 });
 
 async function loadIPTVStreams(type: string, categoryId: string) {
@@ -886,7 +886,7 @@ async function loadIPTVStreams(type: string, categoryId: string) {
     }
 }
 
-function renderIPTVData(items: any[], type: string, isSearch = false) {
+function renderIPTVData(items: any[], type: string) {
     if (!iptvGrid) return;
     
     // On ne garde que les vrais items avec un titre
