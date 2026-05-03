@@ -10,11 +10,6 @@ export default async function handler(request) {
     return new Response('Missing url parameter', { status: 400 });
   }
 
-  // No domain restriction for IPTV support
-  const isAllowed = true; 
-
-
-  try {
     let urlObj;
     try {
         urlObj = new URL(targetUrl);
@@ -22,11 +17,21 @@ export default async function handler(request) {
         return new Response('Invalid target URL', { status: 400 });
     }
 
+    // SÉCURITÉ : Restriction aux domaines IPTV autorisés
+    const allowedDomains = ['gndk28.xyz', 'iptv', 'stream']; 
+    const targetHost = urlObj.hostname;
+    const isWhitelisted = allowedDomains.some(d => targetHost.includes(d));
+
+    if (!isWhitelisted) {
+      return new Response('Access Denied: Domain not whitelisted', { status: 403 });
+    }
+
     const response = await fetch(targetUrl, {
       headers: {
         'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
         'Accept': '*/*',
-        'Connection': 'keep-alive'
+        'Connection': 'keep-alive',
+        'Referer': '', // Supprimer le Referer pour masquer l'origine Movieverse
       },
       cache: 'no-store',
       redirect: 'follow',
