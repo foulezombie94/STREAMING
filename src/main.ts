@@ -954,7 +954,12 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
     if (url.includes('.m3u8')) {
         const loadHls = (target: string) => {
             if (Hls.isSupported()) {
-                const hls = new Hls({ debug: false, manifestLoadingMaxRetry: 3 });
+                const hls = new Hls({ 
+                    debug: false, 
+                    manifestLoadingMaxRetry: 3,
+                    manifestLoadingRetryDelay: 1000,
+                    enableWorker: true
+                });
                 (window as any).hls = hls;
                 hls.loadSource(target);
                 hls.attachMedia(video);
@@ -964,11 +969,14 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
                 });
                 hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
                     if (data.fatal) {
+                        console.warn("HLS Fatal Error:", data.type);
                         if (tryNextProxy()) {
                             hls.destroy();
+                            delete (window as any).hls;
                             loadHls(streamUrl);
                         } else {
                             if (msg) msg.textContent = "Flux indisponible (Erreur HLS).";
+                            errorOverlay.querySelector('span')!.textContent = "❌";
                         }
                     }
                 });
@@ -981,21 +989,48 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
     } else {
         const loadTs = (target: string) => {
             if (mpegts.getFeatureList().mseLivePlayback) {
-                const player = mpegts.createPlayer({ type: 'mse', isLive: true, url: target });
+                const player = mpegts.createPlayer({ 
+                    type: 'mse', 
+                    isLive: true, 
+                    url: target,
+                    cors: true
+                });
                 (window as any).mpegtsPlayer = player;
                 player.attachMediaElement(video);
-                player.load();
-                player.on(mpegts.Events.ERROR, () => {
-                    if (tryNextProxy()) {
-                        player.destroy();
-                        loadTs(streamUrl);
-                    } else if (url.endsWith('.ts')) {
-                        player.destroy();
-                        playLiveChannel(url.replace('.ts', '.m3u8'), name, useProxy);
+                
+                try {
+                    player.load();
+                    player.play().catch((e: any) => console.warn("MPEGTS Play catch:", e));
+                } catch (e) {
+                    console.error("MPEGTS Load error:", e);
+                }
+
+                player.on(mpegts.Events.ERROR, (type: any, detail: any, info: any) => {
+                    console.error("MPEGTS Error:", type, detail, info);
+                    
+                    // Prevent crash and multiple triggers
+                    const currentPlayer = (window as any).mpegtsPlayer;
+                    if (currentPlayer) {
+                        currentPlayer.off(mpegts.Events.ERROR); // Stop listening
+                        if (tryNextProxy()) {
+                            currentPlayer.destroy();
+                            delete (window as any).mpegtsPlayer;
+                            setTimeout(() => loadTs(streamUrl), 100);
+                        } else if (url.endsWith('.ts')) {
+                            currentPlayer.destroy();
+                            delete (window as any).mpegtsPlayer;
+                            playLiveChannel(url.replace('.ts', '.m3u8'), name, useProxy);
+                        } else {
+                            if (msg) msg.textContent = "Erreur de lecture (TS).";
+                            errorOverlay.querySelector('span')!.textContent = "❌";
+                        }
                     }
                 });
-                video.onplaying = () => { errorOverlay.style.display = 'none'; };
-                player.play().catch(() => {});
+
+                video.onplaying = () => { 
+                    errorOverlay.style.display = 'none';
+                    console.log("Lecture commencée !");
+                };
             } else {
                 video.src = target;
                 video.play().catch(() => {});

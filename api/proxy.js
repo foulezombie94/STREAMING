@@ -19,7 +19,7 @@ export default async function handler(request) {
     }
 
     // SÉCURITÉ : Restriction aux domaines IPTV autorisés
-    const allowedDomains = ['gndk28.xyz', 'iptv', 'stream']; 
+    const allowedDomains = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium']; 
     const targetHost = urlObj.hostname;
     const isWhitelisted = allowedDomains.some(d => targetHost.includes(d));
 
@@ -28,11 +28,10 @@ export default async function handler(request) {
     }
 
     // Préparation des headers à envoyer à la cible
+    // On simplifie au maximum pour éviter d'être détecté comme un proxy suspect
     const forwardHeaders = {
       'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
       'Accept': '*/*',
-      'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-      'Accept-Encoding': 'gzip, deflate',
       'Connection': 'keep-alive',
     };
 
@@ -40,12 +39,6 @@ export default async function handler(request) {
     const range = request.headers.get('range');
     if (range) {
       forwardHeaders['Range'] = range;
-    }
-
-    // Tenter de passer l'IP réelle du client (certains serveurs l'acceptent)
-    const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip');
-    if (clientIp) {
-      forwardHeaders['X-Forwarded-For'] = clientIp;
     }
 
     const response = await fetch(targetUrl, {
