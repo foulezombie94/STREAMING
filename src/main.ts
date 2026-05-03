@@ -859,7 +859,8 @@ function renderLiveTV(filter: string = '', categoryId: string = 'all') {
     }
 
     liveGrid.innerHTML = display.map(c => {
-    const streamUrl = `${xtreamConfig.host}/live/${xtreamConfig.user}/${xtreamConfig.pass}/${c.stream_id}.m3u8`;
+        // On remet en .ts par défaut (format standard Xtream)
+        const streamUrl = `${xtreamConfig.host}/live/${xtreamConfig.user}/${xtreamConfig.pass}/${c.stream_id}.ts`;
         return `
             <div class="live-card" data-url="${streamUrl}">
                 <div class="card-img-container" style="aspect-ratio: 16/9; background: #1a1a1a; position: relative; overflow: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
@@ -909,10 +910,7 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
     }
 
     const isHttps = window.location.protocol === 'https:';
-    // On force le proxy si on est en HTTPS pour éviter le Mixed Content
-    // On utilise .m3u8 car HLS.js est optimisé pour ça (Xtream supporte les deux)
-    const finalUrl = url.replace('.ts', '.m3u8');
-    const streamUrl = (useProxy || isHttps) ? `/api/proxy?url=${encodeURIComponent(finalUrl)}` : finalUrl;
+    const streamUrl = (useProxy || isHttps) ? `/api/proxy?url=${encodeURIComponent(url)}` : url;
     console.log(`Tentative de lecture (${useProxy ? 'Proxy' : 'Direct'}): ${streamUrl}`);
 
     if (Hls.isSupported()) {
@@ -939,7 +937,13 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
         hls.on(Hls.Events.ERROR, function (_event: any, data: any) {
             if (data.fatal) {
                 console.warn("HLS Fatal Error:", data.type);
-                if (!useProxy) {
+                // Fallback: Si .ts échoue, on tente .m3u8
+                if (url.endsWith('.ts')) {
+                    console.log("Tentative de bascule vers .m3u8...");
+                    hls.destroy();
+                    playLiveChannel(url.replace('.ts', '.m3u8'), name, useProxy);
+                } else if (!useProxy && isHttps) {
+                    // Déjà géré par streamUrl mais au cas où
                     hls.destroy();
                     playLiveChannel(url, name, true);
                 } else {

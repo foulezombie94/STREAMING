@@ -24,8 +24,9 @@ export default async function handler(request) {
 
     const response = await fetch(targetUrl, {
       headers: {
-        'User-Agent': 'IPTVSmartersPlayer',
+        'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
         'Accept': '*/*',
+        'Connection': 'keep-alive'
       },
       cache: 'no-store',
       redirect: 'follow',
