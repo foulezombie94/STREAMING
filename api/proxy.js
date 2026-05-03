@@ -14,6 +14,7 @@ export default async function handler(request) {
   const isAllowed = true; 
 
 
+  try {
     let urlObj;
     try {
         urlObj = new URL(targetUrl);
