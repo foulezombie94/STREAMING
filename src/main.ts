@@ -815,11 +815,19 @@ function renderIPTVSubCategories(data: any, type: string) {
         return;
     }
 
-    iptvSubCategories.innerHTML = categories.map((cat, index) => `
-        <button class="iptv-sub-cat-btn ${index === 0 ? 'active' : ''}" data-id="${cat.category_id}" style="padding: 8px 15px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: white; white-space: nowrap; cursor: pointer; font-size: 13px;">
-            ${cat.category_name}
-        </button>
-    `).join('');
+    // DEBUG: Voir la structure du premier bouquet
+    console.log(`Structure 1er bouquet ${type}:`, categories[0]);
+
+    iptvSubCategories.innerHTML = categories.map((cat, index) => {
+        const name = cat.category_name || cat.name || cat.title || `Bouquet ${index + 1}`;
+        const id = cat.category_id || cat.id || cat.cid || '0';
+        
+        return `
+            <button class="iptv-sub-cat-btn ${index === 0 ? 'active' : ''}" data-id="${id}" style="padding: 8px 15px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: white; white-space: nowrap; cursor: pointer; font-size: 13px;">
+                ${name}
+            </button>
+        `;
+    }).join('');
 
     iptvSubCategories.querySelectorAll('.iptv-sub-cat-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -868,10 +876,10 @@ function renderIPTVData(data: any, type: string) {
     if (Array.isArray(data)) {
         items = data;
     } else if (data && typeof data === 'object') {
-        // Gérer le cas où c'est un objet (ex: Smarters Lite)
-        items = Object.values(data).filter(item => item && typeof item === 'object' && (item as any).name) as any[];
+        // Certains serveurs retournent un objet avec des clés numériques
+        items = Object.values(data).filter(item => item && typeof item === 'object' && ((item as any).name || (item as any).title)) as any[];
         
-        // Si toujours rien, chercher dans des propriétés connues
+        // Si c'est vide, on cherche des clés standards
         if (items.length === 0) {
             items = data.streams || data.series || data.vod || [];
         }
@@ -879,27 +887,30 @@ function renderIPTVData(data: any, type: string) {
 
     if (!items || items.length === 0) {
         console.warn(`Aucun item trouvé pour ${type}`);
-        iptvGrid.innerHTML = '<div class="no-results">Aucun contenu trouvé dans cette catégorie. Vérifiez votre abonnement.</div>';
+        iptvGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px;">Aucun contenu trouvé dans ce bouquet.</div>';
         return;
     }
 
+    // DEBUG: Voir la structure du premier item pour corriger les noms de champs
+    console.log(`Structure 1er item ${type}:`, items[0]);
+
     // On limite l'affichage pour la performance
-    const displayItems = items.slice(0, 150); 
+    const displayItems = items.slice(0, 200); 
     iptvGrid.innerHTML = displayItems.map(item => {
-        const title = item.name;
-        const img = item.stream_icon || item.icon || item.series_cover;
-        const id = item.stream_id || item.series_id;
+        const title = item.name || item.title || "Sans titre";
+        const img = item.stream_icon || item.icon || item.series_cover || item.cover || item.thumbnail;
+        const id = item.stream_id || item.series_id || item.id;
         
         return `
             <div class="movie-card iptv-card" data-id="${id}" data-type="${type}">
-                <div class="card-img-container" style="aspect-ratio: 16/9; background: #1a1a1a;">
-                    <img src="${img || ''}" alt="${title}" loading="lazy" onerror="this.src='https://via.placeholder.com/320x180?text=TV'">
-                    <div class="card-overlay">
-                        <svg viewBox="0 0 24 24" width="40" height="40"><path d="M8 5V19L19 12L8 5Z" fill="white"/></svg>
+                <div class="card-img-container" style="aspect-ratio: 16/9; background: #1a1a1a; position: relative; overflow: hidden; border-radius: 12px;">
+                    <img src="${img || ''}" alt="${title}" loading="lazy" onerror="this.src='https://via.placeholder.com/320x180?text=TV'" style="width: 100%; height: 100%; object-fit: cover;">
+                    <div class="card-overlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.5); opacity: 0; display: flex; align-items: center; justify-content: center; transition: opacity 0.3s;">
+                        <svg viewBox="0 0 24 24" width="40" height="40" fill="white"><path d="M8 5V19L19 12L8 5Z"/></svg>
                     </div>
                 </div>
-                <div class="card-info">
-                    <h3 class="card-title" style="font-size: 14px;">${title}</h3>
+                <div class="card-info" style="padding: 10px 0;">
+                    <h3 class="card-title" style="font-size: 13px; font-weight: 500; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${title}</h3>
                 </div>
             </div>
         `;
