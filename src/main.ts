@@ -57,6 +57,14 @@ window.addEventListener('scroll', () => {
     }
 });
 
+// Shortcut to focus search
+window.addEventListener('keydown', (e) => {
+    if (e.key === 's' && document.activeElement?.tagName !== 'INPUT') {
+        e.preventDefault();
+        searchInput?.focus();
+    }
+});
+
 // 4. Gestion de la Navigation (Top & Bottom)
 const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
 
