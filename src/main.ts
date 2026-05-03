@@ -109,7 +109,8 @@ const closeGenreOverlay = document.getElementById('close-genre-overlay');
 
 // Event listeners pour le mobile et PC (Overlay)
 mobileFilterBtn?.addEventListener('click', () => {
-    // S'assurer que les genres sont à jour avant d'ouvrir
+    // On n'appelle renderGenres que si c'est nécessaire (si vide ou changement de type)
+    // Mais ici on le fait pour s'assurer que l'UI reflète l'état actuel (activeGenreId)
     renderGenres(currentType);
     
     mobileGenreOverlay?.classList.add('active');
@@ -439,16 +440,39 @@ function populateCarousel(items: any[]) {
 
 // 9. Démarrage de l'application
 async function fetchGenres() {
-    try {
-        const mRes = await fetch(`${BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=fr-FR`);
-        const mData = await mRes.json();
-        movieGenres = mData.genres || [];
+    // 1. Vérifier le cache
+    const cachedMovieGenres = sessionStorage.getItem('movie_genres');
+    const cachedTvGenres = sessionStorage.getItem('tv_genres');
 
-        const tRes = await fetch(`${BASE_URL}/genre/tv/list?api_key=${TMDB_API_KEY}&language=fr-FR`);
-        const tData = await tRes.json();
+    if (cachedMovieGenres && cachedTvGenres) {
+        movieGenres = JSON.parse(cachedMovieGenres);
+        tvGenres = JSON.parse(cachedTvGenres);
+        console.log("Genres chargés du cache");
+        return;
+    }
+
+    try {
+        console.log("Fetching genres from API...");
+        const [mRes, tRes] = await Promise.all([
+            fetch(`${BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=fr-FR`),
+            fetch(`${BASE_URL}/genre/tv/list?api_key=${TMDB_API_KEY}&language=fr-FR`)
+        ]);
+
+        const [mData, tData] = await Promise.all([mRes.json(), tRes.json()]);
+
+        movieGenres = mData.genres || [];
         tvGenres = tData.genres || [];
-    } catch (e) {
-        console.error("Erreur genres:", e);
+
+        // Sauvegarder dans le cache
+        sessionStorage.setItem('movie_genres', JSON.stringify(movieGenres));
+        sessionStorage.setItem('tv_genres', JSON.stringify(tvGenres));
+        
+        console.log("Genres récupérés et cachés");
+    } catch (error) {
+        console.error('Erreur lors de la récupération des genres:', error);
+        // Fallback minimal si l'API échoue
+        movieGenres = [];
+        tvGenres = [];
     }
 }
 
