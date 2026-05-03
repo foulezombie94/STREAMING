@@ -766,20 +766,27 @@ async function performIPTVSearch(term: string) {
             if (Array.isArray(data)) {
                 currentIPTVItems = data;
             } else if (data && typeof data === 'object') {
-                // Chercher récursivement un tableau qui contient des objets avec 'name' ou 'title'
-                const findStreams = (obj: any): any[] => {
-                    if (Array.isArray(obj)) return obj;
-                    for (const key in obj) {
-                        if (Array.isArray(obj[key]) && obj[key].length > 0) return obj[key];
-                        if (typeof obj[key] === 'object' && obj[key] !== null) {
-                            const found = findStreams(obj[key]);
-                            if (found.length > 0) return found;
-                        }
+                // Heuristique: Chercher TOUS les tableaux et prendre le plus grand
+                let allArrays: any[][] = [];
+                const searchArrays = (obj: any) => {
+                    if (!obj || typeof obj !== 'object') return;
+                    if (Array.isArray(obj)) {
+                        allArrays.push(obj);
+                        return;
                     }
-                    // Si rien trouvé, essayer de convertir les valeurs de l'objet lui-même en tableau
-                    return Object.values(obj).filter(v => v && typeof v === 'object');
+                    for (const key in obj) {
+                        searchArrays(obj[key]);
+                    }
                 };
-                currentIPTVItems = findStreams(data);
+                searchArrays(data);
+                
+                if (allArrays.length > 0) {
+                    // Prendre le tableau qui a le plus d'items
+                    currentIPTVItems = allArrays.reduce((prev, current) => (prev.length > current.length) ? prev : current);
+                } else {
+                    // Si aucun tableau, essayer les valeurs de l'objet lui-même
+                    currentIPTVItems = Object.values(data).filter(v => v && typeof v === 'object');
+                }
             }
             console.log(`${currentIPTVItems.length} chaînes chargées en mémoire.`);
         }
