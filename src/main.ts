@@ -791,6 +791,7 @@ async function loadIPTVCategory(type: string) {
         console.error(`Erreur bouquets ${type}:`, err);
         iptvGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Impossible de charger les bouquets.</div>';
     }
+}
 
 function renderIPTVSubCategories(categories: any[], type: string) {
     if (!iptvSubCategories) return;
