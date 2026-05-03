@@ -30,6 +30,8 @@ const heroContent = document.querySelector('.hero-content');
 const navItems = document.querySelectorAll('.nav-item');
 const sectionTitle = document.querySelector('.section-title');
 const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
+const popularSection = document.getElementById('popular-section');
+const iptvSection = document.getElementById('iptv-section');
 
 const watchBtn = document.getElementById('watch-btn');
 const seeMoreBtn = document.getElementById('see-more-btn');
@@ -135,10 +137,10 @@ mobileGenreOverlay?.addEventListener('click', (e) => {
     if (e.target === mobileGenreOverlay) closeGenreOverlay?.click();
 });
 
-function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre') {
+function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv') {
     if (!genreFiltersContainer) return;
     
-    if (type === 'trending' || type === 'reprendre') {
+    if (type === 'trending' || type === 'reprendre' || type === 'iptv') {
         genreFiltersContainer.style.display = 'none';
         return;
     }
@@ -291,7 +293,7 @@ if (carousel) {
 }
 
 // 6. Fetch Data (Films, Séries ou Trending)
-async function fetchPopularData(type: 'movie' | 'tv' | 'trending', genreId: number | null = null) {
+async function fetchPopularData(type: 'movie' | 'tv' | 'trending' | 'iptv', genreId: number | null = null) {
     try {
         let endpoint = '';
         let queryParams = `api_key=${TMDB_API_KEY}&language=fr-FR&page=1`;
@@ -530,6 +532,8 @@ if (searchInput) {
             }
             if (currentType === 'reprendre') {
                 renderResumePage();
+            } else if (currentType === 'iptv') {
+                initIPTV();
             } else {
                 fetchPopularData(currentType);
             }
@@ -649,7 +653,6 @@ function renderResumePage() {
 }
 
 // --- IPTV Section ---
-const iptvSection = document.getElementById('iptv-section');
 const iptvLogin = document.getElementById('iptv-login');
 const iptvContent = document.getElementById('iptv-content');
 const iptvLoginForm = document.getElementById('iptv-login-form') as HTMLFormElement;
