@@ -754,19 +754,22 @@ async function performIPTVSearch(term: string) {
     if (!iptvAccount || !iptvGrid) return;
 
     try {
-        if (currentIPTVItems.length === 0) {
+        if (currentIPTVItems.length < 2) {
             console.log("Fetching ALL live streams for search...");
             const fetchUrl = `${iptvAccount.url}/player_api.php?username=${iptvAccount.user}&password=${iptvAccount.pass}&action=get_live_streams`;
             const proxyUrl = `/api/proxy?url=${encodeURIComponent(fetchUrl)}`;
             const res = await fetch(proxyUrl);
             const data = await res.json();
             
-            console.log("Données reçues du serveur IPTV:", data);
+            console.log("Structure des clés reçues:", Object.keys(data));
+            // Log un petit bout du JSON pour voir le format réel
+            console.log("Aperçu JSON:", JSON.stringify(data).substring(0, 300));
 
+            let rawItems: any[] = [];
             if (Array.isArray(data)) {
-                currentIPTVItems = data;
+                rawItems = data;
             } else if (data && typeof data === 'object') {
-                // Heuristique: Chercher TOUS les tableaux et prendre le plus grand
+                // Heuristique: Chercher TOUS les tableaux
                 let allArrays: any[][] = [];
                 const searchArrays = (obj: any) => {
                     if (!obj || typeof obj !== 'object') return;
@@ -775,20 +778,28 @@ async function performIPTVSearch(term: string) {
                         return;
                     }
                     for (const key in obj) {
-                        searchArrays(obj[key]);
+                        if (key !== 'user_info' && key !== 'server_info') { // Ignorer les métadonnées
+                            searchArrays(obj[key]);
+                        }
                     }
                 };
                 searchArrays(data);
                 
                 if (allArrays.length > 0) {
-                    // Prendre le tableau qui a le plus d'items
-                    currentIPTVItems = allArrays.reduce((prev, current) => (prev.length > current.length) ? prev : current);
+                    rawItems = allArrays.reduce((prev, current) => (prev.length > current.length) ? prev : current);
                 } else {
-                    // Si aucun tableau, essayer les valeurs de l'objet lui-même
-                    currentIPTVItems = Object.values(data).filter(v => v && typeof v === 'object');
+                    rawItems = Object.values(data).filter(v => v && typeof v === 'object');
                 }
             }
-            console.log(`${currentIPTVItems.length} chaînes chargées en mémoire.`);
+
+            // FILTRE CRITIQUE: On ne garde que ce qui ressemble à une chaîne (a un nom et un ID)
+            currentIPTVItems = rawItems.filter(item => 
+                item && typeof item === 'object' && 
+                (item.name || item.title) && 
+                (item.stream_id || item.id || item.series_id)
+            );
+
+            console.log(`${currentIPTVItems.length} VRAIES chaînes trouvées après filtrage.`);
         }
 
         const filtered = currentIPTVItems.filter(item => {
