@@ -769,41 +769,18 @@ async function performIPTVSearch(term: string) {
             if (Array.isArray(data)) {
                 rawItems = data;
             } else if (data && typeof data === 'object') {
-                // Heuristique: Chercher la plus grande collection (Tableau ou Objet de valeurs)
-                let bestCollection: any[] = [];
-                
-                const searchCollections = (obj: any, depth = 0) => {
-                    if (!obj || typeof obj !== 'object' || depth > 5) return;
-                    
-                    if (Array.isArray(obj)) {
-                        if (obj.length > bestCollection.length) bestCollection = obj;
-                    } else {
-                        // Tester si c'est un dictionnaire de chaînes
-                        const values = Object.values(obj);
-                        const likelyStreams = values.filter(v => v && typeof v === 'object' && ((v as any).name || (v as any).title));
-                        if (likelyStreams.length > bestCollection.length) bestCollection = likelyStreams;
-                        
-                        // Continuer la recherche dans les propriétés
-                        for (const key in obj) {
-                            if (key !== 'user_info' && key !== 'server_info') {
-                                searchCollections(obj[key], depth + 1);
-                            }
-                        }
-                    }
-                };
-                
-                searchCollections(data);
-                rawItems = bestCollection;
+                // Version robuste et rapide suggérée: extraire les valeurs qui ont un nom
+                rawItems = Object.values(data).filter((v: any) => v && typeof v === 'object' && (v.name || v.title));
             }
 
-            // FILTRE FINAL: On valide que ce sont des chaînes
+            // Filtrage final pour ne garder que les chaînes valides
             currentIPTVItems = rawItems.filter(item => 
                 item && typeof item === 'object' && 
                 (item.name || item.title) && 
                 (item.stream_id || item.id || item.series_id || item.num)
             );
 
-            console.log(`${currentIPTVItems.length} VRAIES chaînes trouvées après filtrage.`);
+            console.log(`${currentIPTVItems.length} chaînes prêtes.`);
         }
 
         const filtered = currentIPTVItems.filter(item => {

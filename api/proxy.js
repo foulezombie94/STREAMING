@@ -45,13 +45,16 @@ export default async function handler(request) {
       newHeaders.set(key, value);
     }
 
+    // Forcer le JSON si c'est une requête API Xtream
+    if (targetUrl.includes('player_api.php')) {
+      newHeaders.set('Content-Type', 'application/json');
+    }
+
     // Allow embedding from anywhere
     newHeaders.set('Access-Control-Allow-Origin', '*');
     newHeaders.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     newHeaders.set('Access-Control-Allow-Headers', '*');
 
-
-    // For non-HTML content, just pass through
     return new Response(response.body, {
       status: response.status,
       headers: newHeaders,
