@@ -33,6 +33,8 @@ export default async function handler(request) {
       'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
       'Accept': '*/*',
       'Connection': 'keep-alive',
+      'Referer': urlObj.origin + '/',
+      'Origin': urlObj.origin,
     };
 
     // Transmettre le header Range pour le support du seeking (important pour la vidéo)

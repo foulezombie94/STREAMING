@@ -1006,22 +1006,32 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
                 }
 
                 player.on(mpegts.Events.ERROR, (type: any, detail: any, info: any) => {
-                    console.error("MPEGTS Error:", type, detail, info);
+                    console.error("MPEGTS Error Event:", type, detail, info);
                     
+                    // On récupère le code d'erreur si disponible
+                    const statusCode = info?.code || 0;
+                    const isAuthError = statusCode === 401 || statusCode === 403;
+
                     // Prevent crash and multiple triggers
                     const currentPlayer = (window as any).mpegtsPlayer;
                     if (currentPlayer) {
                         currentPlayer.off(mpegts.Events.ERROR); // Stop listening
+                        
+                        console.log(`Erreur détectée (${statusCode}). Tentative de récupération...`);
+
                         if (tryNextProxy()) {
+                            console.log(`Changement de proxy vers: ${currentProxyType}`);
                             currentPlayer.destroy();
                             delete (window as any).mpegtsPlayer;
-                            setTimeout(() => loadTs(streamUrl), 100);
+                            setTimeout(() => loadTs(streamUrl), 200);
                         } else if (url.endsWith('.ts')) {
+                            console.log("Tous les proxys ont échoué pour le TS, tentative en HLS (.m3u8)...");
                             currentPlayer.destroy();
                             delete (window as any).mpegtsPlayer;
                             playLiveChannel(url.replace('.ts', '.m3u8'), name, useProxy);
                         } else {
-                            if (msg) msg.textContent = "Erreur de lecture (TS).";
+                            console.error("Échec définitif de lecture.");
+                            if (msg) msg.textContent = isAuthError ? "Accès refusé par le serveur (401/403)." : "Erreur de lecture (TS).";
                             errorOverlay.querySelector('span')!.textContent = "❌";
                         }
                     }
