@@ -77,6 +77,29 @@ export default async function handler(request) {
       });
     }
 
+    // REWRITING M3U8 (For HLS relative paths)
+    if (targetUrl.includes('.m3u8')) {
+      let m3u8Content = await response.text();
+      const baseUrl = targetUrl.substring(0, targetUrl.lastIndexOf('/') + 1);
+      
+      // Replace relative paths with absolute ones pointing through the proxy
+      // We look for lines that don't start with # and aren't already absolute
+      const lines = m3u8Content.split('\n');
+      const rewrittenLines = lines.map(line => {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#') && !trimmed.startsWith('http')) {
+          const absoluteSegmentUrl = new URL(trimmed, baseUrl).href;
+          return `/api/proxy?url=${encodeURIComponent(absoluteSegmentUrl)}`;
+        }
+        return line;
+      });
+      
+      return new Response(rewrittenLines.join('\n'), {
+        status: 200,
+        headers: newHeaders,
+      });
+    }
+
     return new Response(response.body, {
       status: response.status,
       headers: newHeaders,
