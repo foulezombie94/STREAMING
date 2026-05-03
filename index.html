@@ -45,6 +45,20 @@
     </header>
 
     <main>
+        <!-- Barre de filtres par genre -->
+        <div class="genre-filters-container" id="genre-filters-container">
+            <!-- Container pour Desktop (Scroll horizontal) - Caché si bouton préféré -->
+            <div class="genre-filters" id="desktop-genres" style="display: none;"></div>
+            
+            <!-- Bouton Filtre (Maintenant pour PC et Mobile) -->
+            <button class="mobile-filter-btn" id="mobile-filter-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                </svg>
+                Filtrer par Genre
+            </button>
+        </div>
+
         <!-- Section Héros -->
         <section class="hero" id="hero-section">
             <div class="hero-content">
@@ -67,20 +81,6 @@
                 </div>
             </div>
         </section>
-
-        <!-- Barre de filtres par genre -->
-        <div class="genre-filters-container" id="genre-filters-container">
-            <!-- Container pour Desktop (Scroll horizontal) -->
-            <div class="genre-filters" id="desktop-genres"></div>
-            
-            <!-- Bouton Filtre pour Mobile -->
-            <button class="mobile-filter-btn" id="mobile-filter-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                </svg>
-                Filtrer par Genre
-            </button>
-        </div>
 
         <!-- Section Populaire / Carrousel -->
         <section class="popular" id="popular-section">

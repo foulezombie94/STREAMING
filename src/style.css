@@ -739,15 +739,15 @@ a {
     width: 100%;
     z-index: 100;
     background: transparent;
-    padding: 0;
-    margin-top: -120px; /* Overlap with hero for premium look */
-    margin-bottom: 30px;
+    padding: 20px 0 0 0;
+    margin-top: 80px; /* Retour en haut sous la navbar */
+    margin-bottom: 0;
 }
 
 @media (max-width: 768px) {
     .genre-filters-container {
-        margin-top: -60px; /* Less overlap on mobile */
-        margin-bottom: 15px;
+        margin-top: 65px;
+        padding: 10px 0;
     }
 }
 
@@ -1226,7 +1226,7 @@ a {
 
 /* --- MOBILE FILTER STYLES --- */
 .mobile-filter-btn {
-    display: none; /* Hidden by default (desktop) */
+    display: flex; /* Visible sur PC et Mobile */
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
     color: #ef4444;
@@ -1234,7 +1234,7 @@ a {
     border-radius: 25px;
     font-size: 14px;
     font-weight: 700;
-    margin: 15px auto;
+    margin: 0 auto;
     align-items: center;
     justify-content: center;
     gap: 8px;
@@ -1247,7 +1247,8 @@ a {
 
 @media (max-width: 768px) {
     .mobile-filter-btn {
-        display: flex; /* Show only on mobile */
+        padding: 8px 18px;
+        font-size: 13px;
     }
 }
 
@@ -1335,7 +1336,7 @@ a {
 
 @media (min-width: 769px) {
     .mobile-filter-btn {
-        display: none !important; /* Force hide on desktop */
+        display: flex !important; /* Visible sur PC */
     }
 }
 
