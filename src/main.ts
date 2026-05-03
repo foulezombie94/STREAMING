@@ -662,7 +662,6 @@ const iptvProviderName = document.getElementById('iptv-provider-name');
 const iptvSearch = document.getElementById('iptv-search') as HTMLInputElement;
 
 let iptvAccount = JSON.parse(localStorage.getItem('iptv_account') || 'null');
-let currentIPTVItems: any[] = [];
 
 function initIPTV() {
     if (iptvAccount) {
@@ -772,7 +771,6 @@ async function performIPTVSearch(term: string) {
 
 async function loadIPTVCategory(_type: string) {
     if (!iptvGrid || !iptvAccount) return;
-    currentIPTVItems = []; 
     iptvGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px; opacity: 0.5;">Entrez un nom de chaîne et appuyez sur ENTRÉE pour rechercher.</div>';
 }
 
