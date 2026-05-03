@@ -669,18 +669,36 @@ async function initLiveTV() {
     if (!liveGrid) return;
 
     if (allChannels.length === 0) {
-        liveGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px;">Chargement des chaînes...</div>';
+        liveGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px; color: #ef4444;">Chargement de la playlist mondiale...</div>';
         try {
-            // Fetch channels (with logos and names)
-            const res = await fetch('https://iptv-org.github.io/api/channels.json');
-            allChannels = await res.json();
+            // Parallel fetch for better performance
+            const [channelsRes, streamsRes] = await Promise.all([
+                fetch('https://iptv-org.github.io/api/channels.json'),
+                fetch('https://iptv-org.github.io/api/streams.json')
+            ]);
             
-            // Filter only channels with streams (using the streams API would be too heavy, 
-            // so we assume many have them or we'll filter as we go)
-            // For now, let's just use the channel list and fetch stream on click
+            const channels = await channelsRes.json();
+            const streams = await streamsRes.json();
+
+            // Create a map of streams by channel id for O(1) lookup
+            const streamMap = new Map();
+            streams.forEach((s: any) => {
+                if (!streamMap.has(s.channel)) {
+                    streamMap.set(s.channel, s.url);
+                }
+            });
+
+            // Merge: Only keep channels that have at least one stream
+            allChannels = channels
+                .filter((c: any) => streamMap.has(c.id))
+                .map((c: any) => ({
+                    ...c,
+                    streamUrl: streamMap.get(c.id)
+                }));
+            
         } catch (err) {
             console.error("Erreur Live TV:", err);
-            liveGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Erreur de chargement.</div>';
+            liveGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Service indisponible. Vérifiez votre connexion.</div>';
             return;
         }
     }
@@ -698,7 +716,7 @@ function renderLiveTV(filter: string = '') {
         if (currentCategory === 'FR') {
             filtered = filtered.filter(c => c.country === 'FR');
         } else {
-            filtered = filtered.filter(c => c.categories && c.categories.includes(currentCategory));
+            filtered = filtered.filter(c => c.categories && c.categories.includes(currentCategory.toLowerCase()));
         }
     }
 
@@ -708,62 +726,55 @@ function renderLiveTV(filter: string = '') {
         filtered = filtered.filter(c => c.name.toLowerCase().includes(f));
     }
 
-    // Limit to 40 for performance
-    const display = filtered.slice(0, 40);
+    // Limit to avoid lag
+    const display = filtered.slice(0, 60);
 
     if (display.length === 0) {
-        liveGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px;">Aucune chaîne trouvée.</div>';
+        liveGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px; color: rgba(255,255,255,0.5);">Aucune chaîne ne correspond à vos critères.</div>';
         return;
     }
 
     liveGrid.innerHTML = display.map(c => `
-        <div class="movie-card live-card" data-id="${c.id}">
-            <img src="${c.logo || 'https://via.placeholder.com/200x300?text=' + encodeURIComponent(c.name)}" alt="${c.name}" loading="lazy">
-            <div class="live-badge">LIVE</div>
-            <div class="live-title">${c.name}</div>
+        <div class="movie-card live-card" data-id="${c.id}" data-url="${c.streamUrl}">
+            <div class="card-img-container" style="aspect-ratio: 2/3; background: #1a1a1a; position: relative; overflow: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <img src="${c.logo || ''}" 
+                     alt="${c.name}" 
+                     loading="lazy" 
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                     style="width: 100%; height: 100%; object-fit: contain; padding: 20px;">
+                <div class="fallback-logo" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(45deg, #1a1a1a, #333); color: #ef4444; font-weight: 800; font-size: 24px; text-align: center; padding: 10px;">
+                    ${c.name.substring(0, 2).toUpperCase()}
+                </div>
+                <div class="live-badge">LIVE</div>
+            </div>
+            <div class="live-title" style="margin-top: 10px; font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.name}</div>
         </div>
     `).join('');
 
     liveGrid.querySelectorAll('.live-card').forEach(card => {
         card.addEventListener('click', () => {
+            const url = card.getAttribute('data-url');
             const id = card.getAttribute('data-id');
             const channel = allChannels.find(c => c.id === id);
-            if (channel) playLiveChannel(channel);
+            if (url && channel) playLiveChannel(url, channel.name);
         });
     });
 }
 
-async function playLiveChannel(channel: any) {
+function playLiveChannel(url: string, name: string) {
     const playerContainer = document.getElementById('live-player-container');
     const iframe = document.getElementById('live-iframe') as HTMLIFrameElement;
     const nameLabel = document.getElementById('current-channel-name');
 
     if (!playerContainer || !iframe || !nameLabel) return;
 
-    // Show loading or name
-    nameLabel.textContent = `Chargement de ${channel.name}...`;
     playerContainer.style.display = 'block';
+    nameLabel.textContent = name;
+    
+    // Using a reliable HLS player wrapper
+    iframe.src = `https://www.hlsplayer.org/embed?url=${encodeURIComponent(url)}`;
+    
     window.scrollTo({ top: playerContainer.offsetTop - 100, behavior: 'smooth' });
-
-    try {
-        // Fetch the actual stream URL for this channel
-        const res = await fetch('https://iptv-org.github.io/api/streams.json');
-        const streams = await res.json();
-        const stream = streams.find((s: any) => s.channel === channel.id);
-
-        if (stream && stream.url) {
-            // Use a web-based HLS player as iframe source
-            // Many streams work in a generic player
-            iframe.src = `https://www.hlsplayer.org/embed?url=${encodeURIComponent(stream.url)}`;
-            nameLabel.textContent = channel.name;
-        } else {
-            alert("Désolé, aucun flux disponible pour cette chaîne actuellement.");
-            playerContainer.style.display = 'none';
-        }
-    } catch (err) {
-        console.error("Erreur stream:", err);
-        alert("Erreur lors de la récupération du flux.");
-    }
 }
 
 // Events for Live TV
