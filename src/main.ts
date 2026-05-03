@@ -763,9 +763,62 @@ iptvCatButtons.forEach(btn => {
     });
 });
 
+const iptvSubCategories = document.getElementById('iptv-sub-categories');
+
 async function loadIPTVCategory(type: string) {
+    if (!iptvGrid || !iptvAccount || !iptvSubCategories) return;
+    iptvGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px;">Chargement des bouquets...</div>';
+    iptvSubCategories.innerHTML = '';
+
+    try {
+        const action = `get_${type}_categories`;
+        const fetchUrl = `${iptvAccount.url}/player_api.php?username=${iptvAccount.user}&password=${iptvAccount.pass}&action=${action}`;
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(fetchUrl)}`;
+        
+        const res = await fetch(proxyUrl);
+        if (!res.ok) throw new Error("Erreur serveur");
+        const data = await res.json();
+        
+        console.log(`Bouquets ${type}:`, data);
+        renderIPTVSubCategories(data, type);
+        
+        if (data && data.length > 0) {
+            loadIPTVStreams(type, data[0].category_id);
+        } else {
+            loadIPTVStreams(type, 'all');
+        }
+    } catch (err) {
+        console.error(`Erreur bouquets ${type}:`, err);
+        iptvGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Impossible de charger les bouquets.</div>';
+    }
+
+function renderIPTVSubCategories(categories: any[], type: string) {
+    if (!iptvSubCategories) return;
+    if (!categories || !Array.isArray(categories)) return;
+
+    iptvSubCategories.innerHTML = categories.map((cat, index) => `
+        <button class="iptv-sub-cat-btn ${index === 0 ? 'active' : ''}" data-id="${cat.category_id}" style="padding: 8px 15px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: white; white-space: nowrap; cursor: pointer; font-size: 13px;">
+            ${cat.category_name}
+        </button>
+    `).join('');
+
+    iptvSubCategories.querySelectorAll('.iptv-sub-cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            iptvSubCategories.querySelectorAll('.iptv-sub-cat-btn').forEach(b => {
+                (b as HTMLElement).classList.remove('active');
+                (b as HTMLElement).style.background = 'rgba(255,255,255,0.1)';
+            });
+            (btn as HTMLElement).classList.add('active');
+            (btn as HTMLElement).style.background = '#ef4444';
+            const categoryId = btn.getAttribute('data-id');
+            loadIPTVStreams(type, categoryId!);
+        });
+    });
+}
+
+async function loadIPTVStreams(type: string, categoryId: string) {
     if (!iptvGrid || !iptvAccount) return;
-    iptvGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px;">Chargement du contenu...</div>';
+    iptvGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px;">Chargement des chaînes...</div>';
 
     try {
         let action = '';
@@ -773,19 +826,19 @@ async function loadIPTVCategory(type: string) {
         else if (type === 'vod') action = 'get_vod_streams';
         else if (type === 'series') action = 'get_series';
 
-        const fetchUrl = `${iptvAccount.url}/player_api.php?username=${iptvAccount.user}&password=${iptvAccount.pass}&action=${action}`;
-        console.log(`Chargement catégorie ${type}:`, fetchUrl);
+        let fetchUrl = `${iptvAccount.url}/player_api.php?username=${iptvAccount.user}&password=${iptvAccount.pass}&action=${action}`;
+        if (categoryId !== 'all') {
+            fetchUrl += `&category_id=${categoryId}`;
+        }
         
         const proxyUrl = `/api/proxy?url=${encodeURIComponent(fetchUrl)}`;
         const res = await fetch(proxyUrl);
-        
-        if (!res.ok) throw new Error("Erreur de proxy");
-        
         const data = await res.json();
+
         renderIPTVData(data, type);
     } catch (err) {
-        console.error(`Erreur IPTV ${type}:`, err);
-        iptvGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Impossible de charger cette catégorie. Vérifiez votre connexion.</div>';
+        console.error(`Erreur flux ${type}:`, err);
+        iptvGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Erreur de chargement des chaînes.</div>';
     }
 }
 
