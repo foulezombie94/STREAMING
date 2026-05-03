@@ -917,10 +917,10 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
         delete (window as any).mpegtsPlayer;
     }
 
-    const isHttps = window.location.protocol === 'https:';
-    
     const getProxyUrl = (targetUrl: string, type: 'vercel' | 'corsproxy' | 'allorigins') => {
         const encoded = encodeURIComponent(targetUrl);
+        const isHttps = window.location.protocol === 'https:';
+        if (!isHttps && type === 'vercel') return targetUrl;
         switch (type) {
             case 'vercel': return `/api/proxy?url=${encoded}`;
             case 'corsproxy': return `https://corsproxy.io/?${encoded}`;
