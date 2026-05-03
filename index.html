@@ -16,7 +16,7 @@
             <li><a href="#" class="nav-item active" data-type="trending">Accueil</a></li>
             <li><a href="#" class="nav-item" data-type="tv">Séries</a></li>
             <li><a href="#" class="nav-item" data-type="movie">Films</a></li>
-            <li><a href="#" class="nav-item" data-type="iptv">TV</a></li>
+            <li><a href="#" class="nav-item" data-type="iptv">Direct TV</a></li>
             <li><a href="#" class="nav-item" data-type="reprendre">Reprendre</a></li>
         </ul>
         <div class="nav-actions">
@@ -82,59 +82,37 @@
                 </div>
             </div>
         </section>
-
-        <!-- Section IPTV (Nouveau) -->
+        <!-- Section TV Direct (LIVE) -->
         <section id="iptv-section" style="display: none; padding: 100px 20px 20px;">
-            <div id="iptv-login" class="iptv-playlist-card">
-                <h2>Enter Your Playlist Details</h2>
-                
-                <form id="iptv-login-form" class="iptv-playlist-form">
-                    <div class="playlist-input-group">
-                        <input type="text" id="iptv-name" placeholder="Playlist Name" required>
-                    </div>
-                    
-                    <div class="playlist-input-group">
-                        <input type="text" id="iptv-user" placeholder="Username" required>
-                    </div>
-                    
-                    <div class="playlist-input-group">
-                        <input type="password" id="iptv-pass" placeholder="Password" required>
-                        <span class="password-toggle">
-                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                        </span>
-                    </div>
-
-                    <div class="playlist-input-group">
-                        <input type="url" id="iptv-url" placeholder="http://url_here.com:port" required>
-                    </div>
-                    
-                    <button type="submit" class="btn-add-playlist">
-                        ADD PLAYLIST
-                    </button>
-                </form>
-            </div>
-
-            <div id="iptv-content" style="display: none;">
-                <div class="iptv-header">
-                    <h2 id="iptv-provider-name">Ma Télévision</h2>
-                    <button id="iptv-logout" class="btn btn-secondary">Déconnexion</button>
-                </div>
-                <div class="iptv-categories">
-                    <button class="iptv-cat-btn active" data-action="live">Direct TV (LIVE)</button>
-                </div>
-
-                <div class="iptv-search-container" style="margin: 10px auto; max-width: 600px;">
-                    <div style="position: relative;">
-                        <input type="text" id="iptv-search" placeholder="Rechercher une chaîne..." style="width: 100%; padding: 10px 15px; padding-left: 40px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 30px; color: white; outline: none; font-size: 14px; transition: all 0.3s;">
-                        <svg style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); opacity: 0.5;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <div id="live-tv-container">
+                <div class="live-tv-header">
+                    <h2>Télévision en Direct</h2>
+                    <div class="live-tv-search">
+                        <input type="text" id="live-search" placeholder="Rechercher une chaîne...">
                     </div>
                 </div>
 
-                <!-- Liste des Bouquets/Catégories cachée pour mode recherche pure -->
-                <div id="iptv-sub-categories" class="iptv-sub-categories" style="display: none;"></div>
+                <!-- Player Live (Caché par défaut) -->
+                <div id="live-player-container" style="display: none; margin-bottom: 30px;">
+                    <div class="player-wrapper" style="position: relative; padding-top: 56.25%; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+                        <iframe id="live-iframe" src="" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
+                        <button id="close-player" style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.5); color: white; border: none; padding: 10px; border-radius: 50%; cursor: pointer; backdrop-filter: blur(10px); z-index: 10;">&times;</button>
+                    </div>
+                    <div id="live-player-info" style="margin-top: 15px;">
+                        <h3 id="current-channel-name">Nom de la chaîne</h3>
+                    </div>
+                </div>
 
-                <div id="iptv-grid" class="movie-grid">
-                    <!-- Chaînes/Films injectés ici -->
+                <div class="live-tv-categories" id="live-categories">
+                    <button class="cat-btn active" data-cat="all">Tout</button>
+                    <button class="cat-btn" data-cat="FR">France</button>
+                    <button class="cat-btn" data-cat="sport">Sport</button>
+                    <button class="cat-btn" data-cat="news">Infos</button>
+                    <button class="cat-btn" data-cat="music">Musique</button>
+                </div>
+
+                <div id="live-grid" class="movie-grid">
+                    <!-- Chaînes injectées ici -->
                 </div>
             </div>
         </section>
@@ -178,7 +156,7 @@
         </a>
         <a href="#" class="bottom-nav-item" data-type="iptv">
             <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
-            <span>TV</span>
+            <span>Direct TV</span>
         </a>
         <a href="#" class="bottom-nav-item" data-type="reprendre">
             <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>

@@ -1501,7 +1501,33 @@ a {
     margin-bottom: 30px;
 }
 
-.iptv-categories {
+/* --- LIVE TV STYLES --- */
+.live-tv-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.live-tv-search input {
+    width: 300px;
+    padding: 12px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 30px;
+    color: white;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.live-tv-search input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #ef4444;
+}
+
+.live-tv-categories {
     display: flex;
     gap: 10px;
     margin-bottom: 30px;
@@ -1509,7 +1535,7 @@ a {
     padding-bottom: 10px;
 }
 
-.iptv-cat-btn {
+.cat-btn {
     padding: 10px 20px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1520,11 +1546,43 @@ a {
     transition: all 0.3s ease;
 }
 
-.iptv-cat-btn.active {
+.cat-btn.active {
     background: #ef4444;
     border-color: #ef4444;
 }
 
-.iptv-cat-btn:hover:not(.active) {
+.cat-btn:hover:not(.active) {
     background: rgba(255, 255, 255, 0.1);
+}
+
+.live-card {
+    position: relative;
+    cursor: pointer;
+}
+
+.live-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #ef4444;
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 4px 8px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+}
+
+.live-title {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 15px 10px 10px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.9));
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
