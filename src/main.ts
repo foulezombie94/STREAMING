@@ -798,6 +798,7 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
     playerContainer.style.display = 'block';
     nameLabel.textContent = name;
     errorOverlay.style.display = 'none';
+    const msg = errorOverlay.querySelector('p');
     
     // Smooth scroll to player
     window.scrollTo({ top: playerContainer.offsetTop - 100, behavior: 'smooth' });
@@ -820,7 +821,6 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
         
         // Show loading state
         errorOverlay.style.display = 'flex';
-        const msg = errorOverlay.querySelector('p');
         if (msg) msg.textContent = "Connexion au flux en cours...";
         errorOverlay.querySelector('span')!.textContent = "⏳";
 
