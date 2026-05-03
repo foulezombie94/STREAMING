@@ -755,13 +755,33 @@ async function performIPTVSearch(term: string) {
 
     try {
         if (currentIPTVItems.length === 0) {
+            console.log("Fetching ALL live streams for search...");
             const fetchUrl = `${iptvAccount.url}/player_api.php?username=${iptvAccount.user}&password=${iptvAccount.pass}&action=get_live_streams`;
             const proxyUrl = `/api/proxy?url=${encodeURIComponent(fetchUrl)}`;
             const res = await fetch(proxyUrl);
             const data = await res.json();
             
-            if (Array.isArray(data)) currentIPTVItems = data;
-            else if (data && typeof data === 'object') currentIPTVItems = Object.values(data).filter(item => item && typeof item === 'object') as any[];
+            console.log("Données reçues du serveur IPTV:", data);
+
+            if (Array.isArray(data)) {
+                currentIPTVItems = data;
+            } else if (data && typeof data === 'object') {
+                // Chercher récursivement un tableau qui contient des objets avec 'name' ou 'title'
+                const findStreams = (obj: any): any[] => {
+                    if (Array.isArray(obj)) return obj;
+                    for (const key in obj) {
+                        if (Array.isArray(obj[key]) && obj[key].length > 0) return obj[key];
+                        if (typeof obj[key] === 'object' && obj[key] !== null) {
+                            const found = findStreams(obj[key]);
+                            if (found.length > 0) return found;
+                        }
+                    }
+                    // Si rien trouvé, essayer de convertir les valeurs de l'objet lui-même en tableau
+                    return Object.values(obj).filter(v => v && typeof v === 'object');
+                };
+                currentIPTVItems = findStreams(data);
+            }
+            console.log(`${currentIPTVItems.length} chaînes chargées en mémoire.`);
         }
 
         const filtered = currentIPTVItems.filter(item => {
