@@ -107,6 +107,24 @@ const mobileGenreOverlay = document.getElementById('mobile-genre-overlay');
 const mobileGenreGrid = document.getElementById('mobile-genre-grid');
 const closeGenreOverlay = document.getElementById('close-genre-overlay');
 
+// Event listeners pour le mobile et PC (Overlay)
+mobileFilterBtn?.addEventListener('click', () => {
+    // S'assurer que les genres sont à jour avant d'ouvrir
+    renderGenres(currentType);
+    
+    mobileGenreOverlay?.classList.add('active');
+    document.body.style.overflow = 'hidden'; // Bloquer le scroll
+});
+
+closeGenreOverlay?.addEventListener('click', () => {
+    mobileGenreOverlay?.classList.remove('active');
+    document.body.style.overflow = '';
+});
+
+mobileGenreOverlay?.addEventListener('click', (e) => {
+    if (e.target === mobileGenreOverlay) closeGenreOverlay?.click();
+});
+
 function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre') {
     if (!genreFiltersContainer) return;
     
@@ -118,8 +136,8 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre') {
     genreFiltersContainer.style.display = 'block';
     const genres = type === 'movie' ? movieGenres : tvGenres;
     
-    // Rendre pour Desktop
-    if (desktopGenres) {
+    // Rendre pour Desktop (si le conteneur est affiché)
+    if (desktopGenres && desktopGenres.style.display !== 'none') {
         if (genres.length === 0) {
             desktopGenres.innerHTML = `<div class="genre-label">Chargement...</div>`;
         } else {
@@ -133,7 +151,31 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre') {
                 btn.addEventListener('click', () => {
                     const idStr = btn.getAttribute('data-id');
                     activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
+                    renderGenres(type);
+                    heroContent?.classList.add('animating');
+                    if (carousel) carousel.style.opacity = '0.5';
+                    fetchPopularData(type, activeGenreId);
+                });
+            });
+        }
+    }
+
+    // Rendre pour l'Overlay (Mobile & PC)
+    if (mobileGenreGrid) {
+        if (genres.length === 0) {
+            mobileGenreGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 40px; font-weight: bold;">Chargement des catégories...</div>`;
+        } else {
+            mobileGenreGrid.innerHTML = `
+                <div class="mobile-genre-item ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</div>
+                ${genres.map(g => `<div class="mobile-genre-item ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</div>`).join('')}
+            `;
+            
+            mobileGenreGrid.querySelectorAll('.mobile-genre-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const idStr = item.getAttribute('data-id');
+                    activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
                     
+                    closeGenreOverlay?.click();
                     renderGenres(type);
                     
                     heroContent?.classList.add('animating');
@@ -143,49 +185,7 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre') {
             });
         }
     }
-
-    // Rendre pour Mobile Overlay
-    if (mobileGenreGrid) {
-        if (genres.length === 0) {
-            mobileGenreGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #a3a3a3; padding: 20px;">Chargement des catégories...</div>`;
-            return;
-        }
-
-        mobileGenreGrid.innerHTML = `
-            <div class="mobile-genre-item ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</div>
-            ${genres.map(g => `<div class="mobile-genre-item ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</div>`).join('')}
-        `;
-        
-        mobileGenreGrid.querySelectorAll('.mobile-genre-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const idStr = item.getAttribute('data-id');
-                activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
-                
-                closeGenreOverlay?.click();
-                renderGenres(type);
-                
-                heroContent?.classList.add('animating');
-                if (carousel) carousel.style.opacity = '0.5';
-                fetchPopularData(type, activeGenreId);
-            });
-        });
-    }
 }
-
-// Event listeners pour le mobile
-mobileFilterBtn?.addEventListener('click', () => {
-    mobileGenreOverlay?.classList.add('active');
-    document.body.style.overflow = 'hidden'; // Bloquer le scroll
-});
-
-closeGenreOverlay?.addEventListener('click', () => {
-    mobileGenreOverlay?.classList.remove('active');
-    document.body.style.overflow = '';
-});
-
-mobileGenreOverlay?.addEventListener('click', (e) => {
-    if (e.target === mobileGenreOverlay) closeGenreOverlay?.click();
-});
 
 // 5. Gestion Drag Carrousel fluide
 // 5. Gestion Drag Carrousel ultra-fluide (Inertie + Correction Jitter)
