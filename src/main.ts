@@ -670,8 +670,9 @@ let xtreamConfig = {
     pass: localStorage.getItem('xtream_pass') || ''
 };
 
-// Declare Hls for TypeScript
+// Global library declarations (Hls.js, mpegts.js)
 declare const Hls: any;
+declare const mpegts: any;
 
 async function initLiveTV() {
     const liveContent = document.getElementById('live-tv-content');
@@ -888,9 +889,7 @@ function renderLiveTV(filter: string = '', categoryId: string = 'all') {
     });
 }
 
-// Declare players for TypeScript
-declare const Hls: any;
-declare const mpegts: any;
+// Logic for playing a live channel
 
 function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
     const playerContainer = document.getElementById('live-player-container');
@@ -943,7 +942,7 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
                 errorOverlay.style.display = 'none';
                 video.play().catch(() => {});
             });
-            hls.on(Hls.Events.ERROR, (event: any, data: any) => {
+            hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
                 if (data.fatal) {
                     console.error("HLS Error:", data);
                     errorOverlay.style.display = 'flex';
