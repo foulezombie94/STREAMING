@@ -707,19 +707,29 @@ iptvLoginForm?.addEventListener('submit', async (e) => {
 
     try {
         const loginUrl = `${url}/player_api.php?username=${user}&password=${pass}`;
+        console.log("Tentative de connexion IPTV:", loginUrl);
+        
         const proxyUrl = `/api/proxy?url=${encodeURIComponent(loginUrl)}`;
         const res = await fetch(proxyUrl);
+        
+        if (!res.ok) {
+            throw new Error(`Erreur serveur (${res.status})`);
+        }
+
         const data = await res.json();
+        console.log("Réponse IPTV reçue:", data);
 
         if (data.user_info && data.user_info.auth === 1) {
             iptvAccount = { url, user, pass };
             localStorage.setItem('iptv_account', JSON.stringify(iptvAccount));
             showIPTVContent();
         } else {
-            alert("Identifiants incorrects ou serveur IPTV incompatible.");
+            const errorMsg = data.message || "Identifiants incorrects ou serveur IPTV incompatible.";
+            alert(errorMsg);
         }
     } catch (err) {
-        alert("Erreur de connexion au serveur IPTV. Vérifiez l'URL.");
+        console.error("Erreur IPTV Login:", err);
+        alert("Erreur de connexion au serveur IPTV. Vérifiez l'URL et assurez-vous qu'elle commence par http:// ou https://");
     } finally {
         if (btnText) btnText.textContent = originalText;
         if (btn) btn.disabled = false;
@@ -752,13 +762,18 @@ async function loadIPTVCategory(type: string) {
         else if (type === 'series') action = 'get_series';
 
         const fetchUrl = `${iptvAccount.url}/player_api.php?username=${iptvAccount.user}&password=${iptvAccount.pass}&action=${action}`;
+        console.log(`Chargement catégorie ${type}:`, fetchUrl);
+        
         const proxyUrl = `/api/proxy?url=${encodeURIComponent(fetchUrl)}`;
         const res = await fetch(proxyUrl);
+        
+        if (!res.ok) throw new Error("Erreur de proxy");
+        
         const data = await res.json();
-
         renderIPTVData(data, type);
     } catch (err) {
-        iptvGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Impossible de charger cette catégorie.</div>';
+        console.error(`Erreur IPTV ${type}:`, err);
+        iptvGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Impossible de charger cette catégorie. Vérifiez votre connexion.</div>';
     }
 }
 
