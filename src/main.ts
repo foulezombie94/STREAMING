@@ -769,34 +769,38 @@ async function performIPTVSearch(term: string) {
             if (Array.isArray(data)) {
                 rawItems = data;
             } else if (data && typeof data === 'object') {
-                // Heuristique: Chercher TOUS les tableaux
-                let allArrays: any[][] = [];
-                const searchArrays = (obj: any) => {
-                    if (!obj || typeof obj !== 'object') return;
+                // Heuristique: Chercher la plus grande collection (Tableau ou Objet de valeurs)
+                let bestCollection: any[] = [];
+                
+                const searchCollections = (obj: any, depth = 0) => {
+                    if (!obj || typeof obj !== 'object' || depth > 5) return;
+                    
                     if (Array.isArray(obj)) {
-                        allArrays.push(obj);
-                        return;
-                    }
-                    for (const key in obj) {
-                        if (key !== 'user_info' && key !== 'server_info') { // Ignorer les métadonnées
-                            searchArrays(obj[key]);
+                        if (obj.length > bestCollection.length) bestCollection = obj;
+                    } else {
+                        // Tester si c'est un dictionnaire de chaînes
+                        const values = Object.values(obj);
+                        const likelyStreams = values.filter(v => v && typeof v === 'object' && ((v as any).name || (v as any).title));
+                        if (likelyStreams.length > bestCollection.length) bestCollection = likelyStreams;
+                        
+                        // Continuer la recherche dans les propriétés
+                        for (const key in obj) {
+                            if (key !== 'user_info' && key !== 'server_info') {
+                                searchCollections(obj[key], depth + 1);
+                            }
                         }
                     }
                 };
-                searchArrays(data);
                 
-                if (allArrays.length > 0) {
-                    rawItems = allArrays.reduce((prev, current) => (prev.length > current.length) ? prev : current);
-                } else {
-                    rawItems = Object.values(data).filter(v => v && typeof v === 'object');
-                }
+                searchCollections(data);
+                rawItems = bestCollection;
             }
 
-            // FILTRE CRITIQUE: On ne garde que ce qui ressemble à une chaîne (a un nom et un ID)
+            // FILTRE FINAL: On valide que ce sont des chaînes
             currentIPTVItems = rawItems.filter(item => 
                 item && typeof item === 'object' && 
                 (item.name || item.title) && 
-                (item.stream_id || item.id || item.series_id)
+                (item.stream_id || item.id || item.series_id || item.num)
             );
 
             console.log(`${currentIPTVItems.length} VRAIES chaînes trouvées après filtrage.`);
