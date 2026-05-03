@@ -664,99 +664,123 @@ function renderResumePage() {
 let allChannels: any[] = [];
 let currentCategory = 'all';
 
+// --- LIVE TV SECTION (M3U Parser) ---
+let allLiveChannels: any[] = [];
+let liveTVInitialized = false;
+
 async function initLiveTV() {
     const liveGrid = document.getElementById('live-grid');
     if (!liveGrid) return;
 
-    if (allChannels.length === 0) {
-        liveGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px; color: #ef4444;">Chargement de la playlist mondiale...</div>';
-        try {
-            // Parallel fetch for better performance
-            const [channelsRes, streamsRes] = await Promise.all([
-                fetch('https://iptv-org.github.io/api/channels.json'),
-                fetch('https://iptv-org.github.io/api/streams.json')
-            ]);
-            
-            const channels = await channelsRes.json();
-            const streams = await streamsRes.json();
+    if (liveTVInitialized) return;
+    
+    liveGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px; color: #ef4444;">Chargement de la base mondiale (M3U)...</div>';
+    
+    try {
+        // Fetching the large index (or a combined set)
+        // For performance, we fetch the FR specific list + the global one if needed
+        const m3uUrl = 'https://iptv-org.github.io/iptv/index.m3u';
+        const response = await fetch(m3uUrl);
+        const text = await response.text();
+        
+        allLiveChannels = parseM3U(text);
+        liveTVInitialized = true;
+        
+        console.log(`Parsed ${allLiveChannels.length} channels from M3U.`);
+        renderLiveTV();
+    } catch (err) {
+        console.error("Erreur M3U:", err);
+        liveGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Erreur de connexion aux serveurs TV.</div>';
+    }
+}
 
-            // Create a map of streams by channel id for O(1) lookup
-            const streamMap = new Map();
-            streams.forEach((s: any) => {
-                if (!streamMap.has(s.channel)) {
-                    streamMap.set(s.channel, s.url);
-                }
-            });
+function parseM3U(content: string) {
+    const channels: any[] = [];
+    const lines = content.split('\n');
+    let currentChannel: any = null;
 
-            // Merge: Only keep channels that have at least one stream
-            allChannels = channels
-                .filter((c: any) => streamMap.has(c.id))
-                .map((c: any) => ({
-                    ...c,
-                    streamUrl: streamMap.get(c.id)
-                }));
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        if (line.startsWith('#EXTINF:')) {
+            currentChannel = {};
             
-        } catch (err) {
-            console.error("Erreur Live TV:", err);
-            liveGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Service indisponible. Vérifiez votre connexion.</div>';
-            return;
+            // Extract attributes
+            const logoMatch = line.match(/tvg-logo="([^"]+)"/i);
+            const nameMatch = line.match(/#EXTINF:.*,(.*)$/i);
+            const groupMatch = line.match(/group-title="([^"]+)"/i);
+            
+            currentChannel.logo = logoMatch ? logoMatch[1] : '';
+            currentChannel.name = nameMatch ? nameMatch[1].trim() : 'Chaîne Inconnue';
+            currentChannel.category = groupMatch ? groupMatch[1] : 'Général';
+            currentChannel.id = `ch-${i}`;
+        } else if (line.startsWith('http') && currentChannel) {
+            currentChannel.url = line;
+            // Only add if it's a direct stream link (usually ends in .m3u8 or .ts or similar)
+            channels.push(currentChannel);
+            currentChannel = null;
         }
     }
-    renderLiveTV();
+    return channels;
 }
 
 function renderLiveTV(filter: string = '') {
     const liveGrid = document.getElementById('live-grid');
     if (!liveGrid) return;
 
-    let filtered = allChannels;
+    let filtered = allLiveChannels;
 
-    // Filter by category
+    // Filter by Category (Special cases for FR)
     if (currentCategory !== 'all') {
+        const cat = currentCategory.toLowerCase();
         if (currentCategory === 'FR') {
-            filtered = filtered.filter(c => c.country === 'FR');
+            // Check in name or category
+            filtered = filtered.filter(c => c.name.toLowerCase().includes('(france)') || c.name.toLowerCase().includes(' fr ') || c.category.toLowerCase().includes('france'));
         } else {
-            filtered = filtered.filter(c => c.categories && c.categories.includes(currentCategory.toLowerCase()));
+            filtered = filtered.filter(c => c.category.toLowerCase().includes(cat) || c.name.toLowerCase().includes(cat));
         }
     }
 
     // Filter by search
     if (filter) {
         const f = filter.toLowerCase();
-        filtered = filtered.filter(c => c.name.toLowerCase().includes(f));
+        filtered = filtered.filter(c => c.name.toLowerCase().includes(f) || c.category.toLowerCase().includes(f));
     }
 
-    // Limit to avoid lag
-    const display = filtered.slice(0, 60);
+    // Sort to put channels with logos first
+    filtered.sort((a, b) => (b.logo ? 1 : 0) - (a.logo ? 1 : 0));
+
+    // Limit to 100 for display
+    const display = filtered.slice(0, 100);
 
     if (display.length === 0) {
-        liveGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px; color: rgba(255,255,255,0.5);">Aucune chaîne ne correspond à vos critères.</div>';
+        liveGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px; color: rgba(255,255,255,0.5);">Aucun résultat pour cette recherche.</div>';
         return;
     }
 
     liveGrid.innerHTML = display.map(c => `
-        <div class="movie-card live-card" data-id="${c.id}" data-url="${c.streamUrl}">
-            <div class="card-img-container" style="aspect-ratio: 2/3; background: #1a1a1a; position: relative; overflow: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <div class="movie-card live-card" data-url="${c.url}">
+            <div class="card-img-container" style="aspect-ratio: 16/9; background: #1a1a1a; position: relative; overflow: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
                 <img src="${c.logo || ''}" 
                      alt="${c.name}" 
                      loading="lazy" 
                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                     style="width: 100%; height: 100%; object-fit: contain; padding: 20px;">
-                <div class="fallback-logo" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(45deg, #1a1a1a, #333); color: #ef4444; font-weight: 800; font-size: 24px; text-align: center; padding: 10px;">
-                    ${c.name.substring(0, 2).toUpperCase()}
+                     style="width: 100%; height: 100%; object-fit: contain; padding: 10px;">
+                <div class="fallback-logo" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(45deg, #050505, #111); color: #ef4444; font-weight: 800; font-size: 18px; text-align: center; padding: 5px;">
+                    ${c.name.split(' ').map((w: string) => w[0]).join('').substring(0, 3).toUpperCase()}
                 </div>
                 <div class="live-badge">LIVE</div>
             </div>
-            <div class="live-title" style="margin-top: 10px; font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.name}</div>
+            <div class="live-title" style="margin-top: 8px; font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 5px;">${c.name}</div>
+            <div class="live-cat" style="font-size: 10px; color: rgba(255,255,255,0.4); padding: 0 5px;">${c.category}</div>
         </div>
     `).join('');
 
     liveGrid.querySelectorAll('.live-card').forEach(card => {
         card.addEventListener('click', () => {
             const url = card.getAttribute('data-url');
-            const id = card.getAttribute('data-id');
-            const channel = allChannels.find(c => c.id === id);
-            if (url && channel) playLiveChannel(url, channel.name);
+            const name = card.querySelector('.live-title')?.textContent || 'Chaîne';
+            if (url) playLiveChannel(url, name);
         });
     });
 }
