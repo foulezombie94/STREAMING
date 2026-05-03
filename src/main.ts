@@ -807,54 +807,55 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
         (window as any).hls.destroy();
     }
 
-    const streamUrl = useProxy ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` : url;
-    console.log(`Tentative de lecture: ${streamUrl}`);
+    const streamUrl = useProxy ? `https://corsproxy.io/?${encodeURIComponent(url)}` : url;
+    console.log(`Tentative de lecture (${useProxy ? 'Proxy' : 'Direct'}): ${streamUrl}`);
 
     if (Hls.isSupported()) {
         const hls = new Hls({
             debug: false,
-            xhrSetup: (xhr: any) => {
-                xhr.withCredentials = false;
-            }
+            manifestLoadingMaxRetry: 2,
+            levelLoadingMaxRetry: 2
         });
         (window as any).hls = hls;
+        
+        // Show loading state
+        errorOverlay.style.display = 'flex';
+        const msg = errorOverlay.querySelector('p');
+        if (msg) msg.textContent = "Connexion au flux en cours...";
+        errorOverlay.querySelector('span')!.textContent = "⏳";
+
         hls.loadSource(streamUrl);
         hls.attachMedia(video);
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            errorOverlay.style.display = 'none';
             video.play().catch(e => console.warn("Autoplay bloqué:", e));
         });
 
         hls.on(Hls.Events.ERROR, function (_event: any, data: any) {
             if (data.fatal) {
-                switch (data.type) {
-                    case Hls.ErrorTypes.NETWORK_ERROR:
-                        console.warn("Erreur réseau HLS, tentative avec proxy...");
-                        if (!useProxy) {
-                            hls.destroy();
-                            playLiveChannel(url, name, true);
-                        } else {
-                            errorOverlay.style.display = 'flex';
-                        }
-                        break;
-                    default:
-                        hls.destroy();
-                        errorOverlay.style.display = 'flex';
-                        break;
+                console.warn("HLS Fatal Error:", data.type);
+                if (!useProxy) {
+                    hls.destroy();
+                    playLiveChannel(url, name, true);
+                } else {
+                    errorOverlay.style.display = 'flex';
+                    errorOverlay.querySelector('span')!.textContent = "⚠️";
+                    if (msg) msg.textContent = "Flux indisponible (Erreur Serveur).";
                 }
             }
         });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = streamUrl;
+        video.play().catch(() => {});
         video.addEventListener('error', () => {
             if (!useProxy) {
                 playLiveChannel(url, name, true);
             } else {
                 errorOverlay.style.display = 'flex';
+                if (msg) msg.textContent = "Incompatible avec ce navigateur.";
             }
         });
-    } else {
-        errorOverlay.style.display = 'flex';
     }
 }
 
