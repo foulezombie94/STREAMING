@@ -758,7 +758,7 @@ function renderLiveTV(filter: string = '') {
     }
 
     liveGrid.innerHTML = display.map(c => `
-        <div class="movie-card live-card" data-url="${c.url}">
+        <div class="live-card" data-url="${c.url}">
             <div class="card-img-container" style="aspect-ratio: 16/9; background: #1a1a1a; position: relative; overflow: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
                 <img src="${c.logo || ''}" 
                      alt="${c.name}" 
@@ -770,8 +770,8 @@ function renderLiveTV(filter: string = '') {
                 </div>
                 <div class="live-badge">LIVE</div>
             </div>
-            <div class="live-title" style="margin-top: 8px; font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 5px;">${c.name}</div>
-            <div class="live-cat" style="font-size: 10px; color: rgba(255,255,255,0.4); padding: 0 5px;">${c.category}</div>
+            <div class="live-title">${c.name}</div>
+            <div class="live-cat">${c.category}</div>
         </div>
     `).join('');
 
