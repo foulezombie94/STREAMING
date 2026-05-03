@@ -123,12 +123,15 @@
                     <button class="iptv-cat-btn active" data-action="live">Direct TV (LIVE)</button>
                 </div>
 
-                <div class="iptv-search-container" style="margin: 15px 0;">
-                    <input type="text" id="iptv-search" placeholder="Rechercher une chaîne, un film..." style="width: 100%; padding: 12px 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; color: white; outline: none; font-size: 16px;">
+                <div class="iptv-search-container" style="margin: 10px auto; max-width: 600px;">
+                    <div style="position: relative;">
+                        <input type="text" id="iptv-search" placeholder="Rechercher une chaîne..." style="width: 100%; padding: 10px 15px; padding-left: 40px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 30px; color: white; outline: none; font-size: 14px; transition: all 0.3s;">
+                        <svg style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); opacity: 0.5;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </div>
                 </div>
 
-                <!-- Nouveau: Liste des Bouquets/Catégories -->
-                <div id="iptv-sub-categories" class="iptv-sub-categories" style="display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; margin-bottom: 20px; scrollbar-width: none;">
+                <!-- Liste des Bouquets/Catégories -->
+                <div id="iptv-sub-categories" class="iptv-sub-categories" style="display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 15px; scrollbar-width: none; -ms-overflow-style: none;">
                     <!-- Les bouquets s'afficheront ici -->
                 </div>
 

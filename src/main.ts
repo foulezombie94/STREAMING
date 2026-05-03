@@ -807,25 +807,21 @@ function renderIPTVSubCategories(data: any, type: string) {
     if (Array.isArray(data)) {
         categories = data;
     } else if (data && typeof data === 'object') {
-        // Chercher n'importe quel tableau dans l'objet (certains serveurs enveloppent les données)
+        // Chercher n'importe quel tableau dans l'objet
         categories = Object.values(data).find(v => Array.isArray(v)) as any[] || 
                      Object.values(data).filter(cat => cat && typeof cat === 'object') as any[];
     }
-
-    // On ajoute toujours un bouton "TOUT" au début
-    const allCategory = { category_id: 'all', category_name: 'TOUT LE CONTENU' };
-    categories = [allCategory, ...categories];
 
     console.log(`Bouquets détectés pour ${type}:`, categories);
 
     iptvSubCategories.innerHTML = categories.map((cat, index) => {
         if (!cat) return '';
-        const name = cat.category_name || cat.name || cat.title || (index === 0 ? 'TOUT' : `Bouquet ${index}`);
-        const id = cat.category_id || cat.id || cat.cid || 'all';
+        const name = cat.category_name || cat.name || cat.title || `Bouquet ${index + 1}`;
+        const id = cat.category_id || cat.id || cat.cid || '0';
         
         return `
-            <button class="iptv-sub-cat-btn ${index === 0 ? 'active' : ''}" data-id="${id}" style="padding: 10px 20px; background: ${index === 0 ? '#ef4444' : 'rgba(255,255,255,0.1)'}; border: none; border-radius: 25px; color: white; white-space: nowrap; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.3s;">
-                ${name.toUpperCase()}
+            <button class="iptv-sub-cat-btn ${index === 0 ? 'active' : ''}" data-id="${id}" style="padding: 8px 18px; background: ${index === 0 ? '#ef4444' : 'rgba(255,255,255,0.05)'}; border: none; border-radius: 20px; color: white; white-space: nowrap; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.3s;">
+                ${name}
             </button>
         `;
     }).join('');
