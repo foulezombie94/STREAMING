@@ -680,27 +680,34 @@ function showIPTVContent() {
     if (iptvLogin) iptvLogin.style.display = 'none';
     if (iptvContent) iptvContent.style.display = 'block';
     if (iptvProviderName) {
-        try {
-            const host = new URL(iptvAccount.url).hostname;
-            iptvProviderName.textContent = host;
-        } catch(e) {
-            iptvProviderName.textContent = "Ma Télévision";
-        }
+        iptvProviderName.textContent = iptvAccount.name || "Ma Télévision";
     }
     
     // Par défaut, charger le Live
     loadIPTVCategory('live');
 }
 
+// Password Visibility Toggle
+const passInput = document.getElementById('iptv-pass') as HTMLInputElement;
+const passToggle = document.querySelector('.password-toggle');
+passToggle?.addEventListener('click', () => {
+    if (passInput) {
+        const type = passInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passInput.setAttribute('type', type);
+    }
+});
+
 iptvLoginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = iptvLoginForm.querySelector('.btn-login') as HTMLButtonElement;
-    const btnText = btn?.querySelector('span');
-    const originalText = btnText ? btnText.textContent : "Se connecter";
+    const btn = iptvLoginForm.querySelector('.btn-add-playlist') as HTMLButtonElement;
+    const originalText = btn ? btn.textContent : "ADD PLAYLIST";
 
-    if (btnText) btnText.textContent = "Connexion en cours...";
-    if (btn) btn.disabled = true;
+    if (btn) {
+        btn.textContent = "VERIFYING...";
+        btn.disabled = true;
+    }
 
+    const name = (document.getElementById('iptv-name') as HTMLInputElement).value;
     const url = (document.getElementById('iptv-url') as HTMLInputElement).value.replace(/\/$/, "");
     const user = (document.getElementById('iptv-user') as HTMLInputElement).value;
     const pass = (document.getElementById('iptv-pass') as HTMLInputElement).value;
@@ -720,7 +727,7 @@ iptvLoginForm?.addEventListener('submit', async (e) => {
         console.log("Réponse IPTV reçue:", data);
 
         if (data.user_info && data.user_info.auth === 1) {
-            iptvAccount = { url, user, pass };
+            iptvAccount = { url, user, pass, name };
             localStorage.setItem('iptv_account', JSON.stringify(iptvAccount));
             showIPTVContent();
         } else {
@@ -731,8 +738,10 @@ iptvLoginForm?.addEventListener('submit', async (e) => {
         console.error("Erreur IPTV Login:", err);
         alert("Erreur de connexion au serveur IPTV. Vérifiez l'URL et assurez-vous qu'elle commence par http:// ou https://");
     } finally {
-        if (btnText) btnText.textContent = originalText;
-        if (btn) btn.disabled = false;
+        if (btn) {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
     }
 });
 

@@ -1398,143 +1398,98 @@ a {
     height: 6px;
 }
 
-/* --- IPTV LOGIN CARD --- */
-.iptv-login-card {
-    max-width: 480px;
-    margin: 80px auto;
-    padding: 50px 40px;
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border-radius: 30px;
-    backdrop-filter: blur(30px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+/* --- PLAYLIST LOGIN CARD (MATCH IMAGE) --- */
+.iptv-playlist-card {
+    max-width: 450px;
+    margin: 60px auto;
+    padding: 40px 30px;
+    background: linear-gradient(135deg, #7b4397 0%, #dc2430 100%);
+    border-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
     text-align: center;
-    animation: fadeInLogin 0.8s ease-out;
+    animation: fadeInLogin 0.6s ease-out;
 }
 
-.iptv-login-header {
-    margin-bottom: 40px;
-}
-
-.iptv-logo-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 80px;
-    height: 80px;
-    background: rgba(239, 68, 68, 0.1);
-    border-radius: 20px;
-    color: #ef4444;
-    margin-bottom: 25px;
-    border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.iptv-login-header h2 {
-    font-size: 28px;
-    font-weight: 800;
+.iptv-playlist-card h2 {
     color: #fff;
-    margin-bottom: 12px;
-    letter-spacing: -0.5px;
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.iptv-login-header p {
-    color: #a3a3a3;
-    font-size: 15px;
-    line-height: 1.5;
-}
-
-.iptv-form {
+.iptv-playlist-form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 15px;
 }
 
-.input-group {
+.playlist-input-group {
     position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.input-icon {
-    position: absolute;
-    left: 18px;
-    color: #666;
-    display: flex;
-    align-items: center;
-    pointer-events: none;
-    transition: color 0.3s;
-    z-index: 2;
-}
-
-.iptv-form input {
     width: 100%;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 16px 16px 16px 50px;
-    border-radius: 14px;
+}
+
+.playlist-input-group input {
+    width: 100%;
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1.5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
     color: #fff;
-    font-size: 15px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 16px;
+    transition: all 0.3s ease;
 }
 
-.iptv-form input:focus {
-    border-color: #ef4444;
-    background: rgba(239, 68, 68, 0.05);
-    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+.playlist-input-group input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.playlist-input-group input:focus {
     outline: none;
+    background: rgba(255, 255, 255, 0.25);
+    border-color: #fff;
 }
 
-.iptv-form input:focus + .input-icon {
-    color: #ef4444;
-}
-
-.btn-login {
+.password-toggle {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
-    background: #ef4444;
-    color: #fff;
-    border: none;
+}
+
+.btn-add-playlist {
+    width: 100%;
     padding: 18px;
-    border-radius: 14px;
-    font-size: 16px;
-    font-weight: 700;
+    margin-top: 15px;
+    background: #fff;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    font-size: 18px;
+    font-weight: 800;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-top: 10px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
 }
 
-.btn-login:hover {
-    background: #dc2626;
+.btn-add-playlist:hover {
+    background: rgba(255, 255, 255, 0.9);
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px -5px rgba(239, 68, 68, 0.4);
-}
-
-.btn-login:active {
-    transform: translateY(0);
-}
-
-.iptv-login-footer {
-    margin-top: 30px;
-    padding-top: 25px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.iptv-login-footer p {
-    color: #666;
-    font-size: 13px;
 }
 
 @keyframes fadeInLogin {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(15px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 480px) {
-    .iptv-login-card {
+    .iptv-playlist-card {
         margin: 40px 15px;
-        padding: 35px 25px;
+        padding: 30px 20px;
     }
 }
 

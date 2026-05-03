@@ -85,52 +85,33 @@
 
         <!-- Section IPTV (Nouveau) -->
         <section id="iptv-section" style="display: none; padding: 100px 20px 20px;">
-            <div id="iptv-login" class="iptv-login-card">
-                <div class="iptv-login-header">
-                    <div class="iptv-logo-icon">
-                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <rect x="2" y="7" width="20" height="13" rx="2" ry="2"></rect>
-                            <polyline points="17 21 17 23"></polyline>
-                            <polyline points="7 21 7 23"></polyline>
-                            <polyline points="10 23 14 23"></polyline>
-                            <polyline points="17 2 12 7 7 2"></polyline>
-                        </svg>
-                    </div>
-                    <h2>Connexion Xtream Codes</h2>
-                    <p>Accédez à des milliers de chaînes et contenus VOD en haute définition.</p>
-                </div>
+            <div id="iptv-login" class="iptv-playlist-card">
+                <h2>Enter Your Playlist Details</h2>
                 
-                <form id="iptv-login-form" class="iptv-form">
-                    <div class="input-group">
-                        <span class="input-icon">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                        </span>
-                        <input type="url" id="iptv-url" placeholder="URL du serveur (http://...)" required>
+                <form id="iptv-login-form" class="iptv-playlist-form">
+                    <div class="playlist-input-group">
+                        <input type="text" id="iptv-name" placeholder="Playlist Name" required>
                     </div>
                     
-                    <div class="input-group">
-                        <span class="input-icon">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                        </span>
-                        <input type="text" id="iptv-user" placeholder="Nom d'utilisateur" required>
+                    <div class="playlist-input-group">
+                        <input type="text" id="iptv-user" placeholder="Username" required>
                     </div>
                     
-                    <div class="input-group">
-                        <span class="input-icon">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <div class="playlist-input-group">
+                        <input type="password" id="iptv-pass" placeholder="Password" required>
+                        <span class="password-toggle">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
                         </span>
-                        <input type="password" id="iptv-pass" placeholder="Mot de passe" required>
+                    </div>
+
+                    <div class="playlist-input-group">
+                        <input type="url" id="iptv-url" placeholder="http://url_here.com:port" required>
                     </div>
                     
-                    <button type="submit" class="btn-login">
-                        <span>Se connecter</span>
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                    <button type="submit" class="btn-add-playlist">
+                        ADD PLAYLIST
                     </button>
                 </form>
-                
-                <div class="iptv-login-footer">
-                    <p>Vos accès sont cryptés et stockés localement.</p>
-                </div>
             </div>
 
             <div id="iptv-content" style="display: none;">
