@@ -725,15 +725,16 @@ iptvLoginForm?.addEventListener('submit', async (e) => {
 
         const data = await res.json();
         console.log("Données IPTV complètes:", data);
+        
+        // DEBUG: Afficher la réponse brute pour comprendre pourquoi ça bloque
+        // alert("Réponse serveur: " + JSON.stringify(data));
 
-        // Si user_info est présent, c'est que le serveur a répondu à l'API.
-        // On accepte la connexion sauf si auth est explicitement à 0.
-        if (data.user_info && data.user_info.auth != 0) {
+        if (data.user_info) {
             iptvAccount = { url, user, pass, name };
             localStorage.setItem('iptv_account', JSON.stringify(iptvAccount));
             showIPTVContent();
         } else {
-            const errorMsg = data.message || "Identifiants incorrects ou serveur IPTV incompatible.";
+            const errorMsg = data.message || "Serveur IPTV incompatible ou erreur de connexion.";
             alert(errorMsg);
         }
     } catch (err) {
