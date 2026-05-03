@@ -11,7 +11,7 @@ const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 // 2. Éléments du DOM
 let currentData: any[] = []; // Stocke les données actuelles
 let activeId: number | null = null; // ID du film actuellement mis en avant
-let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' = 'trending';
+let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' = 'trending';
 
 // Genre globals
 let movieGenres: any[] = [];
@@ -66,21 +66,30 @@ function handleNavigation(type: any) {
         });
     });
 
-    currentType = type as 'movie' | 'tv' | 'trending' | 'reprendre';
+    currentType = type as any;
     activeGenreId = null; 
+
+    // Gestion de la visibilité des sections
+    if (heroSection) heroSection.style.display = (currentType === 'iptv') ? 'none' : 'block';
+    if (popularSection) popularSection.style.display = (currentType === 'iptv') ? 'none' : 'block';
+    if (iptvSection) iptvSection.style.display = (currentType === 'iptv') ? 'block' : 'none';
 
     if (sectionTitle) {
         if (currentType === 'trending') sectionTitle.textContent = 'Tendances Actuelles';
         else if (currentType === 'tv') sectionTitle.textContent = 'Séries Populaires';
         else if (currentType === 'reprendre') sectionTitle.textContent = 'Reprendre la lecture';
+        else if (currentType === 'iptv') sectionTitle.textContent = 'Télévision Direct';
         else sectionTitle.textContent = 'Films Populaires';
     }
 
-    if (currentType === 'reprendre') {
+    if (currentType === 'iptv') {
+        if (genreFiltersContainer) genreFiltersContainer.style.display = 'none';
+        initIPTV();
+    } else if (currentType === 'reprendre') {
         renderResumePage();
     } else {
-        renderGenres(currentType);
-        fetchPopularData(currentType);
+        renderGenres(currentType as any);
+        fetchPopularData(currentType as any);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -637,4 +646,160 @@ function renderResumePage() {
         }
         heroContent?.classList.remove('animating');
     }
+}
+
+// --- IPTV Section ---
+const iptvSection = document.getElementById('iptv-section');
+const iptvLogin = document.getElementById('iptv-login');
+const iptvContent = document.getElementById('iptv-content');
+const iptvLoginForm = document.getElementById('iptv-login-form') as HTMLFormElement;
+const iptvGrid = document.getElementById('iptv-grid');
+const iptvLogout = document.getElementById('iptv-logout');
+const iptvProviderName = document.getElementById('iptv-provider-name');
+const iptvCatButtons = document.querySelectorAll('.iptv-cat-btn');
+
+let iptvAccount = JSON.parse(localStorage.getItem('iptv_account') || 'null');
+
+function initIPTV() {
+    if (iptvAccount) {
+        showIPTVContent();
+    } else {
+        showIPTVLogin();
+    }
+}
+
+function showIPTVLogin() {
+    if (iptvLogin) iptvLogin.style.display = 'block';
+    if (iptvContent) iptvContent.style.display = 'none';
+}
+
+function showIPTVContent() {
+    if (iptvLogin) iptvLogin.style.display = 'none';
+    if (iptvContent) iptvContent.style.display = 'block';
+    if (iptvProviderName) {
+        try {
+            const host = new URL(iptvAccount.url).hostname;
+            iptvProviderName.textContent = host;
+        } catch(e) {
+            iptvProviderName.textContent = "Ma Télévision";
+        }
+    }
+    
+    // Par défaut, charger le Live
+    loadIPTVCategory('live');
+}
+
+iptvLoginForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = (document.getElementById('iptv-url') as HTMLInputElement).value.replace(/\/$/, "");
+    const user = (document.getElementById('iptv-user') as HTMLInputElement).value;
+    const pass = (document.getElementById('iptv-pass') as HTMLInputElement).value;
+
+    try {
+        const loginUrl = `${url}/player_api.php?username=${user}&password=${pass}`;
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(loginUrl)}`;
+        const res = await fetch(proxyUrl);
+        const data = await res.json();
+
+        if (data.user_info && data.user_info.auth === 1) {
+            iptvAccount = { url, user, pass };
+            localStorage.setItem('iptv_account', JSON.stringify(iptvAccount));
+            showIPTVContent();
+        } else {
+            alert("Identifiants incorrects ou serveur IPTV incompatible.");
+        }
+    } catch (err) {
+        alert("Erreur de connexion au serveur IPTV. Vérifiez l'URL.");
+    }
+});
+
+iptvLogout?.addEventListener('click', () => {
+    localStorage.removeItem('iptv_account');
+    iptvAccount = null;
+    showIPTVLogin();
+});
+
+iptvCatButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        iptvCatButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const action = btn.getAttribute('data-action');
+        loadIPTVCategory(action!);
+    });
+});
+
+async function loadIPTVCategory(type: string) {
+    if (!iptvGrid || !iptvAccount) return;
+    iptvGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px;">Chargement du contenu...</div>';
+
+    try {
+        let action = '';
+        if (type === 'live') action = 'get_live_streams';
+        else if (type === 'vod') action = 'get_vod_streams';
+        else if (type === 'series') action = 'get_series';
+
+        const fetchUrl = `${iptvAccount.url}/player_api.php?username=${iptvAccount.user}&password=${iptvAccount.pass}&action=${action}`;
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(fetchUrl)}`;
+        const res = await fetch(proxyUrl);
+        const data = await res.json();
+
+        renderIPTVData(data, type);
+    } catch (err) {
+        iptvGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Impossible de charger cette catégorie.</div>';
+    }
+}
+
+function renderIPTVData(data: any[], type: string) {
+    if (!iptvGrid) return;
+    if (!data || !Array.isArray(data) || data.length === 0) {
+        iptvGrid.innerHTML = '<div class="no-results">Aucun contenu trouvé dans cette catégorie.</div>';
+        return;
+    }
+
+    // On limite l'affichage pour la performance (les playlists IPTV peuvent être énormes)
+    const items = data.slice(0, 100); 
+    iptvGrid.innerHTML = items.map(item => {
+        const title = item.name;
+        const img = item.stream_icon || item.icon || item.series_cover;
+        const id = item.stream_id || item.series_id;
+        
+        return `
+            <div class="movie-card iptv-card" data-id="${id}" data-type="${type}">
+                <div class="card-img-container" style="aspect-ratio: 16/9; background: #1a1a1a;">
+                    <img src="${img || ''}" alt="${title}" loading="lazy" onerror="this.src='https://via.placeholder.com/320x180?text=TV'">
+                    <div class="card-overlay">
+                        <svg viewBox="0 0 24 24" width="40" height="40"><path d="M8 5V19L19 12L8 5Z" fill="white"/></svg>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <h3 class="card-title" style="font-size: 14px;">${title}</h3>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    iptvGrid.querySelectorAll('.iptv-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const id = card.getAttribute('data-id');
+            const itype = card.getAttribute('data-type');
+            playIPTV(id!, itype!);
+        });
+    });
+}
+
+function playIPTV(id: string, type: string) {
+    if (!iptvAccount) return;
+    let playUrl = '';
+    if (type === 'live') {
+        playUrl = `${iptvAccount.url}/live/${iptvAccount.user}/${iptvAccount.pass}/${id}.ts`;
+    } else if (type === 'vod') {
+        playUrl = `${iptvAccount.url}/movie/${iptvAccount.user}/${iptvAccount.pass}/${id}`;
+    } else {
+        alert("Pour les séries IPTV, veuillez utiliser une application dédiée (le format est complexe en web).");
+        return;
+    }
+    
+    // Pour l'IPTV, on ouvre souvent dans un nouvel onglet car le format .ts/.m3u8 nécessite des lecteurs spécifiques
+    // ou on pourrait l'injecter dans notre lecteur si compatible HLS.
+    window.open(playUrl, '_blank');
 }

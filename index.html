@@ -14,9 +14,10 @@
         <div class="logo">MOVIEVERSE</div>
         <ul class="nav-links">
             <li><a href="#" class="nav-item active" data-type="trending">Accueil</a></li>
-            <li><a href="#" class="nav-item" data-type="tv">Séries</a></li>
             <li><a href="#" class="nav-item" data-type="movie">Films</a></li>
-            <li><a href="#" class="nav-item">Reprendre</a></li>
+            <li><a href="#" class="nav-item" data-type="tv">Séries</a></li>
+            <li><a href="#" class="nav-item" data-type="iptv">Télévision</a></li>
+            <li><a href="#" class="nav-item" data-type="reprendre">Reprendre</a></li>
         </ul>
         <div class="nav-actions">
             <!-- Icône Cloche (Cachée sur mobile via CSS) -->
@@ -82,6 +83,35 @@
             </div>
         </section>
 
+        <!-- Section IPTV (Nouveau) -->
+        <section id="iptv-section" style="display: none; padding: 100px 20px 20px;">
+            <div id="iptv-login" class="iptv-login-container">
+                <h2>Connexion Télévision (Xtream Codes)</h2>
+                <p>Entrez vos accès IPTV pour retrouver vos chaînes et films.</p>
+                <form id="iptv-login-form" class="iptv-form">
+                    <input type="url" id="iptv-url" placeholder="URL du serveur (ex: http://serveur.com:8080)" required>
+                    <input type="text" id="iptv-user" placeholder="Nom d'utilisateur" required>
+                    <input type="password" id="iptv-pass" placeholder="Mot de passe" required>
+                    <button type="submit" class="btn btn-primary">Se connecter</button>
+                </form>
+            </div>
+
+            <div id="iptv-content" style="display: none;">
+                <div class="iptv-header">
+                    <h2 id="iptv-provider-name">Ma Télévision</h2>
+                    <button id="iptv-logout" class="btn btn-secondary">Déconnexion</button>
+                </div>
+                <div class="iptv-categories">
+                    <button class="iptv-cat-btn active" data-action="live">Direct TV</button>
+                    <button class="iptv-cat-btn" data-action="vod">Films IPTV</button>
+                    <button class="iptv-cat-btn" data-action="series">Séries IPTV</button>
+                </div>
+                <div id="iptv-grid" class="movie-grid">
+                    <!-- Chaînes/Films injectés ici -->
+                </div>
+            </div>
+        </section>
+
         <!-- Section Populaire / Carrousel -->
         <section class="popular" id="popular-section">
             <h2 class="section-title" id="section-title">Tendances Actuelles</h2>
@@ -119,7 +149,11 @@
             <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
             <span>Séries</span>
         </a>
-        <a href="#" class="bottom-nav-item">
+        <a href="#" class="bottom-nav-item" data-type="iptv">
+            <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+            <span>TV</span>
+        </a>
+        <a href="#" class="bottom-nav-item" data-type="reprendre">
             <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
             <span>Reprendre</span>
         </a>

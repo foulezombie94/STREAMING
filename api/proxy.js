@@ -10,27 +10,9 @@ export default async function handler(request) {
     return new Response('Missing url parameter', { status: 400 });
   }
 
-  // Only allow vidsrc domains
-  const allowed = [
-    'vidsrc-embed.ru',
-    'vidsrc-embed.su',
-    'vidsrcme.su',
-    'vsrc.su',
-    'vidsrc.me',
-    'cloudnestra.com',
-  ];
-  
-  let urlObj;
-  try {
-    urlObj = new URL(targetUrl);
-  } catch {
-    return new Response('Invalid URL', { status: 400 });
-  }
+  // No domain restriction for IPTV support
+  const isAllowed = true; 
 
-  const isAllowed = allowed.some(d => urlObj.hostname === d || urlObj.hostname.endsWith('.' + d));
-  if (!isAllowed) {
-    return new Response('Domain not allowed', { status: 403 });
-  }
 
   try {
     const response = await fetch(targetUrl, {
