@@ -724,9 +724,9 @@ iptvLoginForm?.addEventListener('submit', async (e) => {
         }
 
         const data = await res.json();
-        console.log("Réponse IPTV reçue:", data);
+        console.log("Données IPTV complètes:", data);
 
-        if (data.user_info && data.user_info.auth === 1) {
+        if (data.user_info && (data.user_info.auth == 1 || data.user_info.status === 'Active')) {
             iptvAccount = { url, user, pass, name };
             localStorage.setItem('iptv_account', JSON.stringify(iptvAccount));
             showIPTVContent();
