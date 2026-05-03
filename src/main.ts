@@ -888,6 +888,10 @@ function renderLiveTV(filter: string = '', categoryId: string = 'all') {
     });
 }
 
+// Declare players for TypeScript
+declare const Hls: any;
+declare const mpegts: any;
+
 function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
     const playerContainer = document.getElementById('live-player-container');
     const video = document.getElementById('live-video') as HTMLVideoElement;
@@ -901,69 +905,88 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
     errorOverlay.style.display = 'none';
     const msg = errorOverlay.querySelector('p');
     
-    // Smooth scroll to player
+    // Smooth scroll
     window.scrollTo({ top: playerContainer.offsetTop - 100, behavior: 'smooth' });
 
-    // Stop previous HLS if any
+    // Nettoyage des instances précédentes
     if ((window as any).hls) {
         (window as any).hls.destroy();
+        delete (window as any).hls;
+    }
+    if ((window as any).mpegtsPlayer) {
+        (window as any).mpegtsPlayer.destroy();
+        delete (window as any).mpegtsPlayer;
     }
 
     const isHttps = window.location.protocol === 'https:';
     const streamUrl = (useProxy || isHttps) ? `/api/proxy?url=${encodeURIComponent(url)}` : url;
-    console.log(`Tentative de lecture (${useProxy ? 'Proxy' : 'Direct'}): ${streamUrl}`);
+    console.log(`Lecture du flux: ${streamUrl}`);
 
-    if (Hls.isSupported()) {
-        const hls = new Hls({
-            debug: false,
-            manifestLoadingMaxRetry: 2,
-            levelLoadingMaxRetry: 2
-        });
-        (window as any).hls = hls;
-        
-        // Show loading state
-        errorOverlay.style.display = 'flex';
-        if (msg) msg.textContent = "Connexion au flux en cours...";
-        errorOverlay.querySelector('span')!.textContent = "⏳";
+    // Afficher l'indicateur de chargement
+    errorOverlay.style.display = 'flex';
+    if (msg) msg.textContent = "Connexion au flux en cours...";
+    errorOverlay.querySelector('span')!.textContent = "⏳";
 
-        hls.loadSource(streamUrl);
-        hls.attachMedia(video);
-        
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            errorOverlay.style.display = 'none';
-            video.play().catch(e => console.warn("Autoplay bloqué:", e));
-        });
-
-        hls.on(Hls.Events.ERROR, function (_event: any, data: any) {
-            if (data.fatal) {
-                console.warn("HLS Fatal Error:", data.type);
-                // Fallback: Si .ts échoue, on tente .m3u8
-                if (url.endsWith('.ts')) {
-                    console.log("Tentative de bascule vers .m3u8...");
-                    hls.destroy();
-                    playLiveChannel(url.replace('.ts', '.m3u8'), name, useProxy);
-                } else if (!useProxy && isHttps) {
-                    // Déjà géré par streamUrl mais au cas où
-                    hls.destroy();
-                    playLiveChannel(url, name, true);
-                } else {
+    // DETECTION DU FORMAT
+    if (url.includes('.m3u8')) {
+        // --- MODE HLS ---
+        if (Hls.isSupported()) {
+            const hls = new Hls({
+                debug: false,
+                manifestLoadingMaxRetry: 5,
+                levelLoadingMaxRetry: 5
+            });
+            (window as any).hls = hls;
+            hls.loadSource(streamUrl);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                errorOverlay.style.display = 'none';
+                video.play().catch(() => {});
+            });
+            hls.on(Hls.Events.ERROR, (event: any, data: any) => {
+                if (data.fatal) {
+                    console.error("HLS Error:", data);
                     errorOverlay.style.display = 'flex';
-                    errorOverlay.querySelector('span')!.textContent = "⚠️";
-                    if (msg) msg.textContent = "Flux indisponible (Erreur Serveur).";
+                    if (msg) msg.textContent = "Erreur de flux HLS.";
                 }
-            }
-        });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = streamUrl;
-        video.play().catch(() => {});
-        video.addEventListener('error', () => {
-            if (!useProxy) {
-                playLiveChannel(url, name, true);
-            } else {
-                errorOverlay.style.display = 'flex';
-                if (msg) msg.textContent = "Incompatible avec ce navigateur.";
-            }
-        });
+            });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = streamUrl;
+            video.play().catch(() => {});
+        }
+    } else {
+        // --- MODE MPEG-TS (Standard Xtream) ---
+        if (mpegts.getFeatureList().mseLivePlayback) {
+            const player = mpegts.createPlayer({
+                type: 'mse', // ou 'mpegts'
+                isLive: true,
+                url: streamUrl
+            });
+            (window as any).mpegtsPlayer = player;
+            player.attachMediaElement(video);
+            player.load();
+            
+            player.on(mpegts.Events.ERROR, (err: any) => {
+                console.error("MPEG-TS Error:", err);
+                // Si le .ts échoue, on tente la conversion automatique en .m3u8
+                if (url.endsWith('.ts')) {
+                    console.log("Bascule automatique vers .m3u8...");
+                    player.destroy();
+                    playLiveChannel(url.replace('.ts', '.m3u8'), name, useProxy);
+                }
+            });
+
+            // On considère que ça marche si le chargement avance
+            video.onplaying = () => {
+                errorOverlay.style.display = 'none';
+            };
+
+            player.play().catch(() => {});
+        } else {
+            // Fallback pour navigateurs sans MSE
+            video.src = streamUrl;
+            video.play().catch(() => {});
+        }
     }
 }
 
