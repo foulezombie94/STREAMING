@@ -694,6 +694,13 @@ function showIPTVContent() {
 
 iptvLoginForm?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const btn = iptvLoginForm.querySelector('.btn-login') as HTMLButtonElement;
+    const btnText = btn?.querySelector('span');
+    const originalText = btnText ? btnText.textContent : "Se connecter";
+
+    if (btnText) btnText.textContent = "Connexion en cours...";
+    if (btn) btn.disabled = true;
+
     const url = (document.getElementById('iptv-url') as HTMLInputElement).value.replace(/\/$/, "");
     const user = (document.getElementById('iptv-user') as HTMLInputElement).value;
     const pass = (document.getElementById('iptv-pass') as HTMLInputElement).value;
@@ -713,6 +720,9 @@ iptvLoginForm?.addEventListener('submit', async (e) => {
         }
     } catch (err) {
         alert("Erreur de connexion au serveur IPTV. Vérifiez l'URL.");
+    } finally {
+        if (btnText) btnText.textContent = originalText;
+        if (btn) btn.disabled = false;
     }
 });
 
