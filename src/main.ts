@@ -754,40 +754,15 @@ async function performIPTVSearch(term: string) {
     if (!iptvAccount || !iptvGrid) return;
 
     try {
-        if (currentIPTVItems.length < 2) {
-            console.log("Fetching ALL live streams for search...");
-            const fetchUrl = `${iptvAccount.url}/player_api.php?username=${iptvAccount.user}&password=${iptvAccount.pass}&action=get_live_streams`;
-            const proxyUrl = `/api/proxy?url=${encodeURIComponent(fetchUrl)}`;
-            const res = await fetch(proxyUrl);
-            const data = await res.json();
-            
-            console.log("Structure des clés reçues:", Object.keys(data));
-            // Log un petit bout du JSON pour voir le format réel
-            console.log("Aperçu JSON:", JSON.stringify(data).substring(0, 300));
-
-            let rawItems: any[] = [];
-            if (Array.isArray(data)) {
-                rawItems = data;
-            } else if (data && typeof data === 'object') {
-                // Version robuste et rapide suggérée: extraire les valeurs qui ont un nom
-                rawItems = Object.values(data).filter((v: any) => v && typeof v === 'object' && (v.name || v.title));
-            }
-
-            // Filtrage final pour ne garder que les chaînes valides
-            currentIPTVItems = rawItems.filter(item => 
-                item && typeof item === 'object' && 
-                (item.name || item.title) && 
-                (item.stream_id || item.id || item.series_id || item.num)
-            );
-
-            console.log(`${currentIPTVItems.length} chaînes prêtes.`);
-        }
-
-        const filtered = currentIPTVItems.filter(item => {
-            const title = (item.name || item.title || "").toLowerCase();
-            return title.includes(term);
-        });
-
+        console.log(`Recherche serveur pour: ${term}...`);
+        const fetchUrl = `${iptvAccount.url}/player_api.php?username=${iptvAccount.user}&password=${iptvAccount.pass}&action=get_live_streams`;
+        // On passe le terme de recherche au proxy pour qu'il filtre CÔTÉ SERVEUR
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(fetchUrl)}&search=${encodeURIComponent(term)}`;
+        
+        const res = await fetch(proxyUrl);
+        const filtered = await res.json();
+        
+        console.log(`${filtered.length} résultats reçus du serveur.`);
         renderIPTVData(filtered, 'live');
     } catch (err) {
         console.error("Erreur recherche IPTV:", err);

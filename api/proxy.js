@@ -55,6 +55,25 @@ export default async function handler(request) {
     newHeaders.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     newHeaders.set('Access-Control-Allow-Headers', '*');
 
+    // FILTRAGE SERVEUR (Pour économiser la data mobile)
+    const searchTerm = searchParams.get('search');
+    if (searchTerm && targetUrl.includes('action=get_live_streams')) {
+      const data = await response.json();
+      const term = searchTerm.toLowerCase();
+      
+      let items = Array.isArray(data) ? data : Object.values(data);
+      const filtered = items.filter(item => {
+        if (!item || typeof item !== 'object') return false;
+        const name = (item.name || item.title || "").toLowerCase();
+        return name.includes(term);
+      }).slice(0, 50); // Limiter à 50 pour le transfert
+
+      return new Response(JSON.stringify(filtered), {
+        status: 200,
+        headers: newHeaders,
+      });
+    }
+
     return new Response(response.body, {
       status: response.status,
       headers: newHeaders,
