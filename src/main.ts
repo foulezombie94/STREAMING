@@ -787,7 +787,7 @@ function renderLiveTV(filter: string = '') {
     });
 }
 
-function playLiveChannel(url: string, name: string) {
+function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
     const playerContainer = document.getElementById('live-player-container');
     const video = document.getElementById('live-video') as HTMLVideoElement;
     const nameLabel = document.getElementById('current-channel-name');
@@ -802,25 +802,56 @@ function playLiveChannel(url: string, name: string) {
     // Smooth scroll to player
     window.scrollTo({ top: playerContainer.offsetTop - 100, behavior: 'smooth' });
 
+    // Stop previous HLS if any
+    if ((window as any).hls) {
+        (window as any).hls.destroy();
+    }
+
+    const streamUrl = useProxy ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` : url;
+    console.log(`Tentative de lecture: ${streamUrl}`);
+
     if (Hls.isSupported()) {
         const hls = new Hls({
             debug: false,
-            enableWorker: true,
-            lowLatencyMode: true
+            xhrSetup: (xhr: any) => {
+                xhr.withCredentials = false;
+            }
         });
-        hls.loadSource(url);
+        (window as any).hls = hls;
+        hls.loadSource(streamUrl);
         hls.attachMedia(video);
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            video.play().catch(e => console.warn("Autoplay bloqué:", e));
+        });
+
         hls.on(Hls.Events.ERROR, function (_event: any, data: any) {
             if (data.fatal) {
-                console.error("HLS Fatal Error:", data);
-                errorOverlay.style.display = 'flex';
+                switch (data.type) {
+                    case Hls.ErrorTypes.NETWORK_ERROR:
+                        console.warn("Erreur réseau HLS, tentative avec proxy...");
+                        if (!useProxy) {
+                            hls.destroy();
+                            playLiveChannel(url, name, true);
+                        } else {
+                            errorOverlay.style.display = 'flex';
+                        }
+                        break;
+                    default:
+                        hls.destroy();
+                        errorOverlay.style.display = 'flex';
+                        break;
+                }
             }
         });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native support (Safari)
-        video.src = url;
+        video.src = streamUrl;
         video.addEventListener('error', () => {
-            errorOverlay.style.display = 'flex';
+            if (!useProxy) {
+                playLiveChannel(url, name, true);
+            } else {
+                errorOverlay.style.display = 'flex';
+            }
         });
     } else {
         errorOverlay.style.display = 'flex';
@@ -845,6 +876,12 @@ document.querySelectorAll('#live-categories .cat-btn').forEach(btn => {
 document.getElementById('close-player')?.addEventListener('click', () => {
     const playerContainer = document.getElementById('live-player-container');
     const video = document.getElementById('live-video') as HTMLVideoElement;
+    
+    if ((window as any).hls) {
+        (window as any).hls.destroy();
+        delete (window as any).hls;
+    }
+
     if (playerContainer) playerContainer.style.display = 'none';
     if (video) {
         video.pause();
