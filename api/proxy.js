@@ -28,20 +28,14 @@ export default async function handler(request) {
     }
 
     // Préparation des headers à envoyer à la cible
-    // On utilise des headers qui imitent une application IPTV réelle
+    // On simplifie au maximum pour éviter d'être détecté comme un proxy suspect
     const forwardHeaders = {
-      'User-Agent': 'Mozilla/5.0 (Linux; Android 10; SM-G981B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.162 Mobile Safari/537.36 IPTV-Smarters/3.0',
+      'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
       'Accept': '*/*',
-      'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
       'Connection': 'keep-alive',
-      'X-Requested-With': 'com.nst.iptvsmarterstvbox',
+      'Referer': urlObj.origin + '/',
+      'Origin': urlObj.origin,
     };
-
-    // Note: On évite Referer et Origin qui peuvent être bloqués si incorrects
-    // Mais on peut les ajouter si l'URL cible semble les attendre
-    if (targetUrl.includes('premium') || targetUrl.includes('movie')) {
-       forwardHeaders['Referer'] = urlObj.origin + '/';
-    }
 
     // Transmettre le header Range pour le support du seeking (important pour la vidéo)
     const range = request.headers.get('range');
