@@ -939,7 +939,8 @@ function renderLiveTV(filter: string = '', categoryId: string = 'all') {
 
 // Logic for playing a live channel
 
-function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
+// Logic for playing a live channel
+function playLiveChannel(url: string, name: string) {
     const playerContainer = document.getElementById('live-player-container');
     const video = document.getElementById('live-video') as HTMLVideoElement;
     const nameLabel = document.getElementById('current-channel-name');
@@ -955,15 +956,33 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
     // Smooth scroll
     window.scrollTo({ top: playerContainer.offsetTop - 100, behavior: 'smooth' });
 
-    // Nettoyage des instances précédentes
-    if ((window as any).hls) {
-        (window as any).hls.destroy();
-        delete (window as any).hls;
-    }
-    if ((window as any).mpegtsPlayer) {
-        (window as any).mpegtsPlayer.destroy();
-        delete (window as any).mpegtsPlayer;
-    }
+    // Nettoyage COMPLET des instances et des listeners
+    const cleanup = () => {
+        if ((window as any).hls) {
+            try { (window as any).hls.destroy(); } catch(e){}
+            delete (window as any).hls;
+        }
+        if ((window as any).mpegtsPlayer) {
+            try {
+                const p = (window as any).mpegtsPlayer;
+                p.pause();
+                p.unload();
+                p.detachMediaElement();
+                p.destroy();
+            } catch(e){}
+            delete (window as any).mpegtsPlayer;
+        }
+        video.pause();
+        video.src = "";
+        video.removeAttribute('src');
+        video.load();
+        // Remove all listeners to avoid memory leaks and stack issues
+        const newVideo = video.cloneNode(true) as HTMLVideoElement;
+        video.parentNode?.replaceChild(newVideo, video);
+        return newVideo;
+    };
+
+    const activeVideo = cleanup();
 
     const getProxyUrl = (targetUrl: string, type: 'vercel' | 'corsproxy' | 'allorigins') => {
         const encoded = encodeURIComponent(targetUrl);
@@ -979,8 +998,12 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
 
     let currentProxyType: 'vercel' | 'corsproxy' | 'allorigins' = 'vercel';
     let streamUrl = getProxyUrl(url, currentProxyType);
+    let retryCount = 0;
 
     const tryNextProxy = () => {
+        retryCount++;
+        if (retryCount > 3) return false; // Stop after all proxies failed
+
         if (currentProxyType === 'vercel') {
             currentProxyType = 'corsproxy';
         } else if (currentProxyType === 'corsproxy') {
@@ -993,107 +1016,99 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
         return true;
     };
 
-    console.log(`Lecture via ${currentProxyType}: ${streamUrl}`);
-
     errorOverlay.style.display = 'flex';
     if (msg) msg.textContent = "Connexion au flux...";
     errorOverlay.querySelector('span')!.textContent = "⏳";
 
-    if (url.includes('.m3u8')) {
-        const loadHls = (target: string) => {
-            if (Hls.isSupported()) {
-                const hls = new Hls({ 
-                    debug: false, 
-                    manifestLoadingMaxRetry: 3,
-                    manifestLoadingRetryDelay: 1000,
-                    enableWorker: true
-                });
-                (window as any).hls = hls;
-                hls.loadSource(target);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    errorOverlay.style.display = 'none';
-                    video.play().catch(() => {});
-                });
-                hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
-                    if (data.fatal) {
-                        console.warn("HLS Fatal Error:", data.type);
-                        if (tryNextProxy()) {
-                            hls.destroy();
-                            delete (window as any).hls;
-                            loadHls(streamUrl);
-                        } else {
-                            if (msg) msg.textContent = "Flux indisponible (Erreur HLS).";
-                            errorOverlay.querySelector('span')!.textContent = "❌";
-                        }
+    const loadHls = (target: string) => {
+        if (Hls.isSupported()) {
+            const hls = new Hls({ 
+                debug: false, 
+                manifestLoadingMaxRetry: 2,
+                enableWorker: true,
+                lowLatencyMode: true
+            });
+            (window as any).hls = hls;
+            hls.loadSource(target);
+            hls.attachMedia(activeVideo);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                errorOverlay.style.display = 'none';
+                activeVideo.play().catch(() => {});
+            });
+            hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
+                if (data.fatal) {
+                    if (tryNextProxy()) {
+                        hls.destroy();
+                        setTimeout(() => loadHls(streamUrl), 500);
+                    } else {
+                        if (msg) msg.textContent = "Flux indisponible (Erreur HLS).";
+                        errorOverlay.querySelector('span')!.textContent = "❌";
                     }
-                });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = target;
-                video.play().catch(() => {});
+                }
+            });
+        } else if (activeVideo.canPlayType('application/vnd.apple.mpegurl')) {
+            activeVideo.src = target;
+            activeVideo.play().catch(() => {});
+        }
+    };
+
+    const loadTs = (target: string) => {
+        if (mpegts.getFeatureList().mseLivePlayback) {
+            const player = mpegts.createPlayer({ 
+                type: 'mse', 
+                isLive: true, 
+                url: target,
+                cors: true
+            }, {
+                enableStashBuffer: false, // Vital pour le live
+                liveBufferLatencyChasing: true,
+                autoCleanupSourceBuffer: true,
+                lazyLoad: false
+            });
+            (window as any).mpegtsPlayer = player;
+            player.attachMediaElement(activeVideo);
+            
+            try {
+                player.load();
+                player.play().catch(() => {});
+            } catch (e) {
+                console.error("MPEGTS Load crash:", e);
             }
-        };
-        loadHls(streamUrl);
-    } else {
-        const loadTs = (target: string) => {
-            if (mpegts.getFeatureList().mseLivePlayback) {
-                const player = mpegts.createPlayer({ 
-                    type: 'mse', 
-                    isLive: true, 
-                    url: target,
-                    cors: true
-                });
-                (window as any).mpegtsPlayer = player;
-                player.attachMediaElement(video);
+
+            player.on(mpegts.Events.ERROR, (type: any, detail: any, info: any) => {
+                console.error("MPEGTS Error:", type, detail, info);
                 
-                try {
-                    player.load();
-                    player.play().catch((e: any) => console.warn("MPEGTS Play catch:", e));
-                } catch (e) {
-                    console.error("MPEGTS Load error:", e);
+                // Si erreur de codec (EC-3 / AC-3), on tente une autre approche ou on prévient
+                if (detail === mpegts.ErrorDetails.MEDIA_MSE_ERROR && info?.message?.includes('ec-3')) {
+                    console.warn("Codec AC3 détecté, le navigateur ne le supporte pas en MSE.");
                 }
 
-                player.on(mpegts.Events.ERROR, (type: any, detail: any, info: any) => {
-                    console.error("MPEGTS Error Event:", type, detail, info);
-                    
-                    // On récupère le code d'erreur si disponible
-                    const statusCode = info?.code || 0;
-                    const isAuthError = statusCode === 401 || statusCode === 403;
+                if (tryNextProxy()) {
+                    player.destroy();
+                    setTimeout(() => loadTs(streamUrl), 800); // Délai pour éviter le dépassement de pile
+                } else if (url.endsWith('.ts') && retryCount <= 3) {
+                    player.destroy();
+                    // Tentative finale en changeant d'extension si possible
+                    setTimeout(() => playLiveChannel(url.replace('.ts', '.m3u8'), name), 1000);
+                } else {
+                    if (msg) msg.textContent = "Erreur de lecture (Flux non supporté ou hors ligne).";
+                    errorOverlay.querySelector('span')!.textContent = "❌";
+                    player.destroy();
+                }
+            });
 
-                    // Prevent crash and multiple triggers
-                    const currentPlayer = (window as any).mpegtsPlayer;
-                    if (currentPlayer) {
-                        currentPlayer.off(mpegts.Events.ERROR); // Stop listening
-                        
-                        console.log(`Erreur détectée (${statusCode}). Tentative de récupération...`);
+            activeVideo.onplaying = () => { 
+                errorOverlay.style.display = 'none';
+            };
+        } else {
+            activeVideo.src = target;
+            activeVideo.play().catch(() => {});
+        }
+    };
 
-                        if (tryNextProxy()) {
-                            console.log(`Changement de proxy vers: ${currentProxyType}`);
-                            currentPlayer.destroy();
-                            delete (window as any).mpegtsPlayer;
-                            setTimeout(() => loadTs(streamUrl), 200);
-                        } else if (url.endsWith('.ts')) {
-                            console.log("Tous les proxys ont échoué pour le TS, tentative en HLS (.m3u8)...");
-                            currentPlayer.destroy();
-                            delete (window as any).mpegtsPlayer;
-                            playLiveChannel(url.replace('.ts', '.m3u8'), name, useProxy);
-                        } else {
-                            console.error("Échec définitif de lecture.");
-                            if (msg) msg.textContent = isAuthError ? "Accès refusé par le serveur (401/403)." : "Erreur de lecture (TS).";
-                            errorOverlay.querySelector('span')!.textContent = "❌";
-                        }
-                    }
-                });
-
-                video.onplaying = () => { 
-                    errorOverlay.style.display = 'none';
-                    console.log("Lecture commencée !");
-                };
-            } else {
-                video.src = target;
-                video.play().catch(() => {});
-            }
-        };
+    if (url.includes('.m3u8')) {
+        loadHls(streamUrl);
+    } else {
         loadTs(streamUrl);
     }
 }
