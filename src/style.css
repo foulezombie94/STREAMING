@@ -478,18 +478,22 @@ a {
         position: relative !important;
         display: flex !important;
         align-items: center !important;
-        width: 160px !important; /* Barre fixe */
-        height: 38px !important;
+        width: 140px !important; /* Barre plus étroite pour éviter le débordement */
+        height: 36px !important;
         background: rgba(255, 255, 255, 0.08) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 8px !important; /* Bordures légèrement arrondies comme sur l'image */
+        border-radius: 8px !important; 
         transition: all 0.3s ease !important;
         overflow: hidden !important;
-        margin-left: 10px !important;
+        margin-left: 5px !important;
+    }
+
+    .nav-actions {
+        gap: 10px !important; /* Réduit l'espace entre les éléments de droite */
     }
 
     .search-container:focus-within { 
-        width: 180px !important; 
+        width: 160px !important; 
         background: rgba(255, 255, 255, 0.12) !important;
         border-color: rgba(239, 68, 68, 0.4) !important;
     }
