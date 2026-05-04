@@ -953,17 +953,40 @@ function playLiveChannel(url: string, name: string) {
     // Smooth scroll
     window.scrollTo({ top: playerContainer.offsetTop - 100, behavior: 'smooth' });
 
-    // Nettoyage des instances précédentes
-    if ((window as any).hls) {
-        (window as any).hls.destroy();
-        delete (window as any).hls;
-    }
-    if ((window as any).mpegtsPlayer) {
-        (window as any).mpegtsPlayer.destroy();
-        delete (window as any).mpegtsPlayer;
-    }
+    // Anti-flood: On attend un court instant pour laisser le serveur fermer la connexion précédente
+    if ((window as any).isSwitching) return;
+    (window as any).isSwitching = true;
 
-    const getProxyUrl = (targetUrl: string, type: 'vercel' | 'corsproxy' | 'allorigins') => {
+    const stopExisting = () => {
+        if ((window as any).hls) {
+            try { (window as any).hls.destroy(); } catch(e){}
+            delete (window as any).hls;
+        }
+        if ((window as any).mpegtsPlayer) {
+            try {
+                const p = (window as any).mpegtsPlayer;
+                p.pause();
+                p.unload();
+                p.detachMediaElement();
+                p.destroy();
+            } catch(e){}
+            delete (window as any).mpegtsPlayer;
+        }
+        video.pause();
+        video.src = "";
+        video.load();
+    };
+
+    stopExisting();
+
+    // Petit délai pour éviter le 403 (Too many connections)
+    setTimeout(() => {
+        (window as any).isSwitching = false;
+        startStreamLoad();
+    }, 800);
+
+    function startStreamLoad() {
+        const getProxyUrl = (targetUrl: string, type: 'vercel' | 'corsproxy' | 'allorigins') => {
         const encoded = encodeURIComponent(targetUrl);
         const isHttps = window.location.protocol === 'https:';
         if (!isHttps && type === 'vercel') return targetUrl;
@@ -1087,6 +1110,7 @@ function playLiveChannel(url: string, name: string) {
         };
         loadTs(streamUrl);
     }
+}
 }
 
 // Search event synchronized with current active category
