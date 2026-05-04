@@ -285,9 +285,9 @@ a {
 /* 4. Section Populaire */
 .popular {
     position: relative;
-    margin-top: -160px; 
+    margin-top: -80px; /* Calé sous le contenu héro sans trop d'espace */
     z-index: 10;
-    padding-bottom: 4rem;
+    padding-bottom: 2rem;
 }
 
 .section-title {
