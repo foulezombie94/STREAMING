@@ -23,7 +23,7 @@ a {
     top: 0;
     left: 0;
     width: 100%;
-    padding: 1.2rem 4rem;
+    padding: 0.8rem 4rem; /* Réduit (était 1.2rem) */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -35,14 +35,14 @@ a {
 }
 
 .navbar.scrolled {
-    padding: 0.8rem 4rem;
+    padding: 0.5rem 4rem; /* Réduit (était 0.8rem) */
     background: rgba(5, 5, 5, 0.95);
     border-bottom: 1px solid rgba(239, 68, 68, 0.3);
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
 .logo {
-    font-size: 26px;
+    font-size: 22px; /* Réduit (était 26px) */
     font-weight: 800;
     letter-spacing: 2px;
     background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
@@ -56,7 +56,7 @@ a {
 .nav-links {
     display: flex;
     list-style: none;
-    gap: 40px;
+    gap: 30px; /* Réduit (était 40px) */
 }
 
 .nav-links a {
