@@ -176,12 +176,12 @@ a {
     width: 95%;
     max-width: 1000px;
     margin: 0 auto;
+    padding-top: 10vh; /* Ajusté pour PC pour éviter de coller en haut */
     text-align: center;
     opacity: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; /* Centrage vertical interne si besoin */
     transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
@@ -199,10 +199,10 @@ a {
 }
 
 .hero h1 {
-    font-size: 52px; /* Réduit car un peu grand */
+    font-size: 46px; /* Légèrement réduit pour PC */
     font-weight: 800;
     line-height: 1.1;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
     text-transform: capitalize;
     text-shadow: 0 4px 20px rgba(0,0,0,0.8);
     letter-spacing: -1px;
@@ -229,19 +229,19 @@ a {
 }
 
 .hero-synopsis {
-    font-size: 16px;
+    font-size: 15px; /* Légèrement réduit pour PC */
     color: #D4D4D4;
     line-height: 1.6;
-    max-width: 500px; /* Réduit pour forcer des lignes plus courtes et centrées */
-    margin: 0 auto 30px auto;
+    max-width: 500px; 
+    margin: 0 auto 25px auto;
     text-shadow: 0 2px 10px rgba(0,0,0,0.8);
     display: -webkit-box;
-    -webkit-line-clamp: 4; /* Un peu plus de lignes si besoin */
+    -webkit-line-clamp: 4; 
     line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
-    text-align: center; /* Toujours bien au milieu */
+    text-align: center; 
 }
 
 .hero-buttons {
@@ -296,7 +296,7 @@ a {
 /* 4. Section Populaire */
 .popular {
     position: relative;
-    margin-top: -220px; /* Remonté encore plus haut sur PC et Mobile */
+    margin-top: -120px; /* Réduit pour PC pour éviter de coller aux infos du film */
     z-index: 10;
     padding-bottom: 2rem;
 }
