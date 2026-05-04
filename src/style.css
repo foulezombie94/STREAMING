@@ -141,12 +141,23 @@ a {
 .hero {
     position: relative;
     height: 95vh;
-    width: 100%;
+    width: calc(100% + 64px); /* Élargi pour compenser le padding du main */
+    margin-left: -32px; /* Centré pour compenser le padding gauche */
+    margin-top: -128px; /* Monté pour compenser le padding-top du main */
     background-size: cover;
     background-position: center top;
     display: flex;
     align-items: center;
     transition: background-image 0.8s ease-in-out;
+}
+
+@media (max-width: 768px) {
+    .hero {
+        width: calc(100% + 32px);
+        margin-left: -16px;
+        margin-top: -96px;
+        height: 85vh;
+    }
 }
 
 .hero::before {
@@ -165,7 +176,7 @@ a {
     width: 90%;
     max-width: 800px;
     margin: 0 auto;
-    padding-top: 8vh;
+    padding-top: 15vh; /* Augmenté pour être bien sous la navbar */
     text-align: center;
     opacity: 1;
     transition: opacity 0.4s ease, transform 0.4s ease;
