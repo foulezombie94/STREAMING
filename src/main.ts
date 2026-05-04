@@ -406,7 +406,7 @@ function updateHeroSection(item: any, isInitialLoad = false) {
 }
 
 // 8. Remplissage Carrousel interactif
-function populateCarousel(items: any[]) {
+function populateCarousel(items: any[], isResume = false) {
     if (!carousel) return;
     
     // Remise à zéro fluide
@@ -441,9 +441,10 @@ function populateCarousel(items: any[]) {
             const delay = now - lastClick;
             
             if (delay < 350 && delay > 0) {
-                // Double clic / Double tap
+                // Double clic / Double tap -> Ouvrir avec auto-lecture si c'est la section reprendre
                 let displayType = (currentType === 'trending' || currentType === 'reprendre') ? item.media_type : currentType;
-                window.location.href = `/details.html?id=${item.id}&type=${displayType}`;
+                const resumeParam = isResume ? '&resume=true' : '';
+                window.location.href = `/details.html?id=${item.id}&type=${displayType}${resumeParam}`;
             } else {
                 // Simple clic
                 document.querySelectorAll('.movie-card').forEach(c => c.classList.remove('active'));
@@ -509,7 +510,8 @@ function setupHeroButtons() {
         if (!currentData || currentData.length === 0) return;
         const currentItem = currentData.find(i => i.id === activeId) || currentData[0];
         const displayType = (currentType === 'trending' || currentType === 'reprendre') ? currentItem.media_type : currentType;
-        window.location.href = `/details.html?id=${currentItem.id}&type=${displayType}`;
+        const resumeParam = currentType === 'reprendre' ? '&resume=true' : '';
+        window.location.href = `/details.html?id=${currentItem.id}&type=${displayType}${resumeParam}`;
     };
 
     watchBtn?.addEventListener('click', handleAction);
@@ -623,7 +625,7 @@ function renderResumePage() {
         updateHeroSection(items[0], false);
         
         // On modifie légèrement populateCarousel pour afficher le badge de progression
-        populateCarousel(currentData);
+        populateCarousel(currentData, true);
         
         // Ajouter des badges de progression sur les cartes (Optionnel mais premium)
         setTimeout(() => {

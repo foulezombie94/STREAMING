@@ -415,17 +415,15 @@ function updateTvIframe() {
     const s = seasonSelect.value || "1";
     const e = episodeSelect.value || "1";
     videoIframe.src = getTvUrl(currentServer, mediaId, s, e);
+    // Sauvegarder la progression dès que l'iframe est mise à jour
+    updateTvProgress();
 }
 
 if (watchMovieBtn && playerSection && videoIframe) {
-    watchMovieBtn.addEventListener('click', () => {
+    const startPlayback = () => {
         playerSection.style.display = 'block';
-        
-        // Scroll smoothly to the player
         playerSection.scrollIntoView({ behavior: 'smooth' });
 
-        // Sauvegarder dans l'historique (Reprendre)
-        // On ne sauvegarde pas ici pour les séries si on n'a pas encore chargé les sélecteurs
         if (mediaType === 'movie' && currentMediaData) {
             ProgressManager.saveProgress({
                 mediaId: mediaId!,
@@ -446,9 +444,7 @@ if (watchMovieBtn && playerSection && videoIframe) {
             videoIframe.src = getMovieUrl(currentServer, mediaId);
         } else {
             if (playerControls) playerControls.style.display = 'flex';
-            // On a déjà récupéré le nombre de saisons lors du fetchDetails initial
             if (seasonSelect && (seasonSelect.value === '' || seasonSelect.options.length <= 1) && currentSeasonsCount > 0) {
-                // Charger la dernière progression si elle existe
                 const lastProgress = ProgressManager.getProgress(mediaId!, 'tv');
                 if (lastProgress && lastProgress.season) {
                     populateSeasonSelect(lastProgress.season);
@@ -461,7 +457,20 @@ if (watchMovieBtn && playerSection && videoIframe) {
                 updateTvIframe();
             }
         }
-    });
+    };
+
+    watchMovieBtn.addEventListener('click', startPlayback);
+
+    // Auto-start if resume parameter is present
+    if (urlParams.get('resume') === 'true') {
+        // Attendre que currentMediaData soit chargé
+        const checkData = setInterval(() => {
+            if (currentMediaData) {
+                clearInterval(checkData);
+                startPlayback();
+            }
+        }, 100);
+    }
 }
 
 function updateTvProgress() {
