@@ -1663,3 +1663,37 @@ a {
     height: 100%;
     object-fit: contain;
 }
+
+/* Modern Glassmorphism & Glow Effects */
+.glass-panel {
+    background: rgba(18, 18, 20, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.glow-active {
+    box-shadow: 0 0 20px rgba(255, 95, 95, 0.3), inset 0 0 10px rgba(255, 95, 95, 0.1);
+    border-color: rgba(255, 95, 95, 0.5) !important;
+}
+
+.bento-hover {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bento-hover:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 10px 40px -10px rgba(255, 95, 95, 0.2);
+    border-color: rgba(255, 255, 255, 0.15);
+    z-index: 10;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+

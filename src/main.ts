@@ -815,19 +815,31 @@ function renderCategories() {
     const container = document.getElementById('live-categories');
     if (!container) return;
 
-    // On garde que les catégories qui ont des chaînes (optionnel)
+    const baseClasses = "px-6 py-2.5 rounded-2xl font-body-sm text-body-sm whitespace-nowrap transition-all glass-panel text-on-surface hover:text-white hover:bg-white/5 border border-white/5 hover:border-white/20";
+    const activeClasses = "px-6 py-2.5 rounded-2xl font-body-sm text-body-sm whitespace-nowrap transition-all glass-panel glow-active text-white relative overflow-hidden group active";
+
     const html = `
-        <button class="cat-btn active" data-id="all">Tout</button>
+        <div class="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full blur-[80px] -z-10 pointer-events-none"></div>
+        <button class="${activeClasses}" data-id="all">
+            <div class="absolute inset-0 bg-primary/20 group-hover:bg-primary/30 transition-colors"></div>
+            <span class="relative z-10 font-medium">Tout</span>
+        </button>
         ${liveCategories.map(cat => `
-            <button class="cat-btn" data-id="${cat.category_id}">${cat.category_name}</button>
+            <button class="${baseClasses}" data-id="${cat.category_id}">${cat.category_name}</button>
         `).join('')}
     `;
     container.innerHTML = html;
 
-    container.querySelectorAll('.cat-btn').forEach(btn => {
+    container.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', () => {
-            container.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            container.querySelectorAll('button').forEach(b => {
+                b.className = baseClasses;
+                b.classList.remove('active', 'glow-active', 'text-white', 'relative', 'overflow-hidden', 'group');
+            });
+            btn.className = activeClasses;
+            // Add extra classes for the active look manually to ensure it matches exactly
+            btn.classList.add('active', 'glow-active', 'text-white');
+            
             const catId = btn.getAttribute('data-id') || 'all';
             renderLiveTV('', catId);
         });
@@ -852,38 +864,72 @@ function renderLiveTV(filter: string = '', categoryId: string = 'all') {
     }
 
     // Limite pour perf
-    const display = filtered.slice(0, 200);
+    const display = filtered.slice(0, 100);
 
     if (display.length === 0) {
-        liveGrid.innerHTML = '<div class="no-results" style="grid-column: 1/-1; text-align:center; padding: 50px; color: rgba(255,255,255,0.5);">Aucune chaîne trouvée.</div>';
+        liveGrid.innerHTML = '<div class="md:col-span-12 py-20 text-center text-white/30 font-medium italic">Aucune chaîne trouvée.</div>';
         return;
     }
 
-    liveGrid.innerHTML = display.map(c => {
-        // On remet en .ts par défaut (format standard Xtream)
+    liveGrid.innerHTML = display.map((c, index) => {
         const streamUrl = `${xtreamConfig.host}/live/${xtreamConfig.user}/${xtreamConfig.pass}/${c.stream_id}.ts`;
+        
+        // Varying bento sizes for visual interest
+        let spanClass = "md:col-span-4 lg:col-span-3";
+        if (index === 0 && !filter) {
+            spanClass = "md:col-span-12 lg:col-span-8 row-span-2";
+        } else if (index < 3 && !filter) {
+            spanClass = "md:col-span-6 lg:col-span-4";
+        }
+
+        const isFeatured = index === 0 && !filter;
+
         return `
-            <div class="live-card" data-url="${streamUrl}">
-                <div class="card-img-container" style="aspect-ratio: 16/9; background: #1a1a1a; position: relative; overflow: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                    <img src="${c.stream_icon || ''}" 
-                         alt="${c.name}" 
-                         loading="lazy" 
-                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                         style="width: 100%; height: 100%; object-fit: contain; padding: 10px;">
-                    <div class="fallback-logo" style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; background: linear-gradient(45deg, #050505, #111); color: #ef4444; font-weight: 800; font-size: 14px; text-align: center; padding: 5px;">
-                        ${c.name.substring(0, 10)}
+            <div class="${spanClass} group relative rounded-[2rem] overflow-hidden cursor-pointer bento-hover border border-white/10 glass-panel flex flex-col justify-end min-h-[200px]" data-url="${streamUrl}">
+                ${isFeatured ? `
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent z-10 pointer-events-none"></div>
+                    <img alt="${c.name}" class="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out" src="${c.stream_icon || ''}" onerror="this.src='https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&q=80&w=2070';"/>
+                    <div class="absolute top-6 left-6 z-20">
+                        <span class="bg-primary/20 backdrop-blur-md text-primary border border-primary/30 px-4 py-1.5 rounded-full font-label-caps text-[11px] flex items-center gap-2 shadow-[0_0_15px_rgba(255,179,175,0.2)]">
+                            <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                            A LA UNE
+                        </span>
                     </div>
-                    <div class="live-badge">LIVE</div>
-                </div>
-                <div class="live-title" style="font-size: 11px; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;">${c.name}</div>
+                    <div class="absolute bottom-0 left-0 p-8 z-20 w-full">
+                        <h2 class="font-display-xl text-3xl text-white mb-2 drop-shadow-lg font-bold">${c.name}</h2>
+                        <p class="font-body-sm text-white/60 line-clamp-1">Diffusion haute qualité en direct</p>
+                    </div>
+                    <div class="absolute bottom-8 right-8 z-20 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
+                        <div class="w-14 h-14 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-xl">
+                            <span class="material-symbols-outlined text-3xl ml-1">play_arrow</span>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="absolute inset-0 flex items-center justify-center p-8 opacity-20 group-hover:opacity-40 transition-all group-hover:scale-110">
+                         <img src="${c.stream_icon || ''}" class="max-w-full max-h-full object-contain" onerror="this.style.display='none'"/>
+                    </div>
+                    <div class="relative z-10 p-6 flex flex-col h-full justify-between w-full bg-gradient-to-t from-background via-transparent to-transparent">
+                        <div class="flex justify-between items-start">
+                            <span class="bg-surface-container/60 border border-white/10 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wider flex items-center gap-1.5 backdrop-blur-md">
+                                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                LIVE
+                            </span>
+                        </div>
+                        <div class="w-full">
+                            <h3 class="font-title-lg text-lg text-white font-semibold mb-1 group-hover:text-primary transition-colors truncate w-full">${c.name}</h3>
+                            <p class="font-body-sm text-tertiary text-xs opacity-60">Diffusion Direct</p>
+                        </div>
+                    </div>
+                `}
             </div>
         `;
     }).join('');
 
-    liveGrid.querySelectorAll('.live-card').forEach(card => {
+    liveGrid.querySelectorAll('[data-url]').forEach(card => {
         card.addEventListener('click', () => {
             const url = card.getAttribute('data-url');
-            const name = card.querySelector('.live-title')?.textContent || 'Chaîne';
+            const name = card.querySelector('h2, h3')?.textContent || 'Chaîne';
             if (url) playLiveChannel(url, name);
         });
     });
