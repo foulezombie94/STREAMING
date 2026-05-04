@@ -1166,5 +1166,15 @@ document.getElementById('close-player')?.addEventListener('click', () => {
     stopLiveTV();
 });
 
+// Pause automatique quand on quitte l'onglet (Mobile & PC)
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        const video = document.getElementById('live-video') as HTMLVideoElement;
+        if (video && !video.paused) {
+            video.pause();
+        }
+    }
+});
+
 // Update handleNavigation to use new init
 // (We modify the handleNavigation function in the next chunk)
