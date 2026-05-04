@@ -79,6 +79,11 @@ function handleNavigation(type: any) {
     currentType = type as any;
     activeGenreId = null; 
 
+    // FERME LE LECTEUR LIVE SI ON QUITTE IPTV
+    if (currentType !== 'iptv') {
+        stopLiveTV();
+    }
+
     // Gestion de la visibilité des sections
     if (heroSection) heroSection.style.display = (currentType === 'iptv') ? 'none' : 'block';
     if (popularSection) popularSection.style.display = (currentType === 'iptv') ? 'none' : 'block';
@@ -1129,13 +1134,24 @@ document.getElementById('xtream-logout-btn')?.addEventListener('click', () => {
     }
 });
 
-document.getElementById('close-player')?.addEventListener('click', () => {
+export function stopLiveTV() {
     const playerContainer = document.getElementById('live-player-container');
     const video = document.getElementById('live-video') as HTMLVideoElement;
     
     if ((window as any).hls) {
-        (window as any).hls.destroy();
+        try { (window as any).hls.destroy(); } catch(e){}
         delete (window as any).hls;
+    }
+
+    if ((window as any).mpegtsPlayer) {
+        try {
+            const p = (window as any).mpegtsPlayer;
+            p.pause();
+            p.unload();
+            p.detachMediaElement();
+            p.destroy();
+        } catch(e){}
+        delete (window as any).mpegtsPlayer;
     }
 
     if (playerContainer) playerContainer.style.display = 'none';
@@ -1144,6 +1160,10 @@ document.getElementById('close-player')?.addEventListener('click', () => {
         video.src = "";
         video.load();
     }
+}
+
+document.getElementById('close-player')?.addEventListener('click', () => {
+    stopLiveTV();
 });
 
 // Update handleNavigation to use new init
