@@ -1037,6 +1037,14 @@ function playLiveChannel(url: string, name: string) {
             });
             hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
                 if (data.fatal) {
+                    const statusCode = data.response?.code || 0;
+                    if (statusCode === 401 || statusCode === 403) {
+                        if (msg) msg.textContent = "Accès refusé (401/403). Vérifiez vos identifiants.";
+                        errorOverlay.querySelector('span')!.textContent = "🔑";
+                        hls.destroy();
+                        return;
+                    }
+
                     if (tryNextProxy()) {
                         hls.destroy();
                         setTimeout(() => loadHls(streamUrl), 500);
@@ -1078,20 +1086,27 @@ function playLiveChannel(url: string, name: string) {
             player.on(mpegts.Events.ERROR, (type: any, detail: any, info: any) => {
                 console.error("MPEGTS Error:", type, detail, info);
                 
-                // Si erreur de codec (EC-3 / AC-3), on tente une autre approche ou on prévient
+                const statusCode = info?.code || 0;
+                if (statusCode === 401 || statusCode === 403) {
+                    if (msg) msg.textContent = "Accès refusé (401/403). Vos identifiants ont peut-être expiré.";
+                    errorOverlay.querySelector('span')!.textContent = "🔑";
+                    player.destroy();
+                    return;
+                }
+
+                // Si erreur de codec (EC-3 / AC-3)
                 if (detail === mpegts.ErrorDetails.MEDIA_MSE_ERROR && info?.message?.includes('ec-3')) {
-                    console.warn("Codec AC3 détecté, le navigateur ne le supporte pas en MSE.");
+                    console.warn("Codec AC3 non supporté.");
                 }
 
                 if (tryNextProxy()) {
                     player.destroy();
-                    setTimeout(() => loadTs(streamUrl), 800); // Délai pour éviter le dépassement de pile
+                    setTimeout(() => loadTs(streamUrl), 800);
                 } else if (url.endsWith('.ts') && retryCount <= 3) {
                     player.destroy();
-                    // Tentative finale en changeant d'extension si possible
                     setTimeout(() => playLiveChannel(url.replace('.ts', '.m3u8'), name), 1000);
                 } else {
-                    if (msg) msg.textContent = "Erreur de lecture (Flux non supporté ou hors ligne).";
+                    if (msg) msg.textContent = "Flux indisponible ou format non supporté.";
                     errorOverlay.querySelector('span')!.textContent = "❌";
                     player.destroy();
                 }
