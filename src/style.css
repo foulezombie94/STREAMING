@@ -458,6 +458,28 @@ a {
 }
 
 /* Responsive */
+@media (min-width: 1025px) {
+    .hero-content { 
+        width: 100%; 
+        max-width: 1000px;
+        padding-top: 22vh !important; /* Pousse le texte vers le bas pour éviter le bouton filtre */
+        margin: 0 auto !important;
+    }
+    .hero h1 { font-size: 56px !important; }
+    .hero-synopsis { font-size: 16px !important; margin-bottom: 30px !important; }
+    
+    .genre-filters-container { 
+        margin-top: 40px !important; 
+        margin-bottom: 0 !important;
+        position: relative !important;
+        z-index: 110 !important;
+    }
+    
+    .popular { 
+        margin-top: -100px !important; 
+    }
+}
+
 @media (max-width: 1024px) {
     .hero-content { width: 70%; }
     .hero h1 { font-size: 48px; }
