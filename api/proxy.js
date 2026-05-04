@@ -72,6 +72,16 @@ export default async function handler(request) {
     newHeaders.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     newHeaders.set('Access-Control-Allow-Headers', '*');
 
+    // CACHE MULTI-UTILISATEUR (Pour permettre à 10+ personnes de voir la même chaîne)
+    // On cache les segments .ts pendant 2 secondes au niveau du CDN Edge
+    if (targetUrl.includes('.ts') || targetUrl.includes('.m4s')) {
+      newHeaders.set('Cache-Control', 'public, s-maxage=2, stale-while-revalidate=5');
+    }
+    // On cache le manifest .m3u8 très brièvement (1s)
+    if (targetUrl.includes('.m3u8')) {
+      newHeaders.set('Cache-Control', 'public, s-maxage=1, stale-while-revalidate=2');
+    }
+
     // FILTRAGE SERVEUR (Pour économiser la data mobile)
     const searchTerm = searchParams.get('search');
     if (searchTerm && targetUrl.includes('action=get_live_streams')) {
