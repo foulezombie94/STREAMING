@@ -174,9 +174,9 @@ a {
     position: relative;
     z-index: 20; 
     width: 95%;
-    max-width: 1000px; /* Ne dépasse pas sur les côtés */
+    max-width: 1000px; /* Ne dÃ©passe pas sur les cÃ´tÃ©s */
     margin: 0 auto;
-    padding-top: 15vh; /* Centré verticalement dans l'espace visible */
+    padding-top: 25vh; /* Descendu pour être bien au milieu de l'image visible */
     text-align: center;
     opacity: 1;
     display: flex;
@@ -184,6 +184,13 @@ a {
     align-items: center;
     transition: opacity 0.4s ease, transform 0.4s ease;
 }
+
+@media (max-width: 768px) {
+    .hero-content {
+        padding-top: 20vh; /* Ajusté pour mobile */
+    }
+}
+
 
 /* Classe ajoutÃ©e en JS pour l'animation de transition */
 .hero-content.animating {
