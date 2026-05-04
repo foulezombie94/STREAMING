@@ -497,7 +497,7 @@ async function fetchGenres() {
 
 async function initApp() {
     await fetchGenres();
-    fetchPopularData('trending');
+    handleNavigation('trending'); // Utiliser handleNavigation pour initialiser correctement l'UI
     setupHeroButtons();
 }
 

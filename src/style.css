@@ -141,9 +141,9 @@ a {
 .hero {
     position: relative;
     height: 95vh;
-    width: calc(100% + 64px); /* Élargi pour compenser le padding du main */
-    margin-left: -32px; /* Centré pour compenser le padding gauche */
-    margin-top: -128px; /* Monté pour compenser le padding-top du main */
+    width: calc(100% + 64px); 
+    margin-left: -32px; 
+    margin-top: -110px; /* Légèrement descendu (était -128px) */
     background-size: cover;
     background-position: center top;
     display: flex;
@@ -155,7 +155,7 @@ a {
     .hero {
         width: calc(100% + 32px);
         margin-left: -16px;
-        margin-top: -96px;
+        margin-top: -85px; /* Légèrement descendu (était -96px) */
         height: 85vh;
     }
 }
@@ -754,15 +754,15 @@ a {
     width: 100%;
     z-index: 100;
     background: transparent;
-    padding: 20px 0 0 0;
-    margin-top: 80px; /* Retour en haut sous la navbar */
-    margin-bottom: 0;
+    padding: 0;
+    margin-top: -40px; /* Calé sur le bas du héros sans gros espace */
+    margin-bottom: 20px;
 }
 
 @media (max-width: 768px) {
     .genre-filters-container {
-        margin-top: 65px;
-        padding: 10px 0;
+        margin-top: -20px;
+        padding: 5px 0;
     }
 }
 
