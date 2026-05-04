@@ -189,10 +189,10 @@ a {
 }
 
 .hero h1 {
-    font-size: 64px;
+    font-size: 52px; /* Réduit car un peu grand */
     font-weight: 800;
     line-height: 1.1;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     text-transform: capitalize;
     text-shadow: 0 4px 20px rgba(0,0,0,0.8);
     letter-spacing: -1px;
@@ -235,16 +235,19 @@ a {
 
 .hero-buttons {
     display: flex;
-    justify-content: center;
-    gap: 20px;
+    flex-direction: column; /* L'un au dessus de l'autre */
+    align-items: center;
+    gap: 12px;
 }
 
 .btn {
-    padding: 14px 32px;
-    border-radius: 8px; /* Boutons rectangulaires aux bords arrondis */
+    padding: 12px 32px;
+    border-radius: 12px; /* Rectangulaire arrondi */
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
+    width: 220px; /* Largeur uniforme */
+    justify-content: center;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
