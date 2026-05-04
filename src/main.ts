@@ -979,11 +979,8 @@ function playLiveChannel(url: string, name: string) {
 
     stopExisting();
 
-    // Petit délai pour éviter le 403 (Too many connections)
-    setTimeout(() => {
-        (window as any).isSwitching = false;
-        startStreamLoad();
-    }, 800);
+    (window as any).isSwitching = false;
+    startStreamLoad();
 
     function startStreamLoad() {
         const getProxyUrl = (targetUrl: string, type: 'vercel' | 'corsproxy' | 'allorigins') => {
