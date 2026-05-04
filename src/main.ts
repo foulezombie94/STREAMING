@@ -815,8 +815,8 @@ function renderCategories() {
     const container = document.getElementById('live-categories');
     if (!container) return;
 
-    const baseClasses = "px-6 py-2.5 rounded-2xl font-body-sm text-body-sm whitespace-nowrap transition-all glass-panel text-on-surface hover:text-white hover:bg-white/5 border border-white/5 hover:border-white/20";
-    const activeClasses = "px-6 py-2.5 rounded-2xl font-body-sm text-body-sm whitespace-nowrap transition-all glass-panel glow-active text-white relative overflow-hidden group active";
+    const baseClasses = "px-6 py-2.5 m-1 rounded-2xl font-body-sm text-body-sm whitespace-nowrap transition-all glass-panel text-on-surface hover:text-white hover:bg-white/5 border border-white/5 hover:border-white/20";
+    const activeClasses = "px-6 py-2.5 m-1 rounded-2xl font-body-sm text-body-sm whitespace-nowrap transition-all glass-panel glow-active text-white relative overflow-hidden group active";
 
     const html = `
         <div class="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full blur-[80px] -z-10 pointer-events-none"></div>
