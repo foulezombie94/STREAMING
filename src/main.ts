@@ -937,7 +937,7 @@ function renderLiveTV(filter: string = '', categoryId: string = 'all') {
 
 // Logic for playing a live channel
 
-function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
+function playLiveChannel(url: string, name: string) {
     const playerContainer = document.getElementById('live-player-container');
     const video = document.getElementById('live-video') as HTMLVideoElement;
     const nameLabel = document.getElementById('current-channel-name');
