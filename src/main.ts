@@ -1054,30 +1054,24 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
                 player.on(mpegts.Events.ERROR, (type: any, detail: any, info: any) => {
                     console.error("MPEGTS Error Event:", type, detail, info);
                     
-                    // On récupère le code d'erreur si disponible
                     const statusCode = info?.code || 0;
                     const isAuthError = statusCode === 401 || statusCode === 403;
 
-                    // Prevent crash and multiple triggers
                     const currentPlayer = (window as any).mpegtsPlayer;
                     if (currentPlayer) {
-                        currentPlayer.off(mpegts.Events.ERROR); // Stop listening
+                        // FIX: On ne peut pas appeler off() sans la fonction d'origine
+                        // On utilise destroy() directement qui nettoie tout
                         
-                        console.log(`Erreur détectée (${statusCode}). Tentative de récupération...`);
-
                         if (tryNextProxy()) {
-                            console.log(`Changement de proxy vers: ${currentProxyType}`);
                             currentPlayer.destroy();
                             delete (window as any).mpegtsPlayer;
-                            setTimeout(() => loadTs(streamUrl), 200);
+                            setTimeout(() => loadTs(streamUrl), 500);
                         } else if (url.endsWith('.ts')) {
-                            console.log("Tous les proxys ont échoué pour le TS, tentative en HLS (.m3u8)...");
                             currentPlayer.destroy();
                             delete (window as any).mpegtsPlayer;
-                            playLiveChannel(url.replace('.ts', '.m3u8'), name, useProxy);
+                            playLiveChannel(url.replace('.ts', '.m3u8'), name);
                         } else {
-                            console.error("Échec définitif de lecture.");
-                            if (msg) msg.textContent = isAuthError ? "Accès refusé par le serveur (401/403)." : "Erreur de lecture (TS).";
+                            if (msg) msg.textContent = isAuthError ? "Accès refusé (401/403)." : "Erreur de lecture.";
                             errorOverlay.querySelector('span')!.textContent = "❌";
                         }
                     }
@@ -1085,7 +1079,6 @@ function playLiveChannel(url: string, name: string, useProxy: boolean = false) {
 
                 video.onplaying = () => { 
                     errorOverlay.style.display = 'none';
-                    console.log("Lecture commencée !");
                 };
             } else {
                 video.src = target;

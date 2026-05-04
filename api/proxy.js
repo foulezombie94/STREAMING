@@ -28,13 +28,10 @@ export default async function handler(request) {
     }
 
     // Préparation des headers à envoyer à la cible
-    // On simplifie au maximum pour éviter d'être détecté comme un proxy suspect
     const forwardHeaders = {
       'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18',
       'Accept': '*/*',
       'Connection': 'keep-alive',
-      'Referer': urlObj.origin + '/',
-      'Origin': urlObj.origin,
     };
 
     // Transmettre le header Range pour le support du seeking (important pour la vidéo)
