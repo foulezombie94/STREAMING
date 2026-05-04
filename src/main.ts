@@ -1016,9 +1016,9 @@ function playLiveChannel(url: string, name: string) {
 
     console.log(`Lecture via ${currentProxyType}: ${streamUrl}`);
 
-    errorOverlay.style.display = 'flex';
+    errorOverlay!.style.display = 'flex';
     if (msg) msg.textContent = "Connexion au flux...";
-    errorOverlay.querySelector('span')!.textContent = "⏳";
+    errorOverlay!.querySelector('span')!.textContent = "⏳";
 
     if (url.includes('.m3u8')) {
         const loadHls = (target: string) => {
@@ -1033,7 +1033,7 @@ function playLiveChannel(url: string, name: string) {
                 hls.loadSource(target);
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    errorOverlay.style.display = 'none';
+                    errorOverlay!.style.display = 'none';
                     video.play().catch(() => {});
                 });
                 hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
@@ -1045,7 +1045,7 @@ function playLiveChannel(url: string, name: string) {
                             loadHls(streamUrl);
                         } else {
                             if (msg) msg.textContent = "Flux indisponible (Erreur HLS).";
-                            errorOverlay.querySelector('span')!.textContent = "❌";
+                            errorOverlay!.querySelector('span')!.textContent = "❌";
                         }
                     }
                 });
@@ -1095,13 +1095,13 @@ function playLiveChannel(url: string, name: string) {
                             playLiveChannel(url.replace('.ts', '.m3u8'), name);
                         } else {
                             if (msg) msg.textContent = isAuthError ? "Accès refusé (401/403)." : "Erreur de lecture.";
-                            errorOverlay.querySelector('span')!.textContent = "❌";
+                            errorOverlay!.querySelector('span')!.textContent = "❌";
                         }
                     }
                 });
 
                 video.onplaying = () => { 
-                    errorOverlay.style.display = 'none';
+                    errorOverlay!.style.display = 'none';
                 };
             } else {
                 video.src = target;
