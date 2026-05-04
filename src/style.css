@@ -457,61 +457,159 @@ a {
     color: #ef4444;
 }
 
-/* Responsive Styles */
+/* Responsive */
 @media (max-width: 1024px) {
-    .hero-content { width: 75%; padding-top: 20vh; }
-    .hero h1 { font-size: 42px; }
-    .movie-card { flex: 0 0 calc(25% - 15px); }
+    .hero-content { width: 70%; padding-top: 10vh; }
+    .hero h1 { font-size: 48px; }
+    .movie-card { flex: 0 0 calc(25% - 20px); }
+    .details-content-wrapper { padding: 12vh 3rem 4rem 3rem; gap: 35px; }
+    .poster-container { flex: 0 0 240px; }
 }
 
 @media (max-width: 768px) {
+    /* 1. Navbar responsive - Retour au noir premium */
     .navbar { 
-        padding: 0.6rem 1rem; 
-        background: rgba(5, 5, 5, 0.95);
+        padding: 0.8rem 1.2rem; 
+        display: flex;
+        justify-content: space-between; 
+        align-items: center; 
+        flex-wrap: nowrap;
+        background: rgba(5, 5, 5, 0.85);
+        backdrop-filter: blur(25px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
-    .nav-links { display: none !important; }
-    .nav-actions .icon:not(.search-icon) { display: none !important; }
-    
+
+    .navbar.scrolled {
+        background: rgba(0, 0, 0, 0.95);
+    }
+
+    .logo {
+        font-size: 20px;
+        letter-spacing: 1px;
+    }
+
+    /* Cache les menus texte */
+    .nav-links { 
+        display: none !important; 
+    }
+
+    /* Cache les notifications et l'icône de recherche sur mobile */
+    .nav-actions .icon:not(.search-icon),
+    .nav-actions .search-icon {
+        display: none !important;
+    }
+
+    /* REWRITTEN SEARCH MOBILE - SIMPLE BAR WITHOUT SVG */
+    .search-container { 
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        width: 140px !important; /* Barre plus étroite pour éviter le débordement */
+        height: 36px !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 8px !important; 
+        transition: all 0.3s ease !important;
+        overflow: hidden !important;
+        margin-left: 5px !important;
+    }
+
+    .nav-actions {
+        gap: 10px !important; /* Réduit l'espace entre les éléments de droite */
+    }
+
+    .search-container:focus-within { 
+        width: 160px !important; 
+        background: rgba(255, 255, 255, 0.12) !important;
+        border-color: rgba(239, 68, 68, 0.4) !important;
+    }
+
+    .search-input { 
+        width: 100% !important; 
+        opacity: 1 !important; 
+        visibility: visible !important;
+        padding: 0 12px !important; 
+        margin: 0 !important;
+        border: none !important;
+        outline: none !important;
+        color: white !important;
+        font-family: inherit !important;
+        font-size: 16px !important;
+        background: transparent !important;
+        pointer-events: auto !important;
+    }
+
+    /* Placeholder spécifique mobile */
+    .search-input::placeholder {
+        color: rgba(255, 255, 255, 0.5) !important;
+        font-size: 13px;
+    }
+
     .bottom-nav { display: flex; }
     
-    .hero { height: 80vh; }
-    .hero-content { 
-        width: 95%; 
-        padding-top: 35vh; /* Descendu pour le milieu sans toucher le header */
-        align-items: center;
-        text-align: center;
-    }
-    .hero h1 { font-size: 30px; }
-    .hero-synopsis { 
-        max-width: 90%; 
-        font-size: 14px; 
-        margin-bottom: 25px;
-        -webkit-line-clamp: 3;
-        line-clamp: 3;
+    .hero-content { width: 90%; padding-left: 0; padding-top: 15vh; }
+    .hero h1 { font-size: 32px; line-height: 1.2; }
+    
+    .genre-filters-container { margin-top: 60px; padding: 10px 1.5rem; }
+    .mobile-filter-btn { 
+        width: 100%; 
+        justify-content: center; 
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
     }
     
+    main { padding-bottom: 20px; }
+    
+    /* Grille 3 colonnes au lieu du carrousel */
     .carousel-container { 
         display: grid !important; 
         grid-template-columns: repeat(3, 1fr) !important; 
         gap: 8px !important; 
-        padding: 0 10px !important;
-        overflow: visible !important;
+        padding: 0 1rem !important;
+        overflow: hidden !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
     
-    .popular { margin-top: -80px; }
-    .section-title { font-size: 18px; padding-left: 10px; }
-    
-    .search-container { width: 150px !important; }
+    .movie-card { 
+        width: 100% !important; 
+        min-width: 0 !important; 
+        border-radius: 8px;
+    }
 }
 
 @media (max-width: 480px) {
-    .hero { height: 75vh; }
-    .hero-content { padding-top: 32vh; }
-    .hero h1 { font-size: 26px; }
-    .hero-buttons { width: 100%; max-width: 250px; gap: 10px; }
-    .hero-btn { width: 100%; }
-    .logo { font-size: 18px; }
-    .carousel-container { grid-template-columns: repeat(3, 1fr) !important; }
+    .hero { min-height: 55vh; }
+    .hero-content { padding-top: 10vh; }
+    .hero h1 { font-size: 24px; }
+    .hero-synopsis { -webkit-line-clamp: 2;
+    line-clamp: 2; font-size: 13px; margin-bottom: 12px; }
+    .hero-meta { font-size: 11px; }
+    .hero-buttons { 
+        max-width: 280px; 
+        margin: 0 auto; 
+        gap: 12px; 
+        flex-direction: column;
+        align-items: center;
+    }
+    .popular { margin-top: -30px; }
+    .movie-card { width: 100% !important; min-width: 0 !important; }
+    .section-title { font-size: 16px; padding-left: 1rem; }
+    .carousel-container { 
+        padding-left: 1rem !important; 
+        padding-right: 1rem !important; 
+        gap: 8px !important; 
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+    .movie-card { width: 100% !important; min-width: 0 !important; }
+    .logo { font-size: 16px; }
+    .navbar { padding: 1rem; }
+    .navbar.scrolled { padding: 0.7rem 1rem; }
+    .details-content-wrapper { padding: 8vh 1rem 2rem 1rem; }
+    .poster-container { width: 160px; }
+    .player-section { padding: 20px 1rem; }
+    .server-btn { font-size: 11px; padding: 8px 8px; }
+    .btn { padding: 10px 16px; font-size: 13px; }
 }
 
 /* --- DETAILS PAGE STYLES --- */
