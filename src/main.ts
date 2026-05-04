@@ -982,7 +982,7 @@ function playLiveChannel(url: string, name: string) {
     setTimeout(() => {
         (window as any).isSwitching = false;
         startStreamLoad();
-    }, 600);
+    }, 650);
 
     function startStreamLoad() {
         const getProxyUrl = (targetUrl: string, type: 'vercel' | 'corsproxy' | 'allorigins') => {
