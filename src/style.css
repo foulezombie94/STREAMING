@@ -285,7 +285,7 @@ a {
 /* 4. Section Populaire */
 .popular {
     position: relative;
-    margin-top: -80px; /* Calé sous le contenu héro sans trop d'espace */
+    margin-top: -160px; /* Remonté au maximum pour supprimer l'espace inutile */
     z-index: 10;
     padding-bottom: 2rem;
 }
