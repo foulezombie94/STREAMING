@@ -852,34 +852,48 @@ async function loadXtreamData() {
 
 function renderCategories() {
     const container = document.getElementById('live-categories');
+    const categoryLabel = document.getElementById('current-category-name');
     if (!container) return;
 
-    const baseClasses = "px-6 py-2.5 m-1 rounded-2xl font-body-sm text-body-sm whitespace-nowrap transition-all glass-panel text-on-surface hover:text-white hover:bg-white/5 border border-white/5 hover:border-white/20";
-    const activeClasses = "px-6 py-2.5 m-1 rounded-2xl font-body-sm text-body-sm whitespace-nowrap transition-all glass-panel glow-active text-white relative overflow-hidden group active";
+    const baseClasses = "w-full px-5 py-4 rounded-xl flex items-center justify-between transition-all hover:bg-white/5 group text-white/50 hover:text-white cursor-pointer";
+    const activeClasses = "w-full px-5 py-4 rounded-xl flex items-center justify-between transition-all bg-primary/20 border border-primary/30 text-white shadow-[0_0_20px_rgba(255,179,175,0.1)] group active cursor-pointer";
+
+    const allChannelsCount = allLiveChannels.length;
 
     const html = `
-        <div class="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full blur-[80px] -z-10 pointer-events-none"></div>
-        <button class="${activeClasses}" data-id="all">
-            <div class="absolute inset-0 bg-primary/20 group-hover:bg-primary/30 transition-colors"></div>
-            <span class="relative z-10 font-medium">Tout</span>
-        </button>
-        ${liveCategories.map(cat => `
-            <button class="${baseClasses}" data-id="${cat.category_id}">${cat.category_name}</button>
-        `).join('')}
+        <div class="${activeClasses}" data-id="all">
+            <div class="flex items-center gap-4">
+                <span class="material-symbols-outlined text-xl group-hover:scale-110 transition-transform">grid_view</span>
+                <span class="font-bold text-xs uppercase tracking-widest">Tout</span>
+            </div>
+            <span class="text-[10px] font-bold opacity-30 group-hover:opacity-100 transition-opacity">${allChannelsCount}</span>
+        </div>
+        ${liveCategories.map(cat => {
+            const count = allLiveChannels.filter(c => c.category_id === cat.category_id).length;
+            return `
+                <div class="${baseClasses}" data-id="${cat.category_id}">
+                    <div class="flex items-center gap-4">
+                        <span class="material-symbols-outlined text-xl group-hover:scale-110 transition-transform">folder</span>
+                        <span class="font-bold text-xs uppercase tracking-widest truncate max-w-[140px]">${cat.category_name}</span>
+                    </div>
+                    <span class="text-[10px] font-bold opacity-30 group-hover:opacity-100 transition-opacity">${count}</span>
+                </div>
+            `;
+        }).join('')}
     `;
     container.innerHTML = html;
 
-    container.querySelectorAll('button').forEach(btn => {
+    container.querySelectorAll('[data-id]').forEach(btn => {
         btn.addEventListener('click', () => {
-            container.querySelectorAll('button').forEach(b => {
+            container.querySelectorAll('[data-id]').forEach(b => {
                 b.className = baseClasses;
-                b.classList.remove('active', 'glow-active', 'text-white', 'relative', 'overflow-hidden', 'group');
             });
             btn.className = activeClasses;
-            // Add extra classes for the active look manually to ensure it matches exactly
-            btn.classList.add('active', 'glow-active', 'text-white');
             
             const catId = btn.getAttribute('data-id') || 'all';
+            const catName = btn.querySelector('span:nth-child(2)')?.textContent || 'Toutes les chaînes';
+            
+            if (categoryLabel) categoryLabel.textContent = catName;
             renderLiveTV('', catId);
         });
     });

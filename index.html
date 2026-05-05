@@ -124,67 +124,75 @@
                 }
             </style>
             <div class="container mx-auto px-4 lg:px-12">
-                <div id="live-tv-content">
+                <div id="live-tv-content" style="display: none;" class="fixed inset-0 z-[100] bg-[#050505] flex flex-row overflow-hidden">
                     
-                    <!-- Content Header -->
-                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-                        <h1 class="font-display-xl text-3xl md:text-4xl text-white font-bold tracking-tight">Télévision Direct</h1>
-                        <div class="flex items-center gap-4 w-full md:w-auto">
-                            <div class="glass-panel rounded-2xl flex items-center px-4 py-2 border border-white/10 focus-within:border-primary/50 transition-all flex-1 md:flex-none">
-                                <span class="material-symbols-outlined text-white/50 text-xl mr-2">search</span>
-                                <input type="text" id="live-search" placeholder="Rechercher une chaîne..." class="bg-transparent border-none outline-none text-white text-sm w-full md:w-64" autocomplete="off">
+                    <!-- Sidebar Style Smarters -->
+                    <div id="live-tv-sidebar" class="w-80 h-full bg-[#0d0d0d] border-r border-white/5 flex flex-col shrink-0">
+                        <!-- Branding & Search -->
+                        <div class="p-6 space-y-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center border border-primary/30">
+                                    <span class="material-symbols-outlined text-primary">live_tv</span>
+                                </div>
+                                <h2 class="text-white font-bold text-lg tracking-tight uppercase">Movieverse TV</h2>
                             </div>
-                            <button id="xtream-logout-btn" title="Déconnexion" class="w-10 h-10 rounded-2xl glass-panel flex items-center justify-center text-white/70 hover:text-primary hover:border-primary/50 transition-all border border-white/10 flex-shrink-0">
-                                <span class="material-symbols-outlined text-xl">logout</span>
+                            
+                            <div class="relative group">
+                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-primary transition-colors text-xl">search</span>
+                                <input type="text" id="live-search" placeholder="Rechercher..." class="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white text-sm focus:border-primary/50 focus:bg-white/10 outline-none transition-all placeholder:text-white/10">
+                            </div>
+                        </div>
+
+                        <!-- Categories List -->
+                        <div id="live-categories" class="flex-1 overflow-y-auto px-3 py-2 space-y-1 custom-scrollbar">
+                            <!-- Categories will be injected here -->
+                        </div>
+
+                        <!-- Logout -->
+                        <div class="p-4 border-t border-white/5">
+                            <button id="xtream-logout" class="w-full px-4 py-4 rounded-xl bg-white/5 hover:bg-error/20 text-white/40 hover:text-error transition-all flex items-center justify-center gap-3 border border-white/10 font-bold text-[10px] uppercase tracking-[0.2em] group">
+                                <span class="material-symbols-outlined text-lg transition-transform group-hover:-translate-x-1">logout</span>
+                                Quitter la TV
                             </button>
                         </div>
                     </div>
 
-                    <!-- Player Live (Caché par défaut) -->
-                    <div id="live-player-container" style="display: none;" class="mb-12">
-                        <div class="glass-panel rounded-[2rem] p-4 md:p-6 border border-primary/20 shadow-2xl">
-                            <div class="flex items-center justify-between mb-4 px-2">
-                                <div class="flex items-center gap-3">
-                                    <span class="bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider flex items-center gap-1.5">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                                        DIFFUSION EN COURS
-                                    </span>
-                                    <h3 id="current-channel-name" class="font-title-lg text-lg md:text-xl text-white font-bold truncate max-w-[200px] md:max-w-none"></h3>
-                                </div>
-                                <button id="close-player" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-white hover:bg-white/10 transition-colors">
+                    <!-- Main Content (Grid & Player) -->
+                    <div class="flex-1 flex flex-col overflow-hidden relative">
+                        <!-- Header Right -->
+                        <div class="h-20 flex items-center justify-between px-10 bg-[#080808] border-b border-white/5">
+                            <div class="flex items-center gap-4">
+                                <span id="current-category-name" class="text-white/20 font-bold text-[11px] uppercase tracking-[0.3em]">Toutes les chaînes</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="px-3 py-1 bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold rounded-md">LIVE SERVER OK</div>
+                                <button id="close-live-tv" class="w-10 h-10 rounded-full flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-all">
                                     <span class="material-symbols-outlined">close</span>
                                 </button>
                             </div>
-                            <div class="player-wrapper relative aspect-video rounded-2xl overflow-hidden bg-black shadow-inner">
-                                <video id="live-video" controls autoplay playsinline class="w-full h-full"></video>
-                                <div id="player-error" style="display: none;" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center p-8 z-10">
-                                    <span class="material-symbols-outlined text-5xl text-primary mb-4">warning</span>
-                                    <p class="text-white font-medium text-lg">Flux indisponible ou protégé.</p>
-                                    <p class="text-white/50 text-sm mt-2">Tentative de reconnexion automatique via proxy...</p>
+                        </div>
+
+                        <!-- Grid Area -->
+                        <div class="flex-1 overflow-y-auto p-10 custom-scrollbar">
+                            <!-- Player Area (If active) -->
+                            <div id="live-player-container" style="display: none;" class="mb-10 animate-fade-in">
+                                <div class="bg-black border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative aspect-video">
+                                    <video id="live-video" controls autoplay playsinline class="w-full h-full"></video>
+                                    <div id="player-error" style="display: none;" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center text-center p-8 z-20">
+                                        <span class="material-symbols-outlined text-5xl text-primary mb-4 animate-pulse">error</span>
+                                        <p class="text-white font-bold text-xl">Flux protégé ou expiré</p>
+                                        <p class="text-white/40 text-sm mt-2">Le serveur a refusé la connexion.</p>
+                                    </div>
+                                    <div class="absolute top-6 left-6 z-10">
+                                        <h3 id="current-channel-name" class="bg-black/60 backdrop-blur-md px-6 py-2 rounded-xl text-white font-bold border border-white/10"></h3>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- Categories Bento Box -->
-                    <div id="live-categories" class="glass-panel rounded-3xl py-4 px-6 flex flex-nowrap gap-3 items-center justify-start relative overflow-x-auto overflow-y-hidden hide-scrollbar mb-12 select-none touch-pan-x" style="overscroll-behavior-x: contain;">
-                        <div class="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full blur-[80px] -z-10 pointer-events-none"></div>
-                        <!-- Categories will be injected here -->
-                        <button class="px-6 py-2.5 rounded-2xl font-body-sm text-body-sm whitespace-nowrap transition-all glass-panel glow-active text-white relative overflow-hidden group active" data-id="all">
-                             <span class="relative z-10 font-medium">Tout</span>
-                        </button>
-                        <!-- Bouton Déconnexion -->
-                        <button id="xtream-logout" class="ml-auto px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-error/20 text-white/40 hover:text-error transition-all flex items-center gap-2 border border-white/10 group">
-                            <span class="material-symbols-outlined text-xl transition-transform group-hover:-translate-x-0.5">logout</span>
-                            <span class="text-xs font-bold uppercase tracking-widest hidden sm:inline">Déconnexion</span>
-                        </button>
-                    </div>
-
-                    <!-- Bento Grid (Channels) -->
-                    <div id="live-grid" class="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[minmax(180px,auto)]">
-                        <!-- Channels will be injected here -->
-                        <div class="md:col-span-12 py-20 text-center text-white/30 font-medium italic">
-                            Chargement des chaînes...
+                            <!-- Channels Grid -->
+                            <div id="live-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-5 pb-20">
+                                <!-- Channels will be injected here -->
+                            </div>
                         </div>
                     </div>
 
