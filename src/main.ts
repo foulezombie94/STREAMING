@@ -948,36 +948,36 @@ function renderLiveTV(filter: string = '', categoryId: string = 'all') {
         filtered = filtered.filter(c => c.name.toLowerCase().includes(f));
     }
 
-    // Limite pour perf
-    const display = filtered.slice(0, 100);
-
-    if (display.length === 0) {
+    if (filtered.length === 0) {
         liveGrid.innerHTML = '<div class="md:col-span-12 py-20 text-center text-white/30 font-medium italic">Aucune chaîne trouvée.</div>';
         return;
     }
 
-    // 1. Skeletons for immediate feedback
-    liveGrid.innerHTML = Array(12).fill(0).map(() => `
-        <div class="skeleton-card">
-            <div class="skeleton-shimmer"></div>
-        </div>
-    `).join('');
-
-    // 2. Progressive batch rendering
-    const batchSize = 12;
+    // 1. Initial State
+    liveGrid.innerHTML = '';
     let renderedCount = 0;
+    const batchSize = 24;
 
-    const renderBatch = () => {
-        if (renderedCount >= display.length) return;
+    // Create Sentinel for Intersection Observer
+    const sentinel = document.createElement('div');
+    sentinel.id = 'live-sentinel';
+    sentinel.className = "w-full h-10 col-span-full flex items-center justify-center py-10 opacity-0";
+    sentinel.innerHTML = '<div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>';
 
-        const nextBatch = display.slice(renderedCount, renderedCount + batchSize);
+    const renderNextBatch = () => {
+        if (renderedCount >= filtered.length) {
+            sentinel.remove();
+            return;
+        }
+
+        const nextBatch = filtered.slice(renderedCount, renderedCount + batchSize);
         const fragment = document.createDocumentFragment();
 
         nextBatch.forEach((c, index) => {
             const streamUrl = `${xtreamConfig.host}/live/${xtreamConfig.user}/${xtreamConfig.pass}/${c.stream_id}.ts`;
             const div = document.createElement('div');
             div.className = "group relative aspect-[2/3] overflow-hidden cursor-pointer border border-white/5 bg-[#111] transition-all duration-300 fade-in-progressive";
-            div.style.animationDelay = `${(index % batchSize) * 30}ms`;
+            div.style.animationDelay = `${(index % batchSize) * 20}ms`;
             div.setAttribute('data-url', streamUrl);
             
             div.innerHTML = `
@@ -1020,18 +1020,25 @@ function renderLiveTV(filter: string = '', categoryId: string = 'all') {
             fragment.appendChild(div);
         });
 
-        if (renderedCount === 0) liveGrid.innerHTML = '';
-        liveGrid.appendChild(fragment);
+        // Insert before sentinel
+        liveGrid.insertBefore(fragment, sentinel);
         renderedCount += batchSize;
-
-        if (renderedCount < display.length) {
-            requestAnimationFrame(() => {
-                setTimeout(renderBatch, 40);
-            });
-        }
+        
+        // Make sentinel visible briefly to show loader if scroll is at bottom
+        sentinel.style.opacity = '0.3';
     };
 
-    renderBatch();
+    // Add sentinel to grid
+    liveGrid.appendChild(sentinel);
+
+    // Initial Observer
+    const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+            renderNextBatch();
+        }
+    }, { rootMargin: '200px' });
+
+    observer.observe(sentinel);
 }
 
 // Logic for playing a live channel
