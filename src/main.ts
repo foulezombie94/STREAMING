@@ -778,6 +778,21 @@ document.getElementById('xtream-submit')?.addEventListener('click', async () => 
     }
 });
 
+// Logout Logic
+document.getElementById('xtream-logout')?.addEventListener('click', () => {
+    if (confirm("Voulez-vous vous déconnecter de la TV ?")) {
+        console.log("[IPTV] Déconnexion demandée...");
+        localStorage.removeItem('xtream_host');
+        localStorage.removeItem('xtream_user');
+        localStorage.removeItem('xtream_pass');
+        xtreamConfig = { host: '', user: '', pass: '' };
+        liveTVInitialized = false;
+        allLiveChannels = [];
+        liveCategories = [];
+        initLiveTV(); // Revenir au login
+    }
+});
+
 async function loadXtreamData() {
     console.log("[IPTV] loadXtreamData démarré...");
     const liveGrid = document.getElementById('live-grid');
