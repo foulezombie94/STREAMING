@@ -717,23 +717,25 @@ document.getElementById('xtream-submit')?.addEventListener('click', async () => 
 
     try {
         // Test de connexion via l'API player_api.php
-        const testUrl = `${host}/player_api.php?username=${user}&password=${pass}`;
+        const rawTestUrl = `${host}/player_api.php?username=${user}&password=${pass}`;
+        const proxyVercel = `/api/proxy?url=${encodeURIComponent(rawTestUrl)}`;
+        const proxyCors = `https://corsproxy.io/?${encodeURIComponent(rawTestUrl)}`;
+        const proxyAllOrigins = `https://api.allorigins.win/raw?url=${encodeURIComponent(rawTestUrl)}`;
         
-        // Tentative 1: Proxy local Vercel (Optimal)
         let response;
         try {
-            response = await fetch(`/api/proxy?url=${encodeURIComponent(testUrl)}`);
-            if (!response.ok) throw new Error("Vercel Proxy Failed");
+            response = await fetch(proxyVercel);
+            if (!response.ok) throw new Error();
         } catch (e) {
-            // Tentative 2: corsproxy.io
             try {
-                response = await fetch(`https://corsproxy.io/?${encodeURIComponent(testUrl)}`);
+                response = await fetch(proxyCors);
                 if (!response.ok) throw new Error();
             } catch (e2) {
-                // Tentative 3: allorigins (plus permissif)
-                response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(testUrl)}`);
+                response = await fetch(proxyAllOrigins);
             }
         }
+        
+        if (!response || !response.ok) throw new Error("Impossible de contacter le serveur TV (CORS/Proxy error)");
 
         const text = await response.text();
         let data;
@@ -773,35 +775,28 @@ async function loadXtreamData() {
 
     try {
         // 1. Récupérer les catégories
-        const catUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_categories`;
-        let catRes;
-        try {
-            catRes = await fetch(`/api/proxy?url=${encodeURIComponent(catUrl)}`);
-            if (!catRes.ok) throw new Error();
-        } catch (e) {
+        const rawCatUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_categories`;
+        const rawStreamUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_streams`;
+
+        // helper internal to use multiple proxies
+        const fetchWithProxy = async (target: string) => {
             try {
-                catRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(catUrl)}`);
-                if (!catRes.ok) throw new Error();
-            } catch (e2) {
-                catRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(catUrl)}`);
-            }
-        }
+                const r1 = await fetch(`/api/proxy?url=${encodeURIComponent(target)}`);
+                if (r1.ok) return r1;
+            } catch(e){}
+            try {
+                const r2 = await fetch(`https://corsproxy.io/?${encodeURIComponent(target)}`);
+                if (r2.ok) return r2;
+            } catch(e){}
+            return fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`);
+        };
+
+        // 1. Categories
+        let catRes = await fetchWithProxy(rawCatUrl);
         liveCategories = await catRes.json();
 
-        // 2. Récupérer toutes les chaînes
-        const streamUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_streams`;
-        let streamRes;
-        try {
-            streamRes = await fetch(`/api/proxy?url=${encodeURIComponent(streamUrl)}`);
-            if (!streamRes.ok) throw new Error();
-        } catch (e) {
-            try {
-                streamRes = await fetch(`https://corsproxy.io/?${encodeURIComponent(streamUrl)}`);
-                if (!streamRes.ok) throw new Error();
-            } catch (e2) {
-                streamRes = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(streamUrl)}`);
-            }
-        }
+        // 2. Streams
+        let streamRes = await fetchWithProxy(rawStreamUrl);
         allLiveChannels = await streamRes.json();
 
         liveTVInitialized = true;
