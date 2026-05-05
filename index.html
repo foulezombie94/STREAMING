@@ -182,8 +182,22 @@
                 </div>
             </div>
 
-            <!-- Grid Area (5 par ligne comme demandé) -->
-            <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            <!-- Grid Area (Strictement 4 par ligne comme demandé) -->
+            <div class="flex-1 overflow-y-auto p-4 custom-scrollbar relative">
+                <!-- Global Loader Overlay -->
+                <div id="live-init-loader" style="display: none;" class="absolute inset-0 z-[60] bg-[#050505]/90 backdrop-blur-xl flex flex-col items-center justify-center text-center">
+                    <div class="w-20 h-20 mb-8 relative">
+                        <div class="absolute inset-0 border-4 border-primary/10 rounded-full"></div>
+                        <div class="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <span class="material-symbols-outlined absolute inset-0 flex items-center justify-center text-primary text-3xl animate-pulse">sync</span>
+                    </div>
+                    <h2 class="text-white font-black text-2xl uppercase tracking-tighter mb-2">Synchronisation</h2>
+                    <p id="live-loader-status" class="text-white/40 text-xs uppercase tracking-widest mb-8">Chargement des données serveur...</p>
+                    <div class="w-64 h-1 bg-white/5 rounded-full overflow-hidden relative">
+                        <div id="live-loader-progress" class="absolute inset-y-0 left-0 bg-primary transition-all duration-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]" style="width: 0%;"></div>
+                    </div>
+                </div>
+
                 <!-- Player Area (If active) -->
                 <div id="live-player-container" style="display: none;" class="mb-6 animate-fade-in">
                     <div class="bg-black border border-white/10 rounded-xl overflow-hidden shadow-2xl relative aspect-video">

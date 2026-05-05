@@ -815,21 +815,23 @@ async function loadXtreamData() {
     console.log("[IPTV] loadXtreamData démarré...");
     const liveGrid = document.getElementById('live-grid');
     const catsContainer = document.getElementById('live-categories');
-    if (!liveGrid || !catsContainer) {
-        console.error("[IPTV] Grid ou Categories container manquant");
+    const initLoader = document.getElementById('live-init-loader');
+    const loaderStatus = document.getElementById('live-loader-status');
+    const loaderBar = document.getElementById('live-loader-progress');
+
+    if (!liveGrid || !catsContainer || !initLoader || !loaderBar || !loaderStatus) {
+        console.error("[IPTV] UI elements for loader missing");
         return;
     }
 
-    liveGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px; color: #ef4444;">Chargement des chaînes...</div>';
+    // Show initial loader
+    initLoader.style.display = 'flex';
+    loaderBar.style.width = '10%';
+    loaderStatus.textContent = "Authentification serveur...";
 
     const { host, user, pass } = xtreamConfig;
 
     try {
-        // 1. Récupérer les catégories
-        const rawCatUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_categories`;
-        const rawStreamUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_streams`;
-
-        // helper internal to use multiple proxies
         const fetchWithProxy = async (target: string) => {
             try {
                 const r1 = await fetch(`/api/proxy?url=${encodeURIComponent(target)}`);
@@ -843,28 +845,44 @@ async function loadXtreamData() {
         };
 
         // 1. Categories
-        console.log("[IPTV] Récupération des catégories...");
+        loaderBar.style.width = '30%';
+        loaderStatus.textContent = "Récupération des catégories...";
+        
+        const rawCatUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_categories`;
         let catRes = await fetchWithProxy(rawCatUrl);
         if (!catRes.ok) throw new Error("Échec chargement catégories");
         liveCategories = await catRes.json();
-        console.log(`[IPTV] ${liveCategories.length} catégories chargées.`);
-
+        
         // 2. Streams
-        console.log("[IPTV] Récupération des chaînes...");
+        loaderBar.style.width = '60%';
+        loaderStatus.textContent = `Synchronisation de ${liveCategories.length} catégories...`;
+        
+        const rawStreamUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_streams`;
         let streamRes = await fetchWithProxy(rawStreamUrl);
         if (!streamRes.ok) throw new Error("Échec chargement chaînes");
         allLiveChannels = await streamRes.json();
+
+        // 3. Finalize
+        loaderBar.style.width = '100%';
+        loaderStatus.textContent = "Finalisation de la grille...";
+        
         console.log(`[IPTV] ${allLiveChannels.length} chaînes chargées.`);
 
-        liveTVInitialized = true;
+        setTimeout(() => {
+            initLoader.style.display = 'none';
+            renderCategories();
+            renderLiveTV();
+            liveTVInitialized = true;
+        }, 600);
+
+    } catch (err: any) {
+        console.error("[IPTV] Erreur lors du chargement des données:", err);
+        loaderStatus.textContent = "Erreur de synchronisation.";
+        loaderStatus.classList.add('text-error');
+        loaderBar.classList.add('bg-error');
         
-        // Rendre les catégories
-        renderCategories();
-        // Rendre les chaînes
-        renderLiveTV();
-    } catch (err) {
-        console.error("Failed to load Xtream data:", err);
-        liveGrid.innerHTML = '<div class="error" style="grid-column: 1/-1; text-align:center; color: #ef4444; padding: 50px;">Erreur lors du chargement des données IPTV. Vérifiez vos identifiants ou le serveur.</div>';
+        // On laisse l'overlay d'erreur visible ou on met un message dans la grille
+        liveGrid.innerHTML = `<div class="md:col-span-12 py-20 text-center text-error font-medium italic">Erreur: ${err.message || "Connexion impossible"}</div>`;
     }
 }
 
