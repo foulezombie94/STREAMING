@@ -162,7 +162,7 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv') 
         return;
     }
     
-    genreFiltersContainer.style.display = 'block';
+    genreFiltersContainer.style.display = 'flex';
     const genres = type === 'movie' ? movieGenres : tvGenres;
     
     // Rendre pour Desktop (si le conteneur est affiché)

@@ -30,18 +30,17 @@ a {
 
 /* 2. En-tÃªte / Barre de Navigation */
 .navbar {
-    position: fixed;
+    position: relative; /* Changé de fixed à relative */
     top: 0;
     left: 0;
     width: 100%;
-    padding: 0.8rem 4rem; /* Réduit (était 1.2rem) */
+    padding: 1.2rem 4rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     z-index: 1000;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    background: rgba(5, 5, 5, 0.4);
-    backdrop-filter: blur(15px); 
+    background: #050505; /* Fond solide pour éviter la transparence sur le hero */
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -183,10 +182,9 @@ a {
 /* 3. Section HÃ©ros */
 .hero {
     position: relative;
-    height: 95vh;
-    width: calc(100% + 64px); 
-    margin-left: -32px; 
-    margin-top: -128px; /* Intégré derrière la navbar */
+    height: 85vh; /* Réduit un peu */
+    width: 100%; 
+    margin-top: 0; /* Plus de marge négative */
     background-size: cover;
     background-position: center top;
     display: flex;
@@ -196,10 +194,9 @@ a {
 
 @media (max-width: 768px) {
     .hero {
-        width: calc(100% + 32px);
-        margin-left: -16px;
-        margin-top: -96px;
-        height: 85vh;
+        width: 100%;
+        margin-top: 0;
+        height: 70vh;
     }
 }
 
@@ -876,12 +873,14 @@ a {
 .genre-filters-container {
     position: relative;
     width: 100%;
-    z-index: 100;
-    background: transparent;
-    padding: 0;
-    margin-top: -10px; /* Entre le header et le film */
-    margin-bottom: 0;
+    z-index: 1100;
+    background: #000; /* Fond noir pour la barre de filtres tout en haut */
+    padding: 15px 0;
+    margin: 0;
     text-align: center;
+    display: flex;
+    justify-content: center;
+    border-bottom: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .mobile-filter-btn {
