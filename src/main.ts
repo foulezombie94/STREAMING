@@ -819,15 +819,33 @@ async function loadXtreamData() {
     const loaderStatus = document.getElementById('live-loader-status');
     const loaderBar = document.getElementById('live-loader-progress');
 
-    if (!liveGrid || !catsContainer || !initLoader || !loaderBar || !loaderStatus) {
-        console.error("[IPTV] UI elements for loader missing");
-        return;
+    if (!liveGrid || !catsContainer || !initLoader || !loaderBar || !loaderStatus) return;
+
+    // 1. Tenter de charger depuis le Cache Local (Instantané)
+    const cachedCats = localStorage.getItem('xtream_cache_cats');
+    const cachedChannels = localStorage.getItem('xtream_cache_channels');
+
+    if (cachedCats && cachedChannels && !liveTVInitialized) {
+        console.log("[IPTV] Chargement depuis le cache...");
+        try {
+            liveCategories = JSON.parse(cachedCats);
+            allLiveChannels = JSON.parse(cachedChannels);
+            renderCategories();
+            renderLiveTV();
+            liveTVInitialized = true;
+            // On ne cache pas le loader tout de suite car on va valider en arrière-plan
+            loaderStatus.textContent = "Mise à jour en arrière-plan...";
+        } catch(e) {
+            console.warn("[IPTV] Cache corrompu");
+        }
     }
 
-    // Show initial loader
-    initLoader.style.display = 'flex';
-    loaderBar.style.width = '10%';
-    loaderStatus.textContent = "Authentification serveur...";
+    // 2. Synchronisation en arrière-plan (ou initiale si pas de cache)
+    if (!liveTVInitialized) {
+        initLoader.style.display = 'flex';
+        loaderBar.style.width = '10%';
+        loaderStatus.textContent = "Authentification serveur...";
+    }
 
     const { host, user, pass } = xtreamConfig;
 
@@ -844,45 +862,56 @@ async function loadXtreamData() {
             return fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`);
         };
 
-        // 1. Categories
-        loaderBar.style.width = '30%';
-        loaderStatus.textContent = "Récupération des catégories...";
-        
+        // Step 1: Categories
+        if (!liveTVInitialized) loaderBar.style.width = '30%';
         const rawCatUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_categories`;
         let catRes = await fetchWithProxy(rawCatUrl);
-        if (!catRes.ok) throw new Error("Échec chargement catégories");
-        liveCategories = await catRes.json();
+        if (!catRes.ok) throw new Error("Serveur indisponible");
+        const newCats = await catRes.json();
         
-        // 2. Streams
-        loaderBar.style.width = '60%';
-        loaderStatus.textContent = `Synchronisation de ${liveCategories.length} catégories...`;
-        
+        // Step 2: Streams
+        if (!liveTVInitialized) loaderBar.style.width = '60%';
         const rawStreamUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_streams`;
         let streamRes = await fetchWithProxy(rawStreamUrl);
-        if (!streamRes.ok) throw new Error("Échec chargement chaînes");
-        allLiveChannels = await streamRes.json();
+        if (!streamRes.ok) throw new Error("Erreur flux");
+        const newChannels = await streamRes.json();
 
-        // 3. Finalize
-        loaderBar.style.width = '100%';
-        loaderStatus.textContent = "Finalisation de la grille...";
-        
-        console.log(`[IPTV] ${allLiveChannels.length} chaînes chargées.`);
+        // Update Global State
+        liveCategories = newCats;
+        allLiveChannels = newChannels;
 
-        setTimeout(() => {
-            initLoader.style.display = 'none';
+        // Save to Cache (LocalStorage)
+        try {
+            localStorage.setItem('xtream_cache_cats', JSON.stringify(newCats));
+            localStorage.setItem('xtream_cache_channels', JSON.stringify(newChannels));
+        } catch(e) {
+            console.warn("[IPTV] Cache trop volumineux pour LocalStorage");
+        }
+
+        // Finalize UI
+        if (!liveTVInitialized) {
+            loaderBar.style.width = '100%';
+            loaderStatus.textContent = "Terminé !";
+            setTimeout(() => {
+                initLoader.style.display = 'none';
+                renderCategories();
+                renderLiveTV();
+                liveTVInitialized = true;
+            }, 600);
+        } else {
+            // Mise à jour silencieuse si déjà chargé depuis le cache
             renderCategories();
             renderLiveTV();
-            liveTVInitialized = true;
-        }, 600);
+            console.log("[IPTV] Mise à jour du cache terminée.");
+        }
 
     } catch (err: any) {
-        console.error("[IPTV] Erreur lors du chargement des données:", err);
-        loaderStatus.textContent = "Erreur de synchronisation.";
-        loaderStatus.classList.add('text-error');
-        loaderBar.classList.add('bg-error');
-        
-        // On laisse l'overlay d'erreur visible ou on met un message dans la grille
-        liveGrid.innerHTML = `<div class="md:col-span-12 py-20 text-center text-error font-medium italic">Erreur: ${err.message || "Connexion impossible"}</div>`;
+        console.error("[IPTV] Erreur Sync:", err);
+        if (!liveTVInitialized) {
+            loaderStatus.textContent = "Erreur de connexion.";
+            loaderStatus.classList.add('text-error');
+            loaderBar.classList.add('bg-error');
+        }
     }
 }
 
