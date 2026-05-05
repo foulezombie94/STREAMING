@@ -160,38 +160,48 @@
             </div> <!-- Fin de live-tv-content -->
 
             <!-- Formulaire Login Xtream (Style Bento Premium) -->
-            <div id="xtream-login" style="display: none;" class="max-w-xl mx-auto mt-12 px-4">
-                <div class="glass-panel rounded-[2.5rem] p-10 border border-white/10 shadow-2xl relative overflow-hidden">
-                    <div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
-                    <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/10 rounded-full blur-[100px] pointer-events-none"></div>
+            <div id="xtream-login" style="display: none;" class="w-full max-w-xl mx-auto px-4 py-12">
+                <div class="glass-panel rounded-[2.5rem] p-8 md:p-12 border border-white/10 shadow-2xl relative overflow-hidden backdrop-blur-3xl">
+                    <!-- Glows décoratifs -->
+                    <div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 rounded-full blur-[100px] pointer-events-none"></div>
+                    <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/20 rounded-full blur-[100px] pointer-events-none"></div>
                     
-                    <div class="text-center mb-10">
-                        <div class="w-20 h-20 bg-primary/20 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-primary/30">
+                    <div class="text-center mb-10 relative z-10">
+                        <div class="w-20 h-20 bg-primary/20 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-primary/30 shadow-lg shadow-primary/20">
                             <span class="material-symbols-outlined text-4xl text-primary">tv_gen</span>
                         </div>
                         <h2 class="text-3xl font-display-xl font-bold text-white mb-2">Connexion TV</h2>
-                        <p class="text-white/50 text-sm">Entrez vos identifiants Xtream Codes pour accéder au direct.</p>
+                        <p class="text-white/50 text-sm">Entrez vos identifiants Xtream Codes</p>
                     </div>
 
-                    <div class="flex flex-col gap-5">
-                        <div class="relative">
-                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-xl">language</span>
-                            <input type="text" id="xtream-host" placeholder="Hôte (ex: http://serveur.com)" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white placeholder:text-white/20 focus:border-primary/50 focus:bg-white/10 transition-all outline-none" autocomplete="off">
+                    <div class="flex flex-col gap-6 relative z-10">
+                        <div class="group">
+                            <label class="block text-white/40 text-xs font-bold uppercase tracking-widest mb-2 ml-4">Serveur</label>
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-white/30 text-xl group-focus-within:text-primary transition-colors">language</span>
+                                <input type="text" id="xtream-host" placeholder="http://votre-serveur.com:8080" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:border-primary/50 focus:bg-white/10 transition-all outline-none">
+                            </div>
                         </div>
-                        <div class="relative">
-                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-xl">person</span>
-                            <input type="text" id="xtream-user" placeholder="Nom d'utilisateur" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white placeholder:text-white/20 focus:border-primary/50 focus:bg-white/10 transition-all outline-none" autocomplete="off">
+                        <div class="group">
+                            <label class="block text-white/40 text-xs font-bold uppercase tracking-widest mb-2 ml-4">Utilisateur</label>
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-white/30 text-xl group-focus-within:text-primary transition-colors">person</span>
+                                <input type="text" id="xtream-user" placeholder="Nom d'utilisateur" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:border-primary/50 focus:bg-white/10 transition-all outline-none">
+                            </div>
                         </div>
-                        <div class="relative">
-                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-xl">key</span>
-                            <input type="password" id="xtream-pass" placeholder="Mot de passe" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-white placeholder:text-white/20 focus:border-primary/50 focus:bg-white/10 transition-all outline-none" autocomplete="off">
+                        <div class="group">
+                            <label class="block text-white/40 text-xs font-bold uppercase tracking-widest mb-2 ml-4">Mot de passe</label>
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-white/30 text-xl group-focus-within:text-primary transition-colors">key</span>
+                                <input type="password" id="xtream-pass" placeholder="••••••••" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:border-primary/50 focus:bg-white/10 transition-all outline-none">
+                            </div>
                         </div>
-                        <button id="xtream-submit" class="mt-4 bg-primary text-on-primary font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 group">
-                            <span>SE CONNECTER</span>
-                            <span class="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        <button id="xtream-submit" class="mt-6 bg-primary text-on-primary font-bold py-4 rounded-2xl shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group overflow-hidden relative">
+                            <span class="relative z-10">SE CONNECTER</span>
+                            <span class="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform relative z-10">arrow_forward</span>
                         </button>
                     </div>
-                    <p id="login-error" class="text-error font-medium text-sm mt-6 text-center" style="display: none;">Identifiants incorrects ou serveur injoignable.</p>
+                    <p id="login-error" class="text-error font-medium text-sm mt-6 text-center" style="display: none;">Identifiants invalides ou serveur injoignable.</p>
                 </div>
             </div>
         </section>
