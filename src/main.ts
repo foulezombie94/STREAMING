@@ -680,19 +680,26 @@ declare const Hls: any;
 declare const mpegts: any;
 
 async function initLiveTV() {
+    console.log("[IPTV] Initialisation de l'onglet TV...");
     const liveContent = document.getElementById('live-tv-content');
     const loginForm = document.getElementById('xtream-login');
     const liveGrid = document.getElementById('live-grid');
     const categoriesContainer = document.getElementById('live-categories');
     
-    if (!liveContent || !loginForm || !liveGrid || !categoriesContainer) return;
+    if (!liveContent || !loginForm || !liveGrid || !categoriesContainer) {
+        console.error("[IPTV] Éléments DOM manquants pour l'IPTV", { liveContent, loginForm, liveGrid, categoriesContainer });
+        return;
+    }
 
     // Si on a déjà des identifiants, on tente de charger
     if (xtreamConfig.host && xtreamConfig.user && xtreamConfig.pass) {
+        console.log("[IPTV] Identifiants trouvés, chargement des données...");
         loginForm.style.display = 'none';
         liveContent.style.display = 'block';
         if (!liveTVInitialized) await loadXtreamData();
+        else console.log("[IPTV] Données déjà initialisées.");
     } else {
+        console.log("[IPTV] Aucun identifiant trouvé, affichage du formulaire de login.");
         loginForm.style.display = 'block';
         liveContent.style.display = 'none';
     }
@@ -735,17 +742,20 @@ document.getElementById('xtream-submit')?.addEventListener('click', async () => 
             }
         }
         
-        if (!response || !response.ok) throw new Error("Impossible de contacter le serveur TV (CORS/Proxy error)");
+        if (!response || !response.ok) throw new Error(`Impossible de contacter le serveur TV (Status: ${response?.status || 'Unknown'})`);
 
+        console.log("[IPTV] Test de connexion réussi, lecture de la réponse...");
         const text = await response.text();
         let data;
         try {
             data = JSON.parse(text);
         } catch (e) {
-            throw new Error("Invalid Server Response (Not JSON)");
+            console.error("[IPTV] Erreur parsing JSON:", text);
+            throw new Error("Réponse serveur invalide (Pas du JSON).");
         }
 
         if (data && data.user_info && data.user_info.auth === 1) {
+            console.log("[IPTV] Authentification réussie !");
             // Success ! Sauvegarde
             localStorage.setItem('xtream_host', host);
             localStorage.setItem('xtream_user', user);
@@ -754,20 +764,28 @@ document.getElementById('xtream-submit')?.addEventListener('click', async () => 
             
             initLiveTV(); // Recharger l'UI
         } else {
-            throw new Error("Auth Failed");
+            console.warn("[IPTV] Échec Auth:", data);
+            throw new Error("Authentification échouée (Login/Pass incorrect)");
         }
-    } catch (err) {
-        console.error("Login failed:", err);
-        if (errorMsg) errorMsg.style.display = 'block';
+    } catch (err: any) {
+        console.error("[IPTV] Erreur lors du Login:", err);
+        if (errorMsg) {
+            errorMsg.textContent = err.message || "Erreur de connexion";
+            errorMsg.style.display = 'block';
+        }
     } finally {
         if (btn) btn.textContent = "SE CONNECTER";
     }
 });
 
 async function loadXtreamData() {
+    console.log("[IPTV] loadXtreamData démarré...");
     const liveGrid = document.getElementById('live-grid');
     const catsContainer = document.getElementById('live-categories');
-    if (!liveGrid || !catsContainer) return;
+    if (!liveGrid || !catsContainer) {
+        console.error("[IPTV] Grid ou Categories container manquant");
+        return;
+    }
 
     liveGrid.innerHTML = '<div class="loading-spinner" style="grid-column: 1/-1; text-align:center; padding: 50px; color: #ef4444;">Chargement des chaînes...</div>';
 
@@ -792,12 +810,18 @@ async function loadXtreamData() {
         };
 
         // 1. Categories
+        console.log("[IPTV] Récupération des catégories...");
         let catRes = await fetchWithProxy(rawCatUrl);
+        if (!catRes.ok) throw new Error("Échec chargement catégories");
         liveCategories = await catRes.json();
+        console.log(`[IPTV] ${liveCategories.length} catégories chargées.`);
 
         // 2. Streams
+        console.log("[IPTV] Récupération des chaînes...");
         let streamRes = await fetchWithProxy(rawStreamUrl);
+        if (!streamRes.ok) throw new Error("Échec chargement chaînes");
         allLiveChannels = await streamRes.json();
+        console.log(`[IPTV] ${allLiveChannels.length} chaînes chargées.`);
 
         liveTVInitialized = true;
         
