@@ -180,11 +180,11 @@
                             </div>
                         </div>
 
-                        <!-- Grid Area -->
-                        <div class="flex-1 overflow-y-auto p-10 custom-scrollbar">
+                        <!-- Grid Area (5 par ligne comme demandé) -->
+                        <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
                             <!-- Player Area (If active) -->
-                            <div id="live-player-container" style="display: none;" class="mb-10 animate-fade-in">
-                                <div class="bg-black border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative aspect-video">
+                            <div id="live-player-container" style="display: none;" class="mb-6 animate-fade-in">
+                                <div class="bg-black border border-white/10 rounded-xl overflow-hidden shadow-2xl relative aspect-video">
                                     <video id="live-video" controls autoplay playsinline class="w-full h-full"></video>
                                     <div id="player-error" style="display: none;" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center text-center p-8 z-20">
                                         <span class="material-symbols-outlined text-5xl text-primary mb-4 animate-pulse">error</span>
@@ -197,8 +197,8 @@
                                 </div>
                             </div>
 
-                            <!-- Channels Grid -->
-                            <div id="live-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-5 pb-20">
+                            <!-- Channels Grid (Strictement 5 par ligne) -->
+                            <div id="live-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 pb-20">
                                 <!-- Channels will be injected here -->
                             </div>
                         </div>

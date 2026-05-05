@@ -923,23 +923,34 @@ function renderLiveTV(filter: string = '', categoryId: string = 'all') {
         const streamUrl = `${xtreamConfig.host}/live/${xtreamConfig.user}/${xtreamConfig.pass}/${c.stream_id}.ts`;
         
         return `
-            <div class="md:col-span-3 lg:col-span-2 group relative overflow-hidden cursor-pointer bento-hover border border-white/10 glass-panel flex flex-col justify-center items-center min-h-[160px] p-4 transition-all" data-url="${streamUrl}">
-                <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                
-                <!-- Logo -->
-                <div class="relative z-10 w-24 h-24 mb-4 flex items-center justify-center transform group-hover:scale-110 transition-all duration-500">
-                     <img src="${c.stream_icon || ''}" class="max-w-full max-h-full object-contain drop-shadow-2xl" onerror="this.src='https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&q=80&w=200';"/>
+            <div class="group relative aspect-[2/3] overflow-hidden cursor-pointer border border-white/5 bg-[#111] transition-all duration-300" data-url="${streamUrl}">
+                <!-- Logo/Poster -->
+                <div class="absolute inset-0 flex items-center justify-center bg-[#1a1a1a]">
+                     <img src="${c.stream_icon || ''}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" onerror="this.src='https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&q=80&w=400';"/>
                 </div>
 
-                <!-- Channel Info -->
-                <div class="relative z-10 text-center w-full px-2">
-                    <h3 class="font-bold text-sm text-white/90 truncate mb-1 group-hover:text-primary transition-colors">${c.name}</h3>
-                    <div class="w-8 h-0.5 bg-white/10 mx-auto group-hover:w-12 group-hover:bg-primary transition-all"></div>
+                <!-- Overlay Gradient -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
+
+                <!-- Channel Name (Centered like in screenshot) -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                    <h3 class="font-black text-lg text-white uppercase tracking-tighter leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] group-hover:text-primary transition-colors">
+                        ${c.name}
+                    </h3>
                 </div>
 
-                <!-- Play Status -->
-                <div class="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-all">
-                    <span class="material-symbols-outlined text-primary text-xl">play_circle</span>
+                <!-- Top Label (Number/Tag) -->
+                <div class="absolute top-3 left-3 z-10">
+                    <span class="bg-[#136b7a] text-white text-[9px] font-bold px-1.5 py-0.5 shadow-md">
+                        ${c.stream_id % 99}
+                    </span>
+                </div>
+
+                <!-- Hover Play Icon -->
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                    <div class="w-12 h-12 rounded-full bg-primary/20 backdrop-blur-md border border-primary/40 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-primary text-3xl">play_arrow</span>
+                    </div>
                 </div>
             </div>
         `;
