@@ -700,7 +700,7 @@ async function initLiveTV() {
         else console.log("[IPTV] Données déjà initialisées.");
     } else {
         console.log("[IPTV] Aucun identifiant trouvé, affichage du formulaire de login.");
-        loginForm.style.display = 'block';
+        loginForm.style.display = 'flex';
         liveContent.style.display = 'none';
     }
 }
