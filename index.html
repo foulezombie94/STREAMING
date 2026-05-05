@@ -53,19 +53,19 @@
     </header>
 
     <main class="w-full px-4 md:px-8 lg:px-12 pt-28 md:pt-36 pb-8">
-        <!-- Barre de filtres par genre (Placée sous le Header) -->
-        <div class="genre-filters-container" id="genre-filters-container" style="display: none;">
-            <div class="genre-filters" id="desktop-genres"></div>
-            <button class="mobile-filter-btn" id="mobile-filter-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                </svg>
-                Filtrer par Genre
-            </button>
-        </div>
-
         <!-- Section Héros -->
         <section class="hero" id="hero-section">
+            <!-- Bouton de filtre flottant par dessus l'image -->
+            <div class="genre-filters-container" id="genre-filters-container" style="display: none;">
+                <div class="genre-filters" id="desktop-genres" style="display: none !important;"></div>
+                <button class="mobile-filter-btn" id="mobile-filter-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                    </svg>
+                    Filtrer par Genre
+                </button>
+            </div>
+
             <div class="hero-content">
                 <h1 id="hero-title">Chargement...</h1>
                 <div class="hero-meta" id="hero-meta">&nbsp;</div>

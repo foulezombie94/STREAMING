@@ -872,35 +872,36 @@ a {
 
 /* Genre Filters */
 .genre-filters-container {
-    position: relative;
-    width: 100%;
-    z-index: 100;
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 500;
+    width: auto;
     background: transparent;
-    padding: 10px 0;
-    margin-bottom: 20px;
-    text-align: center;
-    display: flex;
-    justify-content: center;
+    padding: 0;
+    margin: 0;
 }
 
 .mobile-filter-btn {
+    display: flex !important; /* Toujours visible */
+    align-items: center;
+    gap: 12px;
     padding: 10px 24px;
     font-size: 0.85rem;
     font-weight: 700;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 100px; /* Style Pill premium */
+    border-radius: 100px;
     color: #fff;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 0 auto;
+    margin: 0;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     text-transform: uppercase;
     letter-spacing: 1.5px;
+    cursor: pointer;
 }
 
 .mobile-filter-btn:hover {
@@ -923,14 +924,7 @@ a {
 }
 
 .genre-filters {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    padding: 20px 4rem;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
-    pointer-events: auto;
+    display: none !important; /* Caché pour ne laisser que le bouton */
 }
 
 @media (max-width: 768px) {
