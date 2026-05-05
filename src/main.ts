@@ -807,9 +807,64 @@ document.getElementById('xtream-logout')?.addEventListener('click', () => {
         liveTVInitialized = false;
         allLiveChannels = [];
         liveCategories = [];
+        // Clear IndexedDB
+        clearXtreamCache();
         initLiveTV(); // Revenir au login
     }
 });
+
+// --- PRO CACHING : IndexedDB (Unlimited storage for massive playlists) ---
+const DB_NAME = 'XtreamDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'cache';
+
+async function openDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function getFromCache(key: string): Promise<any> {
+    try {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.get(key);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    } catch(e) { return null; }
+}
+
+async function saveToCache(key: string, value: any): Promise<void> {
+    try {
+        const db = await openDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.put(value, key);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    } catch(e) { console.warn("[DB] Error saving:", e); }
+}
+
+async function clearXtreamCache() {
+    try {
+        const db = await openDB();
+        const transaction = db.transaction(STORE_NAME, 'readwrite');
+        transaction.objectStore(STORE_NAME).clear();
+    } catch(e){}
+}
 
 async function loadXtreamData() {
     console.log("[IPTV] loadXtreamData démarré...");
@@ -821,26 +876,23 @@ async function loadXtreamData() {
 
     if (!liveGrid || !catsContainer || !initLoader || !loaderBar || !loaderStatus) return;
 
-    // 1. Tenter de charger depuis le Cache Local (Instantané)
-    const cachedCats = localStorage.getItem('xtream_cache_cats');
-    const cachedChannels = localStorage.getItem('xtream_cache_channels');
+    // 1. Tenter de charger depuis IndexedDB (Capacité illimitée)
+    if (!liveTVInitialized) {
+        const cachedCats = await getFromCache('xtream_cats');
+        const cachedChannels = await getFromCache('xtream_channels');
 
-    if (cachedCats && cachedChannels && !liveTVInitialized) {
-        console.log("[IPTV] Chargement depuis le cache...");
-        try {
-            liveCategories = JSON.parse(cachedCats);
-            allLiveChannels = JSON.parse(cachedChannels);
+        if (cachedCats && cachedChannels) {
+            console.log("[IPTV] Chargement depuis IndexedDB...");
+            liveCategories = cachedCats;
+            allLiveChannels = cachedChannels;
             renderCategories();
             renderLiveTV();
             liveTVInitialized = true;
-            // On ne cache pas le loader tout de suite car on va valider en arrière-plan
-            loaderStatus.textContent = "Mise à jour en arrière-plan...";
-        } catch(e) {
-            console.warn("[IPTV] Cache corrompu");
+            loaderStatus.textContent = "Vérification des mises à jour...";
         }
     }
 
-    // 2. Synchronisation en arrière-plan (ou initiale si pas de cache)
+    // 2. Synchronisation en arrière-plan
     if (!liveTVInitialized) {
         initLoader.style.display = 'flex';
         loaderBar.style.width = '10%';
@@ -880,13 +932,9 @@ async function loadXtreamData() {
         liveCategories = newCats;
         allLiveChannels = newChannels;
 
-        // Save to Cache (LocalStorage)
-        try {
-            localStorage.setItem('xtream_cache_cats', JSON.stringify(newCats));
-            localStorage.setItem('xtream_cache_channels', JSON.stringify(newChannels));
-        } catch(e) {
-            console.warn("[IPTV] Cache trop volumineux pour LocalStorage");
-        }
+        // Save to IndexedDB (Capacité quasi illimitée)
+        await saveToCache('xtream_cats', newCats);
+        await saveToCache('xtream_channels', newChannels);
 
         // Finalize UI
         if (!liveTVInitialized) {
