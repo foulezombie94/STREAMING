@@ -855,28 +855,23 @@ function renderCategories() {
     const categoryLabel = document.getElementById('current-category-name');
     if (!container) return;
 
-    const baseClasses = "w-full px-5 py-4 rounded-xl flex items-center justify-between transition-all hover:bg-white/5 group text-white/50 hover:text-white cursor-pointer";
-    const activeClasses = "w-full px-5 py-4 rounded-xl flex items-center justify-between transition-all bg-primary/20 border border-primary/30 text-white shadow-[0_0_20px_rgba(255,179,175,0.1)] group active cursor-pointer";
+    // Style Smarters : Plat, Majuscule, Bord à bord
+    const baseClasses = "w-full px-6 py-4 flex items-center justify-between transition-all hover:bg-white/5 group text-white/40 hover:text-white cursor-pointer border-b border-white/5";
+    const activeClasses = "w-full px-6 py-4 flex items-center justify-between transition-all bg-[#136b7a] text-white shadow-lg group active cursor-pointer border-b border-white/5";
 
     const allChannelsCount = allLiveChannels.length;
 
     const html = `
         <div class="${activeClasses}" data-id="all">
-            <div class="flex items-center gap-4">
-                <span class="material-symbols-outlined text-xl group-hover:scale-110 transition-transform">grid_view</span>
-                <span class="font-bold text-xs uppercase tracking-widest">Tout</span>
-            </div>
-            <span class="text-[10px] font-bold opacity-30 group-hover:opacity-100 transition-opacity">${allChannelsCount}</span>
+            <span class="font-bold text-xs uppercase tracking-[0.2em]">All Channels</span>
+            <span class="text-[11px] font-bold opacity-60">${allChannelsCount}</span>
         </div>
         ${liveCategories.map(cat => {
             const count = allLiveChannels.filter(c => c.category_id === cat.category_id).length;
             return `
                 <div class="${baseClasses}" data-id="${cat.category_id}">
-                    <div class="flex items-center gap-4">
-                        <span class="material-symbols-outlined text-xl group-hover:scale-110 transition-transform">folder</span>
-                        <span class="font-bold text-xs uppercase tracking-widest truncate max-w-[140px]">${cat.category_name}</span>
-                    </div>
-                    <span class="text-[10px] font-bold opacity-30 group-hover:opacity-100 transition-opacity">${count}</span>
+                    <span class="font-bold text-xs uppercase tracking-[0.2em] truncate max-w-[180px]">${cat.category_name}</span>
+                    <span class="text-[11px] font-bold opacity-30 group-hover:opacity-100 transition-opacity">${count}</span>
                 </div>
             `;
         }).join('')}
@@ -891,7 +886,7 @@ function renderCategories() {
             btn.className = activeClasses;
             
             const catId = btn.getAttribute('data-id') || 'all';
-            const catName = btn.querySelector('span:nth-child(2)')?.textContent || 'Toutes les chaînes';
+            const catName = btn.querySelector('span:first-child')?.textContent || 'Toutes les chaînes';
             
             if (categoryLabel) categoryLabel.textContent = catName;
             renderLiveTV('', catId);
