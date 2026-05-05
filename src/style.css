@@ -5,11 +5,20 @@
     box-sizing: border-box;
 }
 
+input, select, textarea, button {
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    border: none;
+    background: transparent;
+}
+
 body {
     font-family: 'Inter', sans-serif;
     background-color: #050505; /* Noir plus profond/premium */
     color: #FFFFFF;
     overflow-x: hidden;
+    color-scheme: dark;
 }
 
 a {
@@ -111,16 +120,28 @@ a {
 }
 
 .search-input {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: #FFF;
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    color: #FFF !important;
     font-family: inherit;
     font-size: 14px;
     width: 0px;
     padding: 0;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0;
+}
+
+.search-input:focus, .search-input:active {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 .search-container:hover .search-input,
@@ -554,10 +575,14 @@ a {
         margin: 0 !important;
         border: none !important;
         outline: none !important;
+        box-shadow: none !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
         color: white !important;
         font-family: inherit !important;
         font-size: 16px !important;
         background: transparent !important;
+        background-color: transparent !important;
         pointer-events: auto !important;
     }
 
@@ -1639,11 +1664,13 @@ a {
 .live-tv-search input {
     width: 300px;
     padding: 12px 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 30px;
-    color: white;
-    outline: none;
+    background: rgba(255, 255, 255, 0.05) !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 30px !important;
+    color: white !important;
+    outline: none !important;
+    box-shadow: none !important;
     transition: all 0.3s;
 }
 
