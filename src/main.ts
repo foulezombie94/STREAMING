@@ -82,6 +82,10 @@ function handleNavigation(type: any) {
     // FERME LE LECTEUR LIVE SI ON QUITTE IPTV
     if (currentType !== 'iptv') {
         stopLiveTV();
+        const liveContent = document.getElementById('live-tv-content');
+        const loginForm = document.getElementById('xtream-login');
+        if (liveContent) liveContent.style.display = 'none';
+        if (loginForm) loginForm.style.display = 'none';
     }
 
     // Gestion de la visibilité des sections
