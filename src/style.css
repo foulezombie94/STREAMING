@@ -320,7 +320,7 @@ a {
 /* 4. Section Populaire */
 .popular {
     position: relative;
-    margin-top: -120px; /* Réduit pour PC pour éviter de coller aux infos du film */
+    margin-top: 40px; /* Espacement propre entre les filtres et les films */
     z-index: 10;
     padding-bottom: 2rem;
 }
@@ -500,7 +500,7 @@ a {
     }
     
     .popular { 
-        margin-top: -100px !important; 
+        margin-top: 20px !important; 
     }
 }
 
@@ -601,7 +601,7 @@ a {
     .hero h1 { font-size: 28px; line-height: 1.2; }
     
     .genre-filters-container { margin-top: 20px; padding: 10px 1.5rem; }
-    .popular { margin-top: -100px; } /* Moins agressif pour éviter de coller au texte hero */
+    .popular { margin-top: 10px; } /* Espacement ajouté pour éviter de coller aux filtres */
     main { padding-bottom: 20px; }
     
     /* Grille 3 colonnes au lieu du carrousel */
@@ -681,7 +681,7 @@ a {
         align-items: center;
     }
     .btn { width: 100%; max-width: 180px; padding: 8px 16px; font-size: 11px; }
-    .popular { margin-top: -80px; }
+    .popular { margin-top: 10px; }
     .movie-card { width: 100% !important; min-width: 0 !important; }
     .section-title { font-size: 15px; padding-left: 1rem; margin-bottom: 15px; }
     .carousel-container { 
