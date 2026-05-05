@@ -898,6 +898,7 @@ function renderCategories() {
 
     container.querySelectorAll('[data-id]').forEach(btn => {
         btn.addEventListener('click', () => {
+            stopLiveTV();
             container.querySelectorAll('[data-id]').forEach(b => {
                 b.className = baseClasses;
             });
