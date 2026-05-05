@@ -695,7 +695,7 @@ async function initLiveTV() {
     if (xtreamConfig.host && xtreamConfig.user && xtreamConfig.pass) {
         console.log("[IPTV] Identifiants trouvés, chargement des données...");
         loginForm.style.display = 'none';
-        liveContent.style.display = 'block';
+        liveContent.style.display = 'flex';
         if (!liveTVInitialized) await loadXtreamData();
         else console.log("[IPTV] Données déjà initialisées.");
     } else {
@@ -704,6 +704,16 @@ async function initLiveTV() {
         liveContent.style.display = 'none';
     }
 }
+
+// Listeners pour fermer la TV (Retour aux films)
+document.getElementById('close-live-tv-back')?.addEventListener('click', () => {
+    document.getElementById('live-tv-content')!.style.display = 'none';
+    document.getElementById('main-nav')!.style.display = 'flex';
+});
+document.getElementById('close-live-tv-x')?.addEventListener('click', () => {
+    document.getElementById('live-tv-content')!.style.display = 'none';
+    document.getElementById('main-nav')!.style.display = 'flex';
+});
 
 // Gestionnaire de Login
 document.getElementById('xtream-submit')?.addEventListener('click', async () => {
@@ -1145,12 +1155,12 @@ function playLiveChannel(url: string, name: string) {
 // Search event synchronized with current active category
 document.getElementById('live-search')?.addEventListener('input', (e) => {
     const val = (e.target as HTMLInputElement).value;
-    const activeCat = document.querySelector('#live-categories .cat-btn.active')?.getAttribute('data-id') || 'all';
+    const activeCat = document.querySelector('#live-categories [data-id].active')?.getAttribute('data-id') || 'all';
     renderLiveTV(val, activeCat);
 });
 
 // Logout feature
-document.getElementById('xtream-logout-btn')?.addEventListener('click', () => {
+document.getElementById('xtream-logout')?.addEventListener('click', () => {
     if (confirm("Voulez-vous vraiment vous déconnecter du serveur TV ?")) {
         localStorage.removeItem('xtream_host');
         localStorage.removeItem('xtream_user');

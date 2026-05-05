@@ -123,152 +123,142 @@
                     animation: shimmer 2s infinite;
                 }
             </style>
-            <div class="container mx-auto px-4 lg:px-12">
-                <div id="live-tv-content" style="display: none;" class="fixed inset-0 z-[100] bg-[#050505] flex flex-row overflow-hidden font-sans">
-                    
-                    <!-- Sidebar Industrielle Style Smarters -->
-                    <div id="live-tv-sidebar" class="w-80 h-full bg-[#000] border-r border-white/5 flex flex-col shrink-0">
-                        <!-- Sidebar Header : Logo & Nav -->
-                        <div class="h-16 flex items-center justify-between px-6 bg-[#0a0a0a] border-b border-white/5">
-                            <div class="flex items-center gap-4">
-                                <button id="close-live-tv-back" class="text-white/60 hover:text-white transition-colors">
-                                    <span class="material-symbols-outlined text-2xl">arrow_back</span>
-                                </button>
-                                <span class="text-white font-black text-sm tracking-tighter flex items-center gap-1">
-                                    IPTV <span class="text-primary italic font-bold">SMARTERS</span> <span class="text-[10px] opacity-40 font-normal">PRO</span>
-                                </span>
-                            </div>
-                            <button id="close-live-tv-x" class="text-white/60 hover:text-white transition-colors">
-                                <span class="material-symbols-outlined text-2xl">close</span>
-                            </button>
+        </section>
+    </main>
+
+    <!-- LIVE TV SECTION (Top level for fixed positioning) -->
+    <div id="live-tv-content" style="display: none;" class="fixed inset-0 z-[100] bg-[#050505] flex flex-row overflow-hidden font-sans">
+        <!-- Sidebar Industrielle Style Smarters -->
+        <div id="live-tv-sidebar" class="w-80 h-full bg-[#000] border-r border-white/5 flex flex-col shrink-0">
+            <!-- Sidebar Header : Logo & Nav -->
+            <div class="h-16 flex items-center justify-between px-6 bg-[#0a0a0a] border-b border-white/5">
+                <div class="flex items-center gap-4">
+                    <button id="close-live-tv-back" class="text-white/60 hover:text-white transition-colors">
+                        <span class="material-symbols-outlined text-2xl">arrow_back</span>
+                    </button>
+                    <span class="text-white font-black text-sm tracking-tighter flex items-center gap-1">
+                        IPTV <span class="text-primary italic font-bold">SMARTERS</span> <span class="text-[10px] opacity-40 font-normal">PRO</span>
+                    </span>
+                </div>
+                <button id="close-live-tv-x" class="text-white/60 hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-2xl">close</span>
+                </button>
+            </div>
+
+            <!-- Sidebar Search -->
+            <div class="p-0 bg-[#111]">
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-white/20 text-xl">search</span>
+                    <input type="text" id="live-search" placeholder="Search in categories" class="w-full bg-transparent py-5 pl-16 pr-6 text-white text-xs uppercase tracking-widest outline-none border-b border-white/5 placeholder:text-white/10">
+                </div>
+            </div>
+
+            <!-- Categories List -->
+            <div id="live-categories" class="flex-1 overflow-y-auto custom-scrollbar bg-[#000]">
+                <!-- Categories will be injected here -->
+            </div>
+
+            <!-- Logout & Stats -->
+            <div class="p-4 bg-[#0a0a0a] border-t border-white/5">
+                <div id="xtream-logout" class="flex items-center justify-between px-4 py-2 text-white/30 hover:text-error transition-all cursor-pointer group">
+                    <span class="text-[10px] font-bold uppercase tracking-widest">Se déconnecter</span>
+                    <span class="material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">logout</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content (Grid & Player) -->
+        <div class="flex-1 flex flex-col overflow-hidden relative">
+            <!-- Header Right -->
+            <div class="h-20 flex items-center justify-between px-10 bg-[#080808] border-b border-white/5">
+                <div class="flex items-center gap-4">
+                    <span id="current-category-name" class="text-white/20 font-bold text-[11px] uppercase tracking-[0.3em]">Toutes les chaînes</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="px-3 py-1 bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold rounded-md">LIVE SERVER OK</div>
+                    <button id="close-live-tv" class="w-10 h-10 rounded-full flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-all">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Grid Area (5 par ligne comme demandé) -->
+            <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                <!-- Player Area (If active) -->
+                <div id="live-player-container" style="display: none;" class="mb-6 animate-fade-in">
+                    <div class="bg-black border border-white/10 rounded-xl overflow-hidden shadow-2xl relative aspect-video">
+                        <video id="live-video" controls autoplay playsinline class="w-full h-full"></video>
+                        <div id="player-error" style="display: none;" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center text-center p-8 z-20">
+                            <span class="material-symbols-outlined text-5xl text-primary mb-4 animate-pulse">error</span>
+                            <p class="text-white font-bold text-xl">Flux protégé ou expiré</p>
+                            <p class="text-white/40 text-sm mt-2">Le serveur a refusé la connexion.</p>
                         </div>
-
-                        <!-- Sidebar Search -->
-                        <div class="p-0 bg-[#111]">
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-white/20 text-xl">search</span>
-                                <input type="text" id="live-search" placeholder="Search in categories" class="w-full bg-transparent py-5 pl-16 pr-6 text-white text-xs uppercase tracking-widest outline-none border-b border-white/5 placeholder:text-white/10">
-                            </div>
-                        </div>
-
-                        <!-- Categories List -->
-                        <div id="live-categories" class="flex-1 overflow-y-auto custom-scrollbar bg-[#000]">
-                            <!-- Categories will be injected here -->
-                        </div>
-
-                        <!-- Logout & Stats -->
-                        <div class="p-4 bg-[#0a0a0a] border-t border-white/5">
-                            <div id="xtream-logout" class="flex items-center justify-between px-4 py-2 text-white/30 hover:text-error transition-all cursor-pointer group">
-                                <span class="text-[10px] font-bold uppercase tracking-widest">Se déconnecter</span>
-                                <span class="material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">logout</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Main Content (Grid & Player) -->
-                    <div class="flex-1 flex flex-col overflow-hidden relative">
-                        <!-- Header Right -->
-                        <div class="h-20 flex items-center justify-between px-10 bg-[#080808] border-b border-white/5">
-                            <div class="flex items-center gap-4">
-                                <span id="current-category-name" class="text-white/20 font-bold text-[11px] uppercase tracking-[0.3em]">Toutes les chaînes</span>
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <div class="px-3 py-1 bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold rounded-md">LIVE SERVER OK</div>
-                                <button id="close-live-tv" class="w-10 h-10 rounded-full flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-all">
-                                    <span class="material-symbols-outlined">close</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Grid Area (5 par ligne comme demandé) -->
-                        <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                            <!-- Player Area (If active) -->
-                            <div id="live-player-container" style="display: none;" class="mb-6 animate-fade-in">
-                                <div class="bg-black border border-white/10 rounded-xl overflow-hidden shadow-2xl relative aspect-video">
-                                    <video id="live-video" controls autoplay playsinline class="w-full h-full"></video>
-                                    <div id="player-error" style="display: none;" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center text-center p-8 z-20">
-                                        <span class="material-symbols-outlined text-5xl text-primary mb-4 animate-pulse">error</span>
-                                        <p class="text-white font-bold text-xl">Flux protégé ou expiré</p>
-                                        <p class="text-white/40 text-sm mt-2">Le serveur a refusé la connexion.</p>
-                                    </div>
-                                    <div class="absolute top-6 left-6 z-10">
-                                        <h3 id="current-channel-name" class="bg-black/60 backdrop-blur-md px-6 py-2 rounded-xl text-white font-bold border border-white/10"></h3>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Channels Grid (Strictement 5 par ligne) -->
-                            <div id="live-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 pb-20">
-                                <!-- Channels will be injected here -->
-                            </div>
-                        </div>
-                    </div>
-
-                </div> <!-- Fin de live-tv-content -->
-
-                <!-- Formulaire Login Xtream (Version Premium Compacte) -->
-                <div id="xtream-login" style="display: none;" class="w-full min-h-[70vh] flex items-center justify-center py-8">
-                    <div class="w-full max-w-4xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-                        
-                        <!-- Côté Gauche : Branding & Info -->
-                        <div class="hidden lg:flex flex-col gap-6 pr-8">
-                            <div class="space-y-4">
-                                <h2 class="text-5xl font-display-xl font-bold text-white leading-tight">
-                                    L'expérience <span class="text-primary italic">Live</span> ultime.
-                                </h2>
-                                <p class="text-white/60 text-lg leading-relaxed">
-                                    Accédez à des milliers de chaînes en direct du monde entier avec une qualité exceptionnelle.
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- Côté Droit : Formulaire -->
-                        <div class="glass-panel p-10 md:p-12 border border-white/10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] relative overflow-hidden backdrop-blur-3xl">
-                            <!-- Background Decor -->
-                            <div class="absolute -top-32 -right-32 w-80 h-80 bg-primary/20 rounded-full blur-[120px] pointer-events-none"></div>
-                            
-                            <div class="relative z-10">
-                                <div class="mb-10">
-                                    <h3 class="text-3xl font-display-xl font-bold text-white mb-2">Connexion Direct</h3>
-                                    <div class="w-16 h-1.5 bg-primary"></div>
-                                </div>
-
-                                <div class="flex flex-col gap-6">
-                                    <!-- Serveur Square -->
-                                    <div class="bg-white/5 border border-white/10 p-6 group focus-within:border-primary/40 transition-all shadow-inner">
-                                        <label class="block text-white/30 text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-2">Serveur Host</label>
-                                        <div class="relative">
-                                            <input type="text" id="xtream-host" placeholder="http://votre-portail.com:80" class="w-full bg-transparent text-white text-xl px-4 placeholder:text-white/5 transition-all outline-none">
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="flex flex-col gap-6">
-                                        <!-- Utilisateur Square -->
-                                        <div class="bg-white/5 border border-white/10 p-6 group focus-within:border-primary/40 transition-all shadow-inner">
-                                            <label class="block text-white/30 text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-2">Utilisateur</label>
-                                            <div class="relative">
-                                                <input type="text" id="xtream-user" placeholder="Login" class="w-full bg-transparent text-white text-xl px-4 placeholder:text-white/5 transition-all outline-none">
-                                            </div>
-                                        </div>
-                                        <!-- Password Square -->
-                                        <div class="bg-white/5 border border-white/10 p-6 group focus-within:border-primary/40 transition-all shadow-inner">
-                                            <label class="block text-white/30 text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-2">Mot de passe</label>
-                                            <div class="relative">
-                                                <input type="password" id="xtream-pass" placeholder="••••••" class="w-full bg-transparent text-white text-xl px-4 placeholder:text-white/5 transition-all outline-none">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <button id="xtream-submit" class="mt-4 bg-primary text-on-primary font-bold py-6 shadow-2xl shadow-primary/40 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-4 text-xl group relative overflow-hidden">
-                                        <span class="relative z-10 font-display-xl uppercase tracking-widest">Connecter</span>
-                                        <span class="material-symbols-outlined text-2xl group-hover:translate-x-2 transition-transform relative z-10">rocket_launch</span>
-                                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer"></div>
-                                    </button>
-                                </div>
-                            </div>
+                        <div class="absolute top-6 left-6 z-10">
+                            <h3 id="current-channel-name" class="bg-black/60 backdrop-blur-md px-6 py-2 rounded-xl text-white font-bold border border-white/10"></h3>
                         </div>
                     </div>
                 </div>
+
+                <!-- Channels Grid (Strictement 5 par ligne) -->
+                <div id="live-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 pb-20">
+                    <!-- Channels will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulaire Login Xtream (Version Premium Compacte) -->
+    <div id="xtream-login" style="display: none;" class="fixed inset-0 z-[90] bg-[#050505] flex items-center justify-center p-4">
+        <div class="w-full max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+            <!-- Côté Gauche : Branding & Info -->
+            <div class="hidden lg:flex flex-col gap-6 pr-8">
+                <div class="space-y-4">
+                    <h2 class="text-5xl font-display-xl font-bold text-white leading-tight">
+                        L'expérience <span class="text-primary italic">Live</span> ultime.
+                    </h2>
+                    <p class="text-white/60 text-lg leading-relaxed">
+                        Accédez à des milliers de chaînes en direct du monde entier avec une qualité exceptionnelle.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Côté Droit : Formulaire -->
+            <div class="glass-panel p-10 md:p-12 border border-white/10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] relative overflow-hidden backdrop-blur-3xl">
+                <!-- Background Decor -->
+                <div class="absolute -top-32 -right-32 w-80 h-80 bg-primary/20 rounded-full blur-[120px] pointer-events-none"></div>
+                
+                <div class="relative z-10">
+                    <div class="mb-10">
+                        <h3 class="text-3xl font-display-xl font-bold text-white mb-2">Connexion Direct</h3>
+                        <div class="w-16 h-1.5 bg-primary"></div>
+                    </div>
+
+                    <div class="flex flex-col gap-6">
+                        <div class="bg-white/5 border border-white/10 p-6 group focus-within:border-primary/40 transition-all shadow-inner">
+                            <label class="block text-white/30 text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-2">Serveur Host</label>
+                            <input type="text" id="xtream-host" placeholder="http://votre-portail.com:80" class="w-full bg-transparent text-white text-xl px-4 placeholder:text-white/5 transition-all outline-none">
+                        </div>
+                        
+                        <div class="flex flex-col gap-6">
+                            <div class="bg-white/5 border border-white/10 p-6 group focus-within:border-primary/40 transition-all shadow-inner">
+                                <label class="block text-white/30 text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-2">Utilisateur</label>
+                                <input type="text" id="xtream-user" placeholder="Login" class="w-full bg-transparent text-white text-xl px-4 placeholder:text-white/5 transition-all outline-none">
+                            </div>
+                            <div class="bg-white/5 border border-white/10 p-6 group focus-within:border-primary/40 transition-all shadow-inner">
+                                <label class="block text-white/30 text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-2">Mot de passe</label>
+                                <input type="password" id="xtream-pass" placeholder="••••••" class="w-full bg-transparent text-white text-xl px-4 placeholder:text-white/5 transition-all outline-none">
+                            </div>
+                        </div>
+
+                        <button id="xtream-submit" class="mt-4 bg-primary text-on-primary font-bold py-6 shadow-2xl shadow-primary/40 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-4 text-xl group relative overflow-hidden">
+                            <span class="relative z-10 font-display-xl uppercase tracking-widest">Connecter</span>
+                            <span class="material-symbols-outlined text-2xl group-hover:translate-x-2 transition-transform relative z-10">rocket_launch</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
             </div>
         </section>
