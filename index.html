@@ -93,115 +93,117 @@
 
         <!-- Section TV Direct (IPTV Bento) -->
         <section id="iptv-section" style="display: none;" class="py-8">
-            <div id="live-tv-content">
-                
-                <!-- Content Header -->
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-                    <h1 class="font-display-xl text-3xl md:text-4xl text-white font-bold tracking-tight">Télévision Direct</h1>
-                    <div class="flex items-center gap-4 w-full md:w-auto">
-                        <div class="glass-panel rounded-2xl flex items-center px-4 py-2 border border-white/10 focus-within:border-primary/50 transition-all flex-1 md:flex-none">
-                            <span class="material-symbols-outlined text-white/50 text-xl mr-2">search</span>
-                            <input type="text" id="live-search" placeholder="Rechercher une chaîne..." class="bg-transparent border-none outline-none text-white text-sm w-full md:w-64" autocomplete="off">
-                        </div>
-                        <button id="xtream-logout-btn" title="Déconnexion" class="w-10 h-10 rounded-2xl glass-panel flex items-center justify-center text-white/70 hover:text-primary hover:border-primary/50 transition-all border border-white/10 flex-shrink-0">
-                            <span class="material-symbols-outlined text-xl">logout</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Player Live (Caché par défaut) -->
-                <div id="live-player-container" style="display: none;" class="mb-12">
-                    <div class="glass-panel rounded-[2rem] p-4 md:p-6 border border-primary/20 shadow-2xl">
-                        <div class="flex items-center justify-between mb-4 px-2">
-                            <div class="flex items-center gap-3">
-                                <span class="bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider flex items-center gap-1.5">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                                    DIFFUSION EN COURS
-                                </span>
-                                <h3 id="current-channel-name" class="font-title-lg text-lg md:text-xl text-white font-bold truncate max-w-[200px] md:max-w-none"></h3>
+            <div class="container mx-auto px-4 lg:px-12">
+                <div id="live-tv-content">
+                    
+                    <!-- Content Header -->
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+                        <h1 class="font-display-xl text-3xl md:text-4xl text-white font-bold tracking-tight">Télévision Direct</h1>
+                        <div class="flex items-center gap-4 w-full md:w-auto">
+                            <div class="glass-panel rounded-2xl flex items-center px-4 py-2 border border-white/10 focus-within:border-primary/50 transition-all flex-1 md:flex-none">
+                                <span class="material-symbols-outlined text-white/50 text-xl mr-2">search</span>
+                                <input type="text" id="live-search" placeholder="Rechercher une chaîne..." class="bg-transparent border-none outline-none text-white text-sm w-full md:w-64" autocomplete="off">
                             </div>
-                            <button id="close-player" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-white hover:bg-white/10 transition-colors">
-                                <span class="material-symbols-outlined">close</span>
+                            <button id="xtream-logout-btn" title="Déconnexion" class="w-10 h-10 rounded-2xl glass-panel flex items-center justify-center text-white/70 hover:text-primary hover:border-primary/50 transition-all border border-white/10 flex-shrink-0">
+                                <span class="material-symbols-outlined text-xl">logout</span>
                             </button>
                         </div>
-                        <div class="player-wrapper relative aspect-video rounded-2xl overflow-hidden bg-black shadow-inner">
-                            <video id="live-video" controls autoplay playsinline class="w-full h-full"></video>
-                            <div id="player-error" style="display: none;" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center p-8 z-10">
-                                <span class="material-symbols-outlined text-5xl text-primary mb-4">warning</span>
-                                <p class="text-white font-medium text-lg">Flux indisponible ou protégé.</p>
-                                <p class="text-white/50 text-sm mt-2">Tentative de reconnexion automatique via proxy...</p>
+                    </div>
+
+                    <!-- Player Live (Caché par défaut) -->
+                    <div id="live-player-container" style="display: none;" class="mb-12">
+                        <div class="glass-panel rounded-[2rem] p-4 md:p-6 border border-primary/20 shadow-2xl">
+                            <div class="flex items-center justify-between mb-4 px-2">
+                                <div class="flex items-center gap-3">
+                                    <span class="bg-primary/20 text-primary border border-primary/30 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider flex items-center gap-1.5">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                        DIFFUSION EN COURS
+                                    </span>
+                                    <h3 id="current-channel-name" class="font-title-lg text-lg md:text-xl text-white font-bold truncate max-w-[200px] md:max-w-none"></h3>
+                                </div>
+                                <button id="close-player" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center text-white hover:bg-white/10 transition-colors">
+                                    <span class="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
+                            <div class="player-wrapper relative aspect-video rounded-2xl overflow-hidden bg-black shadow-inner">
+                                <video id="live-video" controls autoplay playsinline class="w-full h-full"></video>
+                                <div id="player-error" style="display: none;" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center text-center p-8 z-10">
+                                    <span class="material-symbols-outlined text-5xl text-primary mb-4">warning</span>
+                                    <p class="text-white font-medium text-lg">Flux indisponible ou protégé.</p>
+                                    <p class="text-white/50 text-sm mt-2">Tentative de reconnexion automatique via proxy...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Categories Bento Box -->
-                <div id="live-categories" class="glass-panel rounded-3xl py-4 px-6 flex flex-nowrap gap-3 items-center justify-start relative overflow-x-auto overflow-y-hidden hide-scrollbar mb-12 select-none touch-pan-x" style="overscroll-behavior-x: contain;">
-                    <div class="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full blur-[80px] -z-10 pointer-events-none"></div>
-                    <!-- Categories will be injected here -->
-                    <button class="px-6 py-2.5 rounded-2xl font-body-sm text-body-sm whitespace-nowrap transition-all glass-panel glow-active text-white relative overflow-hidden group active" data-id="all">
-                         <span class="relative z-10 font-medium">Tout</span>
-                    </button>
-                    <!-- Bouton Déconnexion -->
-                    <button id="xtream-logout" class="ml-auto px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-error/20 text-white/40 hover:text-error transition-all flex items-center gap-2 border border-white/10 group">
-                        <span class="material-symbols-outlined text-xl transition-transform group-hover:-translate-x-0.5">logout</span>
-                        <span class="text-xs font-bold uppercase tracking-widest hidden sm:inline">Déconnexion</span>
-                    </button>
-                </div>
-
-                <!-- Bento Grid (Channels) -->
-                <div id="live-grid" class="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[minmax(180px,auto)]">
-                    <!-- Channels will be injected here -->
-                    <div class="md:col-span-12 py-20 text-center text-white/30 font-medium italic">
-                        Chargement des chaînes...
-                    </div>
-                </div>
-
-            </div> <!-- Fin de live-tv-content -->
-
-            <!-- Formulaire Login Xtream (Style Bento Premium) -->
-            <div id="xtream-login" style="display: none;" class="w-full max-w-xl mx-auto px-4 py-12">
-                <div class="glass-panel rounded-[2.5rem] p-8 md:p-12 border border-white/10 shadow-2xl relative overflow-hidden backdrop-blur-3xl">
-                    <!-- Glows décoratifs -->
-                    <div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 rounded-full blur-[100px] pointer-events-none"></div>
-                    <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/20 rounded-full blur-[100px] pointer-events-none"></div>
-                    
-                    <div class="text-center mb-10 relative z-10">
-                        <div class="w-20 h-20 bg-primary/20 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-primary/30 shadow-lg shadow-primary/20">
-                            <span class="material-symbols-outlined text-4xl text-primary">tv_gen</span>
-                        </div>
-                        <h2 class="text-3xl font-display-xl font-bold text-white mb-2">Connexion TV</h2>
-                        <p class="text-white/50 text-sm">Entrez vos identifiants Xtream Codes</p>
-                    </div>
-
-                    <div class="flex flex-col gap-6 relative z-10">
-                        <div class="group">
-                            <label class="block text-white/40 text-xs font-bold uppercase tracking-widest mb-2 ml-4">Serveur</label>
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-white/30 text-xl group-focus-within:text-primary transition-colors">language</span>
-                                <input type="text" id="xtream-host" placeholder="http://votre-serveur.com:8080" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:border-primary/50 focus:bg-white/10 transition-all outline-none">
-                            </div>
-                        </div>
-                        <div class="group">
-                            <label class="block text-white/40 text-xs font-bold uppercase tracking-widest mb-2 ml-4">Utilisateur</label>
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-white/30 text-xl group-focus-within:text-primary transition-colors">person</span>
-                                <input type="text" id="xtream-user" placeholder="Nom d'utilisateur" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:border-primary/50 focus:bg-white/10 transition-all outline-none">
-                            </div>
-                        </div>
-                        <div class="group">
-                            <label class="block text-white/40 text-xs font-bold uppercase tracking-widest mb-2 ml-4">Mot de passe</label>
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-white/30 text-xl group-focus-within:text-primary transition-colors">key</span>
-                                <input type="password" id="xtream-pass" placeholder="••••••••" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:border-primary/50 focus:bg-white/10 transition-all outline-none">
-                            </div>
-                        </div>
-                        <button id="xtream-submit" class="mt-6 bg-primary text-on-primary font-bold py-4 rounded-2xl shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group overflow-hidden relative">
-                            <span class="relative z-10">SE CONNECTER</span>
-                            <span class="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform relative z-10">arrow_forward</span>
+                    <!-- Categories Bento Box -->
+                    <div id="live-categories" class="glass-panel rounded-3xl py-4 px-6 flex flex-nowrap gap-3 items-center justify-start relative overflow-x-auto overflow-y-hidden hide-scrollbar mb-12 select-none touch-pan-x" style="overscroll-behavior-x: contain;">
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-secondary/10 rounded-full blur-[80px] -z-10 pointer-events-none"></div>
+                        <!-- Categories will be injected here -->
+                        <button class="px-6 py-2.5 rounded-2xl font-body-sm text-body-sm whitespace-nowrap transition-all glass-panel glow-active text-white relative overflow-hidden group active" data-id="all">
+                             <span class="relative z-10 font-medium">Tout</span>
+                        </button>
+                        <!-- Bouton Déconnexion -->
+                        <button id="xtream-logout" class="ml-auto px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-error/20 text-white/40 hover:text-error transition-all flex items-center gap-2 border border-white/10 group">
+                            <span class="material-symbols-outlined text-xl transition-transform group-hover:-translate-x-0.5">logout</span>
+                            <span class="text-xs font-bold uppercase tracking-widest hidden sm:inline">Déconnexion</span>
                         </button>
                     </div>
-                    <p id="login-error" class="text-error font-medium text-sm mt-6 text-center" style="display: none;">Identifiants invalides ou serveur injoignable.</p>
+
+                    <!-- Bento Grid (Channels) -->
+                    <div id="live-grid" class="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[minmax(180px,auto)]">
+                        <!-- Channels will be injected here -->
+                        <div class="md:col-span-12 py-20 text-center text-white/30 font-medium italic">
+                            Chargement des chaînes...
+                        </div>
+                    </div>
+
+                </div> <!-- Fin de live-tv-content -->
+
+                <!-- Formulaire Login Xtream (Style Bento Premium) -->
+                <div id="xtream-login" style="display: none;" class="w-full max-w-xl mx-auto px-4 py-12">
+                    <div class="glass-panel rounded-[2.5rem] p-8 md:p-12 border border-white/10 shadow-2xl relative overflow-hidden backdrop-blur-3xl">
+                        <!-- Glows décoratifs -->
+                        <div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 rounded-full blur-[100px] pointer-events-none"></div>
+                        <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/20 rounded-full blur-[100px] pointer-events-none"></div>
+                        
+                        <div class="text-center mb-10 relative z-10">
+                            <div class="w-20 h-20 bg-primary/20 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-primary/30 shadow-lg shadow-primary/20">
+                                <span class="material-symbols-outlined text-4xl text-primary">tv_gen</span>
+                            </div>
+                            <h2 class="text-3xl font-display-xl font-bold text-white mb-2">Connexion TV</h2>
+                            <p class="text-white/50 text-sm">Entrez vos identifiants Xtream Codes</p>
+                        </div>
+
+                        <div class="flex flex-col gap-6 relative z-10">
+                            <div class="group">
+                                <label class="block text-white/40 text-xs font-bold uppercase tracking-widest mb-2 ml-4">Serveur</label>
+                                <div class="relative">
+                                    <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-white/30 text-xl group-focus-within:text-primary transition-colors">language</span>
+                                    <input type="text" id="xtream-host" placeholder="http://votre-serveur.com:8080" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:border-primary/50 focus:bg-white/10 transition-all outline-none">
+                                </div>
+                            </div>
+                            <div class="group">
+                                <label class="block text-white/40 text-xs font-bold uppercase tracking-widest mb-2 ml-4">Utilisateur</label>
+                                <div class="relative">
+                                    <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-white/30 text-xl group-focus-within:text-primary transition-colors">person</span>
+                                    <input type="text" id="xtream-user" placeholder="Nom d'utilisateur" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:border-primary/50 focus:bg-white/10 transition-all outline-none">
+                                </div>
+                            </div>
+                            <div class="group">
+                                <label class="block text-white/40 text-xs font-bold uppercase tracking-widest mb-2 ml-4">Mot de passe</label>
+                                <div class="relative">
+                                    <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-white/30 text-xl group-focus-within:text-primary transition-colors">key</span>
+                                    <input type="password" id="xtream-pass" placeholder="••••••••" class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-white placeholder:text-white/20 focus:border-primary/50 focus:bg-white/10 transition-all outline-none">
+                                </div>
+                            </div>
+                            <button id="xtream-submit" class="mt-6 bg-primary text-on-primary font-bold py-4 rounded-2xl shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 group overflow-hidden relative">
+                                <span class="relative z-10">SE CONNECTER</span>
+                                <span class="material-symbols-outlined text-xl group-hover:translate-x-1 transition-transform relative z-10">arrow_forward</span>
+                            </button>
+                        </div>
+                        <p id="login-error" class="text-error font-medium text-sm mt-6 text-center" style="display: none;">Identifiants invalides ou serveur injoignable.</p>
+                    </div>
                 </div>
             </div>
         </section>
