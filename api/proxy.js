@@ -113,7 +113,7 @@ export default async function handler(request) {
         const trimmed = line.trim();
         
         // 1. Rewrite segment URLs
-        if (trimmed && !trimmed.startsWith('#') && !trimmed.startsWith('http')) {
+        if (trimmed && !trimmed.startsWith('#')) {
           const absoluteSegmentUrl = new URL(trimmed, baseUrl).href;
           return `/api/proxy?url=${encodeURIComponent(absoluteSegmentUrl)}`;
         }
@@ -121,7 +121,7 @@ export default async function handler(request) {
         // 2. Rewrite URLs in tags (e.g., EXT-X-KEY, EXT-X-MAP, EXT-X-MEDIA)
         if (trimmed.startsWith('#') && (trimmed.includes('URI="') || trimmed.includes('URI='))) {
             return line.replace(/URI="?([^",\s]+)"?/g, (match, p1) => {
-                if (p1.startsWith('http') || p1.startsWith('/api/proxy')) return match;
+                if (p1.startsWith('/api/proxy')) return match; // Deja proxifié
                 const absoluteUrl = new URL(p1, baseUrl).href;
                 return `URI="/api/proxy?url=${encodeURIComponent(absoluteUrl)}"`;
             });
