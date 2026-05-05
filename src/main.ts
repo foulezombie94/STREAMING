@@ -716,7 +716,11 @@ document.getElementById('close-live-tv-back')?.addEventListener('click', () => {
 });
 document.getElementById('close-live-tv-x')?.addEventListener('click', () => {
     document.getElementById('live-tv-content')!.style.display = 'none';
-    document.getElementById('main-nav')!.style.display = 'flex';
+    handleNavigation('trending');
+});
+document.getElementById('close-live-tv')?.addEventListener('click', () => {
+    document.getElementById('live-tv-content')!.style.display = 'none';
+    handleNavigation('trending');
 });
 
 // Gestionnaire de Login
