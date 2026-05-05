@@ -874,8 +874,8 @@ function renderCategories() {
     if (!container) return;
 
     // Style Smarters : Plat, Majuscule, Bord à bord
-    const baseClasses = "w-full px-6 py-4 flex items-center justify-between transition-all hover:bg-white/5 group text-white/40 hover:text-white cursor-pointer border-b border-white/5";
-    const activeClasses = "w-full px-6 py-4 flex items-center justify-between transition-all bg-[#136b7a] text-white shadow-lg group active cursor-pointer border-b border-white/5";
+    const baseClasses = "w-full px-8 py-5 flex items-center justify-between transition-all hover:bg-white/5 group text-white/40 hover:text-white cursor-pointer border-b border-white/5 border-l-4 border-l-transparent";
+    const activeClasses = "w-full px-8 py-5 flex items-center justify-between transition-all bg-[#136b7a]/20 text-[#136b7a] shadow-lg group active cursor-pointer border-b border-white/5 border-l-4 border-l-[#136b7a]";
 
     const allChannelsCount = allLiveChannels.length;
 
