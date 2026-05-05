@@ -30,17 +30,18 @@ a {
 
 /* 2. En-tÃªte / Barre de Navigation */
 .navbar {
-    position: relative; /* Changé de fixed à relative */
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    padding: 1.2rem 4rem;
+    padding: 0.8rem 4rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     z-index: 1000;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    background: #050505; /* Fond solide pour éviter la transparence sur le hero */
+    background: rgba(5, 5, 5, 0.4);
+    backdrop-filter: blur(15px); 
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -873,14 +874,13 @@ a {
 .genre-filters-container {
     position: relative;
     width: 100%;
-    z-index: 1100;
-    background: #000; /* Fond noir pour la barre de filtres tout en haut */
-    padding: 15px 0;
-    margin: 0;
+    z-index: 100;
+    background: transparent;
+    padding: 10px 0;
+    margin-bottom: 20px;
     text-align: center;
     display: flex;
     justify-content: center;
-    border-bottom: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .mobile-filter-btn {

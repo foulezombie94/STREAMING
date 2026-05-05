@@ -18,18 +18,7 @@
 </head>
 <body class="bg-background text-on-surface font-body-lg min-h-screen pb-24 md:pb-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface-container-high/40 via-background to-background">
 
-    <!-- 1. Barre de filtres (Tout en haut) -->
-    <div class="genre-filters-container" id="genre-filters-container" style="display: none;">
-        <div class="genre-filters" id="desktop-genres"></div>
-        <button class="mobile-filter-btn" id="mobile-filter-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-            </svg>
-            Filtrer par Genre
-        </button>
-    </div>
-
-    <!-- 2. En-tête (Sous les filtres) -->
+    <!-- 1. En-tête (Tout en haut) -->
     <header class="navbar" id="navbar">
         <div class="logo">MOVIEVERSE</div>
         <ul class="nav-links">
@@ -63,7 +52,17 @@
         </div>
     </header>
 
-    <main class="w-full px-4 md:px-8 lg:px-12 pt-8 md:pt-12 pb-8">
+    <main class="w-full px-4 md:px-8 lg:px-12 pt-28 md:pt-36 pb-8">
+        <!-- Barre de filtres par genre (Placée sous le Header) -->
+        <div class="genre-filters-container" id="genre-filters-container" style="display: none;">
+            <div class="genre-filters" id="desktop-genres"></div>
+            <button class="mobile-filter-btn" id="mobile-filter-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                </svg>
+                Filtrer par Genre
+            </button>
+        </div>
 
         <!-- Section Héros -->
         <section class="hero" id="hero-section">
