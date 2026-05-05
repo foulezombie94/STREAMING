@@ -201,7 +201,7 @@
                 <!-- Player Area (If active) -->
                 <div id="live-player-container" style="display: none;" class="mb-6 animate-fade-in">
                     <div class="bg-black border border-white/10 rounded-xl overflow-hidden shadow-2xl relative aspect-video">
-                        <video id="live-video" controls autoplay playsinline class="w-full h-full"></video>
+                        <video id="live-video" controls autoplay playsinline class="w-full h-full" style="transform: translateZ(0); will-change: transform;"></video>
                         <div id="player-error" style="display: none;" class="absolute inset-0 bg-black/95 flex flex-col items-center justify-center text-center p-8 z-20">
                             <span class="material-symbols-outlined text-5xl text-primary mb-4 animate-pulse">error</span>
                             <p class="text-white font-bold text-xl">Flux protégé ou expiré</p>

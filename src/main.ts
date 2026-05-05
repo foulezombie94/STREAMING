@@ -1209,7 +1209,11 @@ function playLiveChannel(url: string, name: string) {
                     debug: false, 
                     manifestLoadingMaxRetry: 3,
                     manifestLoadingRetryDelay: 1000,
-                    enableWorker: true
+                    enableWorker: true,
+                    capLevelToPlayerSize: true, // Empêche le téléchargement 4K sur petit écran
+                    maxBufferLength: 30, // Limite le préchargement à 30 secondes pour sauver la RAM
+                    maxMaxBufferLength: 60, // Limite absolue
+                    maxBufferSize: 60 * 1000 * 1000 // Limite la RAM utilisée par la vidéo à 60 MB
                 });
                 (window as any).hls = hls;
                 hls.loadSource(target);
