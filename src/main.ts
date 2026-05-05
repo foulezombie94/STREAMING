@@ -938,50 +938,82 @@ function renderLiveTV(filter: string = '', categoryId: string = 'all') {
         return;
     }
 
-    liveGrid.innerHTML = display.map((c) => {
-        const streamUrl = `${xtreamConfig.host}/live/${xtreamConfig.user}/${xtreamConfig.pass}/${c.stream_id}.ts`;
-        
-        return `
-            <div class="group relative aspect-[2/3] overflow-hidden cursor-pointer border border-white/5 bg-[#111] transition-all duration-300" data-url="${streamUrl}">
+    // 1. Skeletons for immediate feedback
+    liveGrid.innerHTML = Array(12).fill(0).map(() => `
+        <div class="skeleton-card">
+            <div class="skeleton-shimmer"></div>
+        </div>
+    `).join('');
+
+    // 2. Progressive batch rendering
+    const batchSize = 12;
+    let renderedCount = 0;
+
+    const renderBatch = () => {
+        if (renderedCount >= display.length) return;
+
+        const nextBatch = display.slice(renderedCount, renderedCount + batchSize);
+        const fragment = document.createDocumentFragment();
+
+        nextBatch.forEach((c, index) => {
+            const streamUrl = `${xtreamConfig.host}/live/${xtreamConfig.user}/${xtreamConfig.pass}/${c.stream_id}.ts`;
+            const div = document.createElement('div');
+            div.className = "group relative aspect-[2/3] overflow-hidden cursor-pointer border border-white/5 bg-[#111] transition-all duration-300 fade-in-progressive";
+            div.style.animationDelay = `${(index % batchSize) * 30}ms`;
+            div.setAttribute('data-url', streamUrl);
+            
+            div.innerHTML = `
                 <!-- Logo/Poster -->
                 <div class="absolute inset-0 flex items-center justify-center bg-[#1a1a1a]">
-                     <img src="${c.stream_icon || ''}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" onerror="this.src='https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&q=80&w=400';"/>
+                     <img src="${c.stream_icon || ''}" loading="lazy" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" onerror="this.src='https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&q=80&w=400';"/>
                 </div>
 
                 <!-- Overlay Gradient -->
                 <div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
 
-                <!-- Channel Name (Centered like in screenshot) -->
+                <!-- Channel Name -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
                     <h3 class="font-black text-lg text-white uppercase tracking-tighter leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] group-hover:text-primary transition-colors">
                         ${c.name}
                     </h3>
                 </div>
 
-                <!-- Top Label (Number/Tag) -->
+                <!-- Top Label -->
                 <div class="absolute top-3 left-3 z-10">
                     <span class="bg-[#136b7a] text-white text-[9px] font-bold px-1.5 py-0.5 shadow-md">
                         ${c.stream_id % 99}
                     </span>
                 </div>
 
-                <!-- Hover Play Icon -->
+                <!-- Play Icon -->
                 <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
                     <div class="w-12 h-12 rounded-full bg-primary/20 backdrop-blur-md border border-primary/40 flex items-center justify-center">
                         <span class="material-symbols-outlined text-primary text-3xl">play_arrow</span>
                     </div>
                 </div>
-            </div>
-        `;
-    }).join('');
+            `;
 
-    liveGrid.querySelectorAll('[data-url]').forEach(card => {
-        card.addEventListener('click', () => {
-            const url = card.getAttribute('data-url');
-            const name = card.querySelector('h2, h3')?.textContent || 'Chaîne';
-            if (url) playLiveChannel(url, name);
+            div.addEventListener('click', () => {
+                const url = div.getAttribute('data-url');
+                const name = div.querySelector('h3')?.textContent || 'Chaîne';
+                if (url) playLiveChannel(url, name);
+            });
+
+            fragment.appendChild(div);
         });
-    });
+
+        if (renderedCount === 0) liveGrid.innerHTML = '';
+        liveGrid.appendChild(fragment);
+        renderedCount += batchSize;
+
+        if (renderedCount < display.length) {
+            requestAnimationFrame(() => {
+                setTimeout(renderBatch, 40);
+            });
+        }
+    };
+
+    renderBatch();
 }
 
 // Logic for playing a live channel

@@ -1871,3 +1871,40 @@ a {
     scrollbar-width: none;
 }
 
+
+/* --- PROGRESSIVE LOADING & SKELETONS --- */
+.skeleton-card {
+    position: relative;
+    background: #0a0a0a;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    aspect-ratio: 2/3;
+    overflow: hidden;
+}
+
+.skeleton-shimmer {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.03) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-swipe 1.5s infinite linear;
+}
+
+@keyframes shimmer-swipe {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.fade-in-progressive {
+    animation: fadeInProgressive 0.5s ease forwards;
+    opacity: 0;
+}
+
+@keyframes fadeInProgressive {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
