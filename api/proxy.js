@@ -18,13 +18,16 @@ export default async function handler(request) {
         return new Response('Invalid target URL', { status: 400 });
     }
 
-    // SÉCURITÉ : Restriction aux domaines IPTV autorisés
-    const allowedDomains = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium']; 
+    // SÉCURITÉ : Restriction aux domaines IPTV autorisés ou aux requêtes API/Médias
+    const allowedDomains = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium', 'tv', 'live', 'play', 'vod', 'video', 'cdn', 'media', 'net', 'pro', 'top', 'host', 'box']; 
     const targetHost = urlObj.hostname;
-    const isWhitelisted = allowedDomains.some(d => targetHost.includes(d));
+    const isWhitelistedDomain = allowedDomains.some(d => targetHost.includes(d));
+    
+    // Assouplissement : on autorise aussi si l'URL contient des marqueurs IPTV typiques
+    const isIptvRequest = targetUrl.includes('player_api.php') || targetUrl.includes('get.php') || targetUrl.includes('.m3u8') || targetUrl.includes('.ts') || targetUrl.includes('xmltv');
 
-    if (!isWhitelisted) {
-      return new Response('Access Denied: Domain not whitelisted', { status: 403 });
+    if (!isWhitelistedDomain && !isIptvRequest) {
+      return new Response('Access Denied: Domain not whitelisted and not a recognized IPTV request', { status: 403 });
     }
 
     // Préparation des headers à envoyer à la cible
