@@ -374,7 +374,7 @@ function getMovieUrl(server: string, id: string | null): string {
         case 'vidfast':
             return `https://vidfast.pro/movie/${id}`;
         case 'wiflix':
-            return `https://vidsrc.pro/embed/movie/${id}?ds_lang=fr`;
+            return `https://vidsrc.me/embed/movie?tmdb=${id}`;
         case 'videasy':
         default:
             return `https://player.videasy.net/movie/${id}`;
@@ -390,7 +390,7 @@ function getTvUrl(server: string, id: string | null, season: string, episode: st
         case 'vidfast':
             return `https://vidfast.pro/tv/${id}/${season}/${episode}`;
         case 'wiflix':
-            return `https://vidsrc.pro/embed/tv/${id}/${season}/${episode}?ds_lang=fr`;
+            return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`;
         case 'videasy':
         default:
             return `https://player.videasy.net/tv/${id}/${season}/${episode}`;
