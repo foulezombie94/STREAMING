@@ -1272,11 +1272,11 @@ function playLiveChannel(url: string, name: string) {
                         // On utilise destroy() directement qui nettoie tout
                         
                         if (tryNextProxy()) {
-                            currentPlayer.destroy();
+                            try { currentPlayer.pause(); currentPlayer.unload(); currentPlayer.detachMediaElement(); currentPlayer.destroy(); } catch(e) {}
                             delete (window as any).mpegtsPlayer;
                             setTimeout(() => loadTs(streamUrl), 500);
                         } else if (url.endsWith('.ts')) {
-                            currentPlayer.destroy();
+                            try { currentPlayer.pause(); currentPlayer.unload(); currentPlayer.detachMediaElement(); currentPlayer.destroy(); } catch(e) {}
                             delete (window as any).mpegtsPlayer;
                             playLiveChannel(url.replace('.ts', '.m3u8'), name);
                         } else {
