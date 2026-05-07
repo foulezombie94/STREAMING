@@ -373,8 +373,6 @@ function getMovieUrl(server: string, id: string | null): string {
             return `https://moviesapi.club/movie/${id}`;
         case 'vidfast':
             return `https://vidfast.pro/movie/${id}`;
-        case 'wiflix':
-            return `https://vidsrc.me/embed/movie?tmdb=${id}`;
         case 'videasy':
         default:
             return `https://player.videasy.net/movie/${id}`;
@@ -389,8 +387,6 @@ function getTvUrl(server: string, id: string | null, season: string, episode: st
             return `https://moviesapi.club/tv/${id}/${season}/${episode}`;
         case 'vidfast':
             return `https://vidfast.pro/tv/${id}/${season}/${episode}`;
-        case 'wiflix':
-            return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`;
         case 'videasy':
         default:
             return `https://player.videasy.net/tv/${id}/${season}/${episode}`;
