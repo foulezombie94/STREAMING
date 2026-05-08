@@ -32,7 +32,7 @@ export default async function handler(request) {
 
     // Préparation des headers à envoyer à la cible
     const forwardHeaders = {
-      'User-Agent': 'VLC/3.0.21 LibVLC/3.0.21',
+      'User-Agent': 'VLC/3.0.23 LibVLC/3.0.23',
       'Accept': '*/*',
       'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
       'Connection': 'keep-alive',
