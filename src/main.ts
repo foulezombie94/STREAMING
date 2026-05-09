@@ -381,26 +381,28 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
         section.id = `section-${conf.id}`;
         
         if (conf.id === 'sagas') {
+            const sagasToDisplay = SAGAS_DATA.slice(0, 8); // Max 8 sagas
             section.innerHTML = `
                 <h2 class="section-title">
                     <span class="material-symbols-outlined">${conf.icon}</span>
                     ${conf.title}
                 </h2>
-                <div class="carousel-container" id="carousel-sagas" style="display: flex; overflow-x: auto; gap: 12px; padding: 10px 4rem 2rem 4rem;">
-                    ${SAGAS_DATA.map(saga => `
-                        <div class="saga-card" onclick="renderSagaDetailsPage('${saga.id}')" style="flex: 0 0 16.5%; min-width: 150px;">
+                <div class="sagas-grid-container" id="carousel-sagas">
+                    ${sagasToDisplay.map(saga => `
+                        <div class="saga-card" onclick="renderSagaDetailsPage('${saga.id}')">
                             <img src="${saga.poster}" alt="${saga.title}" loading="lazy">
                             <div class="saga-card-overlay">
-                                <h3 style="font-size: 14px;">${saga.title}</h3>
-                                <p style="font-size: 10px;">${saga.items.length} Films</p>
+                                <h3>${saga.title}</h3>
+                                <p>${saga.items.length} Films</p>
                             </div>
                         </div>
                     `).join('')}
                 </div>
             `;
             mainContent.appendChild(section);
-            return; // On ne fait pas fetchSectionData pour les sagas
+            return;
         }
+
 
         section.innerHTML = `
             <h2 class="section-title">
