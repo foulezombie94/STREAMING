@@ -30,6 +30,7 @@ const heroNextBtn = document.getElementById('carousel-next');
 
 const navItems = document.querySelectorAll('.nav-item');
 const sectionTitle = document.querySelector('.section-title');
+const sectionSubtitle = document.getElementById('section-subtitle');
 const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
 const popularSection = document.getElementById('popular-section');
 const iptvSection = document.getElementById('iptv-section');
@@ -208,7 +209,15 @@ function handleNavigation(type: any) {
     }
 
     if (heroSection) heroSection.style.display = (currentType === 'iptv' || currentType === 'reprendre') ? 'none' : 'block';
-    if (popularSection) popularSection.style.display = (currentType === 'iptv') ? 'none' : 'block';
+    if (popularSection) {
+        popularSection.style.display = (currentType === 'iptv') ? 'none' : 'block';
+        // Ajuster le padding si le hero est masqué
+        if (currentType === 'reprendre' || currentType === 'iptv') {
+            popularSection.classList.add('no-hero');
+        } else {
+            popularSection.classList.remove('no-hero');
+        }
+    }
     if (iptvSection) iptvSection.style.display = (currentType === 'iptv') ? 'block' : 'none';
 
     if (sectionTitle) {
@@ -217,6 +226,14 @@ function handleNavigation(type: any) {
         else if (currentType === 'reprendre') sectionTitle.textContent = 'Reprendre la lecture';
         else if (currentType === 'iptv') sectionTitle.textContent = 'Télévision Direct';
         else sectionTitle.textContent = 'Films Populaires';
+    }
+
+    if (sectionSubtitle) {
+        if (currentType === 'reprendre') {
+            sectionSubtitle.textContent = 'Vous pouvez reprendre la lecture rapidement depuis cette page';
+        } else {
+            sectionSubtitle.textContent = '';
+        }
     }
 
     if (currentType === 'iptv') {

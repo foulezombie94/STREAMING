@@ -497,21 +497,34 @@ a {
 /* 4. Section Populaire */
 .popular {
     position: relative;
-    margin-top: 20px; /* RÉDUIT POUR UN LOOK PLUS COMPACT */
+    margin-top: 20px;
     z-index: 10;
     padding-bottom: 2rem;
+    transition: padding-top 0.4s ease;
+}
+
+.popular.no-hero {
+    padding-top: 120px; /* POUR ÉVITER L'OVERLAP AVEC LA NAVBAR */
 }
 
 .section-title {
-    font-size: 24px; /* UN PEU PLUS GRAND */
-    font-weight: 800; /* PLUS ÉPAIS */
+    font-size: 24px;
+    font-weight: 800;
     padding-left: 4rem;
-    margin-bottom: 25px;
+    margin-bottom: 10px; /* RÉDUIT CAR SOUS-TITRE */
     letter-spacing: 1.5px;
     text-transform: uppercase;
     display: flex;
     align-items: center;
     gap: 12px;
+}
+
+.section-subtitle {
+    padding-left: calc(4rem + 18px); /* ALIGNÉ AVEC LE TEXTE (barre rouge + gap) */
+    color: rgba(255,255,255,0.5);
+    font-size: 16px;
+    margin-bottom: 25px;
+    font-weight: 500;
 }
 
 .section-title::before {
