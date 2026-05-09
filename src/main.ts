@@ -434,34 +434,6 @@ if (carousel) {
 }
 
 // 6. Fetch Data (Films, Séries ou Trending)
-async function fetchPopularData(type: 'movie' | 'tv' | 'trending' | 'iptv', genreId: number | null = null) {
-    const searchSection = document.getElementById('search-results-section');
-    if (searchSection) searchSection.style.display = 'block';
-
-    try {
-        let endpoint = '';
-        let queryParams = `api_key=${TMDB_API_KEY}&language=fr-FR&page=1`;
-
-        if (genreId !== null && type !== 'trending') {
-            endpoint = `discover/${type}`;
-            queryParams += `&with_genres=${genreId}&sort_by=popularity.desc`;
-        } else {
-            if (type === 'trending') endpoint = 'trending/all/week';
-            else if (type === 'tv') endpoint = 'tv/popular';
-            else endpoint = 'movie/popular';
-        }
-
-        const response = await fetch(`${BASE_URL}/${endpoint}?${queryParams}`);
-        const data = await response.json();
-        
-        if (data.results) {
-            populateCarousel(data.results);
-            setupCarouselDrag('carousel');
-        }
-    } catch (error) {
-        console.error('Erreur:', error);
-    }
-}
 // --- NOUVELLE LOGIQUE MULTI-SECTIONS (Style Movix) ---
 
 async function loadAllSections() {
@@ -714,18 +686,13 @@ if (searchInput) {
             } else if (currentType === 'iptv') {
                 initLiveTV();
             } else {
-                const searchSection = document.getElementById('search-results-section');
-                if (searchSection) searchSection.style.display = 'none';
-                loadAllSections();
+                fetchPopularData(currentType);
             }
         }
     });
 }
 
 async function performSearch(query: string) {
-    const searchSection = document.getElementById('search-results-section');
-    if (searchSection) searchSection.style.display = 'block';
-    
     try {
         if (carousel) carousel.style.opacity = '0.5';
 
