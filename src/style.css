@@ -1283,6 +1283,7 @@ a {
         align-items: center !important;
         display: flex !important;
         flex-direction: column !important;
+        width: 100% !important;
         transform: translateY(20px) !important;
     }
 
@@ -1307,6 +1308,22 @@ a {
 
     .info-label {
         font-size: 10px !important;
+    }
+
+    /* Centrage boutons details page mobile */
+    .info-container .hero-buttons {
+        flex-direction: column !important;
+        align-items: center !important;
+        width: 100% !important;
+        max-width: 300px !important;
+        margin: 25px auto 0 auto !important;
+    }
+
+    .info-container .hero-buttons .btn {
+        width: 100% !important;
+        justify-content: center !important;
+        padding: 14px 20px !important;
+        font-size: 13px !important;
     }
 }
 
