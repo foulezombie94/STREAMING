@@ -537,6 +537,7 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
 
     // Scroll to start of container for a clean switch
     container.scrollTo({ left: 0, behavior: 'smooth' });
+    initCarouselDrag();
 }
 
 // Exposer au scope global pour les onclick
@@ -638,88 +639,103 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' |
     }
 }
 
-if (carousel) {
-    let isDown = false;
-    let startX: number = 0;
-    let scrollLeft: number = 0;
-    let velocity: number = 0;
-    let rafId: number = 0;
-    let lastX: number;
-    let lastTime: number;
-    let isDragging = false;
+// 5. Gestion Drag Carrousel ultra-fluide pour toutes les sections
+function initCarouselDrag() {
+    const containers = document.querySelectorAll('.carousel-container, .sagas-grid-container');
+    
+    containers.forEach((container: any) => {
+        let isDown = false;
+        let startX: number = 0;
+        let scrollLeft: number = 0;
+        let velocity: number = 0;
+        let rafId: number = 0;
+        let lastX: number = 0;
+        let lastTime: number = 0;
+        let isDragging = false;
 
-    const beginDrag = (e: MouseEvent | TouchEvent) => {
-        if ('button' in e && e.button !== 0) return;
-        
-        isDown = true;
-        isDragging = false;
-        carousel.style.cursor = 'grabbing';
-        
-        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-        startX = clientX;
-        scrollLeft = carousel.scrollLeft;
-        lastX = clientX;
-        lastTime = performance.now();
-        
-        cancelAnimationFrame(rafId);
-    };
-
-    const endDrag = () => {
-        if (!isDown) return;
-        isDown = false;
-        carousel.style.cursor = 'grab';
-        
-        const step = () => {
-            if (Math.abs(velocity) > 0.2) {
-                carousel.scrollLeft -= velocity;
-                velocity *= 0.95; 
-                rafId = requestAnimationFrame(step);
-            }
+        const beginDrag = (e: MouseEvent | TouchEvent) => {
+            if ('button' in e && e.button !== 0) return;
+            
+            isDown = true;
+            isDragging = false;
+            container.style.cursor = 'grabbing';
+            container.style.userSelect = 'none';
+            
+            const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+            startX = clientX;
+            scrollLeft = container.scrollLeft;
+            lastX = clientX;
+            lastTime = performance.now();
+            
+            cancelAnimationFrame(rafId);
         };
-        rafId = requestAnimationFrame(step);
-        
-        setTimeout(() => isDragging = false, 50);
-    };
 
-    const moveDrag = (e: MouseEvent | TouchEvent) => {
-        if (!isDown) return;
-        
-        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-        const walk = (clientX - startX); 
-        
-        if (Math.abs(walk) > 3) isDragging = true;
-        
-        const currentTime = performance.now();
-        const deltaTime = currentTime - lastTime;
-        
-        if (deltaTime > 0) {
-            const instantVelocity = (clientX - lastX) / deltaTime * 16;
-            velocity = velocity * 0.2 + instantVelocity * 0.8;
-        }
-        
-        carousel.scrollLeft = scrollLeft - walk;
-        
-        lastX = clientX;
-        lastTime = currentTime;
-    };
+        const endDrag = () => {
+            if (!isDown) return;
+            isDown = false;
+            container.style.cursor = 'grab';
+            container.style.userSelect = '';
+            
+            const step = () => {
+                if (Math.abs(velocity) > 0.2) {
+                    container.scrollLeft -= velocity;
+                    velocity *= 0.95; 
+                    rafId = requestAnimationFrame(step);
+                }
+            };
+            rafId = requestAnimationFrame(step);
+            
+            setTimeout(() => isDragging = false, 50);
+        };
 
-    carousel.addEventListener('mousedown', beginDrag);
-    window.addEventListener('mousemove', moveDrag);
-    window.addEventListener('mouseup', endDrag);
-    
-    carousel.addEventListener('touchstart', beginDrag, { passive: true });
-    carousel.addEventListener('touchmove', moveDrag, { passive: true });
-    carousel.addEventListener('touchend', endDrag);
-    
-    carousel.addEventListener('click', (e) => {
-        if (isDragging) {
-            e.stopImmediatePropagation();
-            e.preventDefault();
-        }
-    }, true);
+        const moveDrag = (e: MouseEvent | TouchEvent) => {
+            if (!isDown) return;
+            
+            const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+            const walk = (clientX - startX); 
+            
+            if (Math.abs(walk) > 5) {
+                isDragging = true;
+                // Empêcher le scroll vertical SEULEMENT si on drag horizontalement de façon significative
+                if ('touches' in e) {
+                    // e.preventDefault(); // On ne le fait plus pour laisser le scroll natif gérer le pan-y
+                }
+            }
+            
+            const currentTime = performance.now();
+            const deltaTime = currentTime - lastTime;
+            
+            if (deltaTime > 0) {
+                const instantVelocity = (clientX - lastX) / deltaTime * 16;
+                velocity = velocity * 0.2 + instantVelocity * 0.8;
+            }
+            
+            container.scrollLeft = scrollLeft - walk;
+            
+            lastX = clientX;
+            lastTime = currentTime;
+        };
 
-    carousel.style.transition = 'opacity 0.3s ease';
+        container.addEventListener('mousedown', beginDrag);
+        window.addEventListener('mousemove', moveDrag);
+        window.addEventListener('mouseup', endDrag);
+        
+        container.addEventListener('touchstart', beginDrag, { passive: true });
+        window.addEventListener('touchmove', (e) => {
+            if (isDown) moveDrag(e);
+        }, { passive: false });
+        window.addEventListener('touchend', endDrag);
+        
+        container.addEventListener('click', (e: MouseEvent) => {
+            if (isDragging) {
+                e.stopImmediatePropagation();
+                e.preventDefault();
+            }
+        }, true);
+    });
 }
+// Appeler après chaque rendu de section
+(window as any).initCarouselDrag = initCarouselDrag;
 
 // 9. Démarrage de l'application
 
