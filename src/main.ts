@@ -243,13 +243,17 @@ function handleNavigation(type: any) {
     if (iptvSection) iptvSection.style.display = (currentType === 'iptv') ? 'block' : 'none';
 
     if (currentType === 'iptv') {
+        if (navbar) navbar.style.display = 'none';
         if (genreFiltersContainer) genreFiltersContainer.style.display = 'none';
         initLiveTV();
-    } else if (currentType === 'reprendre') {
-        renderResumePage();
     } else {
-        renderGenres(currentType as any);
-        renderHomeSections(currentType as any);
+        if (navbar) navbar.style.display = 'flex';
+        if (currentType === 'reprendre') {
+            renderResumePage();
+        } else {
+            renderGenres(currentType as any);
+            renderHomeSections(currentType as any);
+        }
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1504,6 +1508,10 @@ export function stopLiveTV() {
 
 document.getElementById('close-player')?.addEventListener('click', () => {
     stopLiveTV();
+});
+
+document.getElementById('close-live-tv')?.addEventListener('click', () => {
+    handleNavigation('trending');
 });
 
 // Pause automatique quand on quitte l'onglet (Mobile & PC)
