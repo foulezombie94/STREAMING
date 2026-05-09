@@ -694,9 +694,6 @@ a {
         padding-bottom: 0 !important;
     }
 
-    .android-chrome .hero-slide.long-title .slide-content {
-        padding-top: 155px !important; /* Baissé encore un tout petit peu plus pour les longs titres sur Android */
-    }
 
     .slide-content h1 {
         font-size: 34px;
