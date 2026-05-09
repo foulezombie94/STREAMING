@@ -263,14 +263,14 @@ a {
 }
 
 .slide-content h1 {
-    font-size: 64px;
+    font-size: 82px; /* PLUS GRAND */
     font-weight: 900;
     color: #fff;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     line-height: 1.1;
-    max-width: 800px;
+    max-width: 900px;
     text-transform: uppercase;
-    letter-spacing: -2px;
+    letter-spacing: -3px;
     transform: translateY(30px);
     opacity: 0;
     transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s;
@@ -312,10 +312,10 @@ a {
 }
 
 .slide-synopsis {
-    font-size: 18px;
-    color: rgba(255,255,255,0.7);
+    font-size: 20px; /* PLUS GRAND */
+    color: rgba(255,255,255,0.8);
     line-height: 1.6;
-    max-width: 600px;
+    max-width: 700px;
     margin-bottom: 35px;
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -349,11 +349,11 @@ a {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 12px 28px;
-    font-size: 18px;
+    gap: 12px;
+    padding: 16px 40px; /* PLUS GRAND */
+    font-size: 20px; /* PLUS GRAND */
     font-weight: 700;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: none;
@@ -371,7 +371,7 @@ a {
 
 .hero-btn-play .material-symbols-outlined {
     font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 48;
-    font-size: 28px;
+    font-size: 32px; /* PLUS GRAND */
 }
 
 .hero-btn-info {
@@ -386,7 +386,7 @@ a {
 }
 
 .hero-btn-info .material-symbols-outlined {
-    font-size: 26px;
+    font-size: 30px; /* PLUS GRAND */
 }
 
 /* Navigation & Elements */
