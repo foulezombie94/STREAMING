@@ -421,8 +421,10 @@ if (watchMovieBtn && playerSection && videoIframe) {
     watchMovieBtn.addEventListener('click', () => {
         playerSection.style.display = 'block';
         
-        // Scroll smoothly to the player
-        playerSection.scrollIntoView({ behavior: 'smooth' });
+        // Petit délai pour laisser l'animation fadeIn s'enclencher proprement
+        setTimeout(() => {
+            playerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
 
         // Sauvegarder dans l'historique (Reprendre)
         // On ne sauvegarde pas ici pour les séries si on n'a pas encore chargé les sélecteurs

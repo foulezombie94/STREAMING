@@ -1680,9 +1680,20 @@ a {
 /* --- EMBEDDED PLAYER SECTION --- */
 .player-section {
     background: #050505;
-    padding: 60px 4%;
+    padding: 80px 4%;
     position: relative;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
+    scroll-margin-top: 80px; /* Pour un scroll auto propre */
+}
+
+/* Animation fadeIn pour le lecteur */
+.animate-fade-in {
+    animation: fadeInPlayer 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInPlayer {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .player-container {
@@ -2246,6 +2257,34 @@ a {
     font-weight: 600;
     cursor: pointer;
     transition: 0.3s;
+}
+
+.server-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #A3A3A3;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.server-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.server-btn.active {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35);
 }
 
 .live-tv-categories .cat-btn.active {
