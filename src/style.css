@@ -298,7 +298,7 @@ a {
 .slide-info {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
     margin-bottom: 25px;
     transform: translateY(20px);
     opacity: 0;
@@ -310,20 +310,28 @@ a {
     opacity: 1;
 }
 
-.rating-tag {
-    background: #ef4444;
-    color: #fff;
-    padding: 4px 12px;
-    border-radius: 8px;
-    font-weight: 800;
+
+.type-tag, .year-tag, .rating-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-weight: 700;
     font-size: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    backdrop-filter: blur(5px);
 }
 
-.year-tag {
-    color: rgba(255,255,255,0.85); /* Plus blanc */
-    font-weight: 600;
-    font-size: 16px;
+.rating-tag {
+    background: #ef4444;
 }
+
+.slide-info .material-symbols-outlined {
+    font-size: 18px;
+}
+
 
 .slide-synopsis {
     font-size: 20px; /* PLUS GRAND */
@@ -502,11 +510,140 @@ a {
 }
 
 @media (max-width: 768px) {
+    .hero-slide {
+        height: 100vh;
+        background-position: center;
+    }
+
+    .hero-slide::after {
+        background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.8) 100%);
+    }
+
+    .slide-content {
+        padding: 0 20px;
+        align-items: center;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .slide-content h1 {
+        font-size: 38px;
+        color: #facc15; /* Jaune Premium */
+        text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        margin-bottom: 20px;
+        letter-spacing: -1px;
+        text-transform: uppercase;
+        max-width: 100%;
+    }
+
+    .slide-info {
+        margin-bottom: 20px;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .type-tag, .year-tag, .rating-tag {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 6px 16px;
+        border-radius: 50px;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: rgba(255,255,255,0.9);
+    }
+
+    .rating-tag {
+        background: rgba(250, 204, 21, 0.2);
+        border-color: rgba(250, 204, 21, 0.3);
+        color: #facc15;
+    }
+
+    .slide-info .material-symbols-outlined {
+        font-size: 16px;
+    }
+
+    .slide-synopsis {
+        font-size: 16px;
+        line-height: 1.5;
+        margin-bottom: 30px;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        max-width: 100%;
+        color: rgba(255,255,255,0.8);
+    }
+
+    .slide-actions {
+        width: 100%;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .hero-btn-play, .hero-btn-info {
+        flex: 1;
+        padding: 14px 10px;
+        font-size: 16px;
+        border-radius: 16px;
+        max-width: 180px;
+    }
+
+    .hero-btn-play {
+        background: #ef4444;
+        color: white;
+    }
+
+    .hero-btn-info {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
     .carousel-nav {
-        left: 30px;
-        bottom: 30px;
+        bottom: 20px;
+        width: 85%;
+        max-width: 320px;
+        background: rgba(15, 15, 15, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.1);
+        padding: 12px 20px;
+        gap: 15px;
+        border-radius: 20px;
+        justify-content: space-between;
+    }
+
+    .dot.active {
+        background: #fff;
+        width: 30px;
+    }
+
+    .carousel-timer {
+        flex: 1;
+        height: 3px;
+        background: rgba(255,255,255,0.1);
+    }
+
+    .carousel-progress {
+        background: #ef4444;
+    }
+
+    .carousel-nav::before {
+        content: '';
+        width: 1px;
+        height: 20px;
+        background: rgba(255,255,255,0.1);
+        margin: 0 5px;
+        display: none; /* Only if needed */
     }
 }
+
+
 
 .carousel-dots {
     display: flex;

@@ -102,23 +102,30 @@ class HeroCarouselManager {
             return `
                 <div class="hero-slide ${index === 0 ? 'active' : ''}" style="background-image: url('${backdropUrl}')" data-index="${index}">
                     <div class="slide-content">
-                        <h1>${title}</h1>
                         <div class="slide-info">
-                            <span class="rating-tag">★ ${rating}</span>
-                            <span class="year-tag">${releaseYear}</span>
-                            <span class="year-tag">• ${displayType === 'tv' ? 'Série' : 'Film'}</span>
+                            <span class="type-tag">${displayType === 'tv' ? 'SÉRIE' : 'FILM'}</span>
+                            <span class="year-tag">
+                                <span class="material-symbols-outlined">calendar_today</span>
+                                ${releaseYear}
+                            </span>
+                            <span class="rating-tag">
+                                <span class="material-symbols-outlined">star</span>
+                                ${rating}
+                            </span>
                         </div>
+                        <h1>${title}</h1>
                         <p class="slide-synopsis">${item.overview || "Aucun synopsis disponible."}</p>
                         <div class="slide-actions">
                             <button class="hero-btn-play" onclick="window.location.href='/details.html?id=${item.id}&type=${displayType}'">
-                                <span class="material-symbols-outlined">play_arrow</span> Regarder
+                                <span class="material-symbols-outlined">play_arrow</span> Lecture
                             </button>
                             <button class="hero-btn-info" onclick="window.location.href='/details.html?id=${item.id}&type=${displayType}'">
-                                <span class="material-symbols-outlined">videocam</span> Bande-Annonce
+                                <span class="material-symbols-outlined">info</span> Plus d'infos
                             </button>
                         </div>
                     </div>
                 </div>
+
             `;
         }).join('');
     }
