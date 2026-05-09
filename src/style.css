@@ -2074,3 +2074,30 @@ a {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* --- GENRE FILTERS (Style Movix) --- */
+.genre-filters-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 0 4rem;
+    margin-bottom: 50px;
+}
+
+.genre-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.genre-btn:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+    transform: translateY(-2px);
+}

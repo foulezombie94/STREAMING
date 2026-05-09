@@ -65,14 +65,46 @@
             </button>
         </section>
 
-        <!-- Section Populaire / Carrousel (Remis juste sous le film) -->
-        <section class="popular" id="popular-section">
-            <h2 class="section-title" id="section-title">Tendances Actuelles</h2>
-            <p id="section-subtitle" class="section-subtitle"></p>
-            <div class="carousel-container" id="carousel">
-                <!-- Les cartes de films seront injectées ici par JS -->
-            </div>
-        </section>
+        <!-- SECTIONS STYLE MOVIX -->
+        <div id="main-content">
+            <!-- 🔥 Tendances du jour -->
+            <section class="popular" id="trending-day-section">
+                <h2 class="section-title"><span class="material-symbols-outlined" style="color: #ff4d4d;">local_fire_department</span> 🔥 Tendances du jour</h2>
+                <div class="carousel-container" id="trending-day-carousel"></div>
+            </section>
+
+            <!-- Tendances -->
+            <section class="popular" id="trending-week-section">
+                <h2 class="section-title"><span class="material-symbols-outlined">trending_up</span> Tendances de la semaine</h2>
+                <div class="carousel-container" id="trending-week-carousel"></div>
+            </section>
+
+            <!-- Films populaires -->
+            <section class="popular" id="popular-movies-section">
+                <h2 class="section-title"><span class="material-symbols-outlined">movie</span> Films populaires</h2>
+                <div class="carousel-container" id="popular-movies-carousel"></div>
+            </section>
+
+            <!-- Séries récentes -->
+            <section class="popular" id="recent-tv-section">
+                <h2 class="section-title"><span class="material-symbols-outlined">tv</span> Séries récentes</h2>
+                <div class="carousel-container" id="recent-tv-carousel"></div>
+            </section>
+
+            <!-- Films récents -->
+            <section class="popular" id="recent-movies-section">
+                <h2 class="section-title"><span class="material-symbols-outlined">new_releases</span> Films récents</h2>
+                <div class="carousel-container" id="recent-movies-carousel"></div>
+            </section>
+
+            <!-- Genres -->
+            <section class="popular" id="genres-section">
+                <h2 class="section-title"><span class="material-symbols-outlined">category</span> Parcourir par Genres</h2>
+                <div id="desktop-genres" class="genre-filters-container">
+                    <!-- Genres injectés par JS -->
+                </div>
+            </section>
+        </div>
 
         <!-- Section TV Direct (IPTV Bento) -->
         <section id="iptv-section" style="display: none;" class="py-8">

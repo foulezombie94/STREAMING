@@ -33,6 +33,7 @@ const sectionTitle = document.querySelector('.section-title');
 const sectionSubtitle = document.getElementById('section-subtitle');
 const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
 const popularSection = document.getElementById('popular-section');
+const mainContent = document.getElementById('main-content');
 const iptvSection = document.getElementById('iptv-section');
 
 // --- Carousel Manager (Movix Style) ---
@@ -209,15 +210,17 @@ function handleNavigation(type: any) {
     }
 
     if (heroSection) heroSection.style.display = (currentType === 'iptv' || currentType === 'reprendre') ? 'none' : 'block';
-    if (popularSection) {
-        popularSection.style.display = (currentType === 'iptv') ? 'none' : 'block';
-        // Ajuster le padding si le hero est masqué
-        if (currentType === 'reprendre' || currentType === 'iptv') {
-            popularSection.classList.add('no-hero');
-        } else {
-            popularSection.classList.remove('no-hero');
-        }
+    
+    if (mainContent) {
+        mainContent.style.display = (currentType === 'iptv' || currentType === 'reprendre') ? 'none' : 'block';
     }
+
+    if (popularSection) {
+        popularSection.style.display = (currentType === 'reprendre') ? 'block' : 'none';
+        if (currentType === 'reprendre') popularSection.classList.add('no-hero');
+        else popularSection.classList.remove('no-hero');
+    }
+
     if (iptvSection) iptvSection.style.display = (currentType === 'iptv') ? 'block' : 'none';
 
     if (sectionTitle) {
@@ -241,9 +244,12 @@ function handleNavigation(type: any) {
         initLiveTV();
     } else if (currentType === 'reprendre') {
         renderResumePage();
+    } else if (currentType === 'trending') {
+        loadAllSections();
     } else {
-        renderGenres(currentType as any);
-        fetchPopularData(currentType as any);
+        // Pour Films ou Séries, on peut soit charger toutes les sections spécifiques, 
+        // soit garder l'ancien comportement. On va charger les sections.
+        loadAllSections();
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -297,27 +303,25 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv') 
     genreFiltersContainer.style.display = 'flex';
     const genres = type === 'movie' ? movieGenres : tvGenres;
     
-    if (desktopGenres && desktopGenres.style.display !== 'none') {
+function renderGenres(type: 'movie' | 'tv') {
+    if (desktopGenres) {
+        const genres = type === 'movie' ? movieGenres : tvGenres;
         if (genres.length === 0) {
             desktopGenres.innerHTML = `<div class="genre-label">Chargement...</div>`;
         } else {
             desktopGenres.innerHTML = `
-                <div class="genre-label">${type === 'movie' ? 'Genres Films' : 'Genres Séries'}</div>
-                <button class="genre-btn ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</button>
-                ${genres.map(g => `<button class="genre-btn ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</button>`).join('')}
+                ${genres.map(g => `<button class="genre-btn" data-id="${g.id}">${g.name}</button>`).join('')}
             `;
 
             desktopGenres.querySelectorAll('.genre-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const idStr = btn.getAttribute('data-id');
-                    activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
-                    renderGenres(type);
-                    if (carousel) carousel.style.opacity = '0.5';
-                    fetchPopularData(type, activeGenreId);
+                    const id = btn.getAttribute('data-id');
+                    window.location.href = `/details.html?type=${type}&genre=${id}`; // Exemple de redirection ou filtrage
                 });
             });
         }
     }
+}
 
     if (mobileGenreGrid) {
         if (genres.length === 0) {
@@ -430,55 +434,148 @@ if (carousel) {
 }
 
 // 6. Fetch Data (Films, Séries ou Trending)
-async function fetchPopularData(type: 'movie' | 'tv' | 'trending' | 'iptv', genreId: number | null = null) {
-    try {
-        let endpoint = '';
-        let queryParams = `api_key=${TMDB_API_KEY}&language=fr-FR&page=1`;
+// --- NOUVELLE LOGIQUE MULTI-SECTIONS (Style Movix) ---
 
-        if (genreId !== null && type !== 'trending') {
-            endpoint = `discover/${type}`;
-            queryParams += `&with_genres=${genreId}&sort_by=popularity.desc`;
-        } else {
-            if (type === 'trending') {
-                endpoint = 'trending/all/week';
-            } else if (type === 'tv') {
-                endpoint = 'tv/popular';
-            } else {
-                endpoint = 'movie/popular';
+async function loadAllSections() {
+    const sections = [
+        { id: 'trending-day-carousel', endpoint: 'trending/all/day' },
+        { id: 'trending-week-carousel', endpoint: 'trending/all/week' },
+        { id: 'popular-movies-carousel', endpoint: 'movie/popular' },
+        { id: 'recent-tv-carousel', endpoint: 'tv/on_the_air' },
+        { id: 'recent-movies-carousel', endpoint: 'movie/now_playing' }
+    ];
+
+    // Charger chaque section
+    sections.forEach(async (sec) => {
+        const data = await fetchTMDBData(sec.endpoint);
+        if (data) {
+            renderSection(sec.id, data);
+            setupCarouselDrag(sec.id);
+            // Si c'est la première section et qu'on est en trending, on update le hero
+            if (sec.id === 'trending-day-carousel' && currentType === 'trending') {
+                heroCarouselManager.setSlides(data);
             }
         }
-
-        const cacheKey = `cache_${endpoint}_${genreId || 'all'}`;
-        const cachedData = sessionStorage.getItem(cacheKey);
-
-        if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            processData(parsedData);
-            return;
-        }
-
-        const response = await fetch(`${BASE_URL}/${endpoint}?${queryParams}`);
-        const data = await response.json();
-        
-        if (data.results && data.results.length > 0) {
-            sessionStorage.setItem(cacheKey, JSON.stringify(data.results));
-            processData(data.results);
-        }
-    } catch (error) {
-        console.error('Erreur:', error);
-    }
+    });
 }
 
-function processData(results: any[]) {
-    currentData = results;
-    
-    if (carousel) carousel.style.opacity = '1';
+async function fetchTMDBData(endpoint: string) {
+    const cacheKey = `cache_${endpoint}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) return JSON.parse(cached);
 
-    // Update Hero Carousel
-    heroCarouselManager.setSlides(results);
+    try {
+        const response = await fetch(`${BASE_URL}/${endpoint}?api_key=${TMDB_API_KEY}&language=fr-FR&page=1`);
+        const data = await response.json();
+        if (data.results) {
+            sessionStorage.setItem(cacheKey, JSON.stringify(data.results));
+            return data.results;
+        }
+    } catch (e) {
+        console.error("Fetch error:", e);
+    }
+    return null;
+}
 
-    // Populate the bottom carousel/grid
-    populateCarousel(currentData);
+function renderSection(containerId: string, items: any[]) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = '';
+    items.forEach((item, index) => {
+        if (!item.poster_path) return;
+
+        const card = document.createElement('div');
+        card.className = `movie-card ${index === 0 ? 'active' : ''}`;
+        card.dataset.id = item.id;
+
+        const displayType = item.media_type || (containerId.includes('tv') ? 'tv' : 'movie');
+        const title = displayType === 'tv' ? (item.name || item.original_name) : (item.title || item.original_title);
+
+        const img = document.createElement('img');
+        img.src = `${IMAGE_W500_URL}${item.poster_path}`;
+        img.alt = title;
+        img.loading = 'lazy';
+        img.draggable = false;
+
+        card.appendChild(img);
+        card.addEventListener('click', () => {
+            window.location.href = `/details.html?id=${item.id}&type=${displayType}`;
+        });
+
+        container.appendChild(card);
+    });
+}
+
+function setupCarouselDrag(id: string) {
+    const car = document.getElementById(id);
+    if (!car) return;
+
+    let isDown = false;
+    let startX: number;
+    let scrollLeft: number;
+    let velocity = 0;
+    let rafId: number;
+    let lastX: number;
+    let lastTime: number;
+    let isDragging = false;
+
+    const beginDrag = (e: MouseEvent | TouchEvent) => {
+        if ('button' in e && e.button !== 0) return;
+        isDown = true;
+        isDragging = false;
+        car.style.cursor = 'grabbing';
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        startX = clientX;
+        scrollLeft = car.scrollLeft;
+        lastX = clientX;
+        lastTime = performance.now();
+        cancelAnimationFrame(rafId);
+    };
+
+    const endDrag = () => {
+        if (!isDown) return;
+        isDown = false;
+        car.style.cursor = 'grab';
+        const step = () => {
+            if (Math.abs(velocity) > 0.2) {
+                car.scrollLeft -= velocity;
+                velocity *= 0.95;
+                rafId = requestAnimationFrame(step);
+            }
+        };
+        rafId = requestAnimationFrame(step);
+    };
+
+    const moveDrag = (e: MouseEvent | TouchEvent) => {
+        if (!isDown) return;
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const walk = (clientX - startX);
+        if (Math.abs(walk) > 3) isDragging = true;
+        const currentTime = performance.now();
+        const deltaTime = currentTime - lastTime;
+        if (deltaTime > 0) {
+            const instantVelocity = (clientX - lastX) / deltaTime * 16;
+            velocity = velocity * 0.2 + instantVelocity * 0.8;
+        }
+        car.scrollLeft = scrollLeft - walk;
+        lastX = clientX;
+        lastTime = currentTime;
+    };
+
+    car.addEventListener('mousedown', beginDrag);
+    window.addEventListener('mousemove', moveDrag);
+    window.addEventListener('mouseup', endDrag);
+    car.addEventListener('touchstart', beginDrag, { passive: true });
+    car.addEventListener('touchmove', moveDrag, { passive: true });
+    car.addEventListener('touchend', endDrag);
+
+    car.addEventListener('click', (e) => {
+        if (isDragging) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+        }
+    }, true);
 }
 
 // 8. Remplissage Carrousel interactif
@@ -558,6 +655,7 @@ async function fetchGenres() {
 
 async function initApp() {
     await fetchGenres();
+    renderGenres('movie'); // Par défaut on affiche les genres de films
     handleNavigation('trending'); 
 }
 
