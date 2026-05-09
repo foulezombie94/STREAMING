@@ -1568,29 +1568,60 @@ document.getElementById('close-live-tv')?.addEventListener('click', () => {
 });
 
 // --- Sagas System ---
+// Variables pour la pagination des sagas
+let sagasPageSize = 12;
+let sagasVisibleCount = 12;
+
 async function renderSagasPage() {
     if (!mainContent) return;
     
-    // Titre de la page
+    // Titre de la page avec conteneur de grille
     mainContent.innerHTML = `
         <section class="popular">
             <h2 class="section-title" style="margin-bottom: 30px;">
                 <span class="material-symbols-outlined">auto_awesome</span>
                 Sagas Incontournables
             </h2>
-            <div class="sagas-grid">
-                ${SAGAS_DATA.map(saga => `
-                    <div class="saga-card" onclick="renderSagaDetailsPage('${saga.id}')">
-                        <img src="${saga.poster}" alt="${saga.title}" loading="lazy">
-                        <div class="saga-card-overlay">
-                            <h3>${saga.title}</h3>
-                            <p>${saga.items.length} Films</p>
-                        </div>
-                    </div>
-                `).join('')}
+            <div class="sagas-grid" id="sagas-grid">
+                <!-- Les sagas seront injectées ici par updateSagasGrid() -->
+            </div>
+            <div id="load-more-sagas-container" style="text-align: center; padding: 40px; display: none;">
+                <button class="nav-item" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #fff; padding: 12px 30px; border-radius: 50px; cursor: pointer; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; transition: all 0.3s ease;">
+                    Voir plus de sagas
+                </button>
             </div>
         </section>
     `;
+    
+    const loadMoreBtn = document.querySelector('#load-more-sagas-container button');
+    loadMoreBtn?.addEventListener('click', () => {
+        sagasVisibleCount += sagasPageSize;
+        updateSagasGrid();
+    });
+
+    sagasVisibleCount = sagasPageSize;
+    updateSagasGrid();
+}
+
+function updateSagasGrid() {
+    const grid = document.getElementById('sagas-grid');
+    const loadMoreContainer = document.getElementById('load-more-sagas-container');
+    if (!grid) return;
+    
+    const visibleSagas = SAGAS_DATA.slice(0, sagasVisibleCount);
+    grid.innerHTML = visibleSagas.map(saga => `
+        <div class="saga-card" onclick="renderSagaDetailsPage('${saga.id}')">
+            <img src="${saga.poster}" alt="${saga.title}" loading="lazy">
+            <div class="saga-card-overlay">
+                <h3>${saga.title}</h3>
+                <p>${saga.items.length} Films</p>
+            </div>
+        </div>
+    `).join('');
+    
+    if (loadMoreContainer) {
+        loadMoreContainer.style.display = sagasVisibleCount < SAGAS_DATA.length ? 'block' : 'none';
+    }
 }
 
 async function renderSagaDetailsPage(sagaId: string) {
