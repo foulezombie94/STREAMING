@@ -181,21 +181,27 @@ a {
         top: 0;
         left: 0;
         width: 100%;
-        height: 100vh;
+        height: 100dvh;
         background: rgba(5, 5, 5, 0.98);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
         display: flex !important;
         flex-direction: column;
-        justify-content: center;
+        justify-content: flex-start;
         align-items: center;
-        padding: 0;
+        padding: 100px 20px 40px 20px;
         z-index: 9999;
-        gap: 35px;
+        gap: 20px;
         transform: translateY(100%);
         transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         pointer-events: none;
         visibility: hidden;
+        overflow-y: auto;
+        scrollbar-width: none;
+    }
+
+    .nav-links::-webkit-scrollbar {
+        display: none;
     }
 
     .navbar.menu-open .nav-links {
@@ -208,42 +214,99 @@ a {
         z-index: 10000;
     }
 
-    .nav-links a {
-        font-size: 28px;
+    .mobile-menu-title {
+        color: rgba(255, 255, 255, 0.4);
+        text-transform: uppercase;
+        font-size: 12px;
         font-weight: 800;
         letter-spacing: 2px;
+        width: 100%;
+        margin-top: 20px;
+        padding-left: 10px;
+        border-left: 3px solid #ef4444;
+    }
+
+    /* Section des genres dans le menu mobile */
+    .mobile-nav-genres {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .genre-tile {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 20px 10px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        color: rgba(255, 255, 255, 0.8);
+        cursor: pointer;
+    }
+
+    .genre-tile:active {
+        transform: scale(0.95);
+        background: rgba(239, 68, 68, 0.2);
+        border-color: #ef4444;
+        color: #fff;
+    }
+
+    .genre-tile .material-symbols-outlined {
+        font-size: 24px;
+        color: #ef4444;
+    }
+
+    .genre-tile span:not(.material-symbols-outlined) {
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .nav-links a {
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: 1px;
         opacity: 0;
         transform: translateY(20px);
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 12px;
         color: #fff;
         text-decoration: none;
         transition: all 0.4s ease;
+        width: 100%;
+        padding: 10px 20px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
     }
 
     .navbar.menu-open .nav-links a {
-        opacity: 0.7;
+        opacity: 1;
         transform: translateY(0);
     }
 
-    /* Staggered animation */
-    .navbar.menu-open .nav-links li:nth-child(1) a { transition-delay: 0.1s; }
-    .navbar.menu-open .nav-links li:nth-child(2) a { transition-delay: 0.2s; }
-    .navbar.menu-open .nav-links li:nth-child(3) a { transition-delay: 0.3s; }
-    .navbar.menu-open .nav-links li:nth-child(4) a { transition-delay: 0.4s; }
-    .navbar.menu-open .nav-links li:nth-child(5) a { transition-delay: 0.5s; }
-    .navbar.menu-open .nav-links li:nth-child(6) a { transition-delay: 0.6s; }
+    .nav-links li {
+        width: 100%;
+        list-style: none;
+    }
 
     .nav-links a .material-symbols-outlined {
-        font-size: 36px;
+        font-size: 28px;
         color: #ef4444;
     }
 
     .nav-links a.active {
-        opacity: 1;
+        background: rgba(239, 68, 68, 0.15);
         color: #ef4444;
-        transform: scale(1.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
     }
 
     .bottom-nav {

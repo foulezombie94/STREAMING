@@ -18,6 +18,36 @@ const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 // Cache pour la pagination des sections
 const sectionDataStore: { [key: string]: { items: any[], conf: any } } = {};
 
+const GENRE_ICONS: { [key: string]: string } = {
+    'Action': 'bolt',
+    'Aventure': 'explore',
+    'Animation': 'animation',
+    'Comédie': 'sentiment_very_satisfied',
+    'Crime': 'policy',
+    'Documentaire': 'description',
+    'Drame': 'theater_comedy',
+    'Familial': 'family_restroom',
+    'Fantastique': 'magic_button',
+    'Histoire': 'history_edu',
+    'Horreur': 'skull',
+    'Musique': 'music_note',
+    'Mystère': 'mystery',
+    'Romance': 'favorite',
+    'Science-Fiction': 'rocket_launch',
+    'Téléfilm': 'tv',
+    'Thriller': 'warning',
+    'Guerre': 'military_tech',
+    'Western': 'directions_run',
+    'Action & Adventure': 'bolt',
+    'Kids': 'child_care',
+    'News': 'newspaper',
+    'Reality': 'visibility',
+    'Sci-Fi & Fantasy': 'rocket_launch',
+    'Soap': 'wash',
+    'Talk': 'forum',
+    'War & Politics': 'military_tech'
+};
+
 // 2. DOM Elements & State
 let currentData: any[] = []; 
 let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' | 'sagas' = 'trending';
@@ -560,48 +590,7 @@ function renderMovieCard(item: any, forceType: string = 'auto', extra: string = 
 
 const genreFiltersContainer = document.getElementById('genre-filters-container');
 const desktopGenres = document.getElementById('desktop-genres');
-const mobileFilterBtn = document.getElementById('mobile-filter-btn');
-const mobileGenreOverlay = document.getElementById('mobile-genre-overlay');
-const mobileGenreGrid = document.getElementById('mobile-genre-grid');
-const closeGenreOverlay = document.getElementById('close-genre-overlay');
-const mobileCategoriesBtn = document.getElementById('mobile-categories-btn');
-
-// Event listener pour le bouton Catégories dans le menu hamburger
-mobileCategoriesBtn?.addEventListener('click', (e) => {
-    e.preventDefault();
-    toggleMobileMenu(); // Ferme le menu hamburger
-    
-    // Si on est sur une page qui supporte les genres (Films ou Séries)
-    if (currentType === 'movie' || currentType === 'tv') {
-        renderGenres(currentType);
-        mobileGenreOverlay?.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    } else {
-        // Sinon, on bascule vers Films par défaut pour montrer les genres
-        handleNavigation('movie');
-        setTimeout(() => {
-            renderGenres('movie');
-            mobileGenreOverlay?.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }, 100);
-    }
-});
-
-// Event listeners pour le mobile et PC (Overlay)
-mobileFilterBtn?.addEventListener('click', () => {
-    renderGenres(currentType);
-    mobileGenreOverlay?.classList.add('active');
-    document.body.style.overflow = 'hidden'; 
-});
-
-closeGenreOverlay?.addEventListener('click', () => {
-    mobileGenreOverlay?.classList.remove('active');
-    document.body.style.overflow = '';
-});
-
-mobileGenreOverlay?.addEventListener('click', (e) => {
-    if (e.target === mobileGenreOverlay) closeGenreOverlay?.click();
-});
+const mobileNavGenres = document.getElementById('mobile-nav-genres');
 
 function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' | 'sagas') {
     if (!genreFiltersContainer) return;
@@ -614,6 +603,19 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' |
     genreFiltersContainer.style.display = 'flex';
     const genres = type === 'movie' ? movieGenres : tvGenres;
     
+    // Injecter dans le menu mobile (Grille 2 colonnes)
+    if (mobileNavGenres) {
+        mobileNavGenres.innerHTML = genres.map(g => {
+            const icon = GENRE_ICONS[g.name] || 'label';
+            return `
+                <div class="genre-tile ${activeGenreId === g.id ? 'active' : ''}" onclick="selectGenre(${g.id}, '${type}')">
+                    <span class="material-symbols-outlined">${icon}</span>
+                    <span>${g.name}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
     if (desktopGenres && desktopGenres.style.display !== 'none') {
         if (genres.length === 0) {
             desktopGenres.innerHTML = `<div class="genre-label">Chargement...</div>`;
@@ -634,38 +636,14 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' |
             });
         }
     }
-    
-    if (mobileGenreGrid) {
-        if (genres.length === 0) {
-            mobileGenreGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 40px; font-weight: bold;">Chargement des catégories...</div>`;
-        } else {
-            mobileGenreGrid.innerHTML = `
-                <div class="mobile-genre-item ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</div>
-                ${genres.map(g => `<div class="mobile-genre-item ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</div>`).join('')}
-            `;
-            
-            mobileGenreGrid.querySelectorAll('.mobile-genre-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const idStr = item.getAttribute('data-id');
-                    activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
-                    
-                    closeGenreOverlay?.click();
-                    renderGenres(type);
-                    renderHomeSections(type, activeGenreId);
-                });
-            });
-        }
-    }
 }
 
-// 5. Gestion Drag Carrousel fluide
-// 5. Gestion Drag Carrousel ultra-fluide (Inertie + Correction Jitter)
 if (carousel) {
     let isDown = false;
-    let startX: number;
-    let scrollLeft: number;
-    let velocity = 0;
-    let rafId: number;
+    let startX: number = 0;
+    let scrollLeft: number = 0;
+    let velocity: number = 0;
+    let rafId: number = 0;
     let lastX: number;
     let lastTime: number;
     let isDragging = false;
@@ -1846,6 +1824,15 @@ async function renderSagaDetailsPage(sagaId: string) {
 (window as any).renderSagasPage = renderSagasPage;
 (window as any).renderSagaDetailsPage = renderSagaDetailsPage;
 
+// Fonction utilitaire pour sélectionner un genre (utilisée par les tuiles du menu mobile)
+function selectGenre(id: number, type: string) {
+    activeGenreId = id;
+    toggleMobileMenu(); // Ferme le menu
+    renderGenres(type as any);
+    renderHomeSections(type as any, id);
+}
+(window as any).selectGenre = selectGenre;
+
 // --- Mobile Menu Toggle ---
 export function toggleMobileMenu() {
     console.log("Toggle Menu Clicked");
@@ -1857,6 +1844,11 @@ export function toggleMobileMenu() {
     const icon = menuToggle.querySelector('.material-symbols-outlined');
     if (icon) {
         icon.textContent = navbar.classList.contains('menu-open') ? 'close' : 'menu';
+    }
+
+    // Charger les genres dans le menu si ouvert
+    if (navbar.classList.contains('menu-open')) {
+        renderGenres(currentType === 'trending' ? 'movie' : currentType);
     }
 }
 (window as any).toggleMobileMenu = toggleMobileMenu;
