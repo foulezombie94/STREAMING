@@ -1825,14 +1825,19 @@ async function renderSagaDetailsPage(sagaId: string) {
 (window as any).renderSagaDetailsPage = renderSagaDetailsPage;
 
 // --- Mobile Menu Toggle ---
-const menuToggle = document.getElementById('menu-toggle');
-menuToggle?.addEventListener('click', () => {
-    navbar?.classList.toggle('menu-open');
+export function toggleMobileMenu() {
+    console.log("Toggle Menu Clicked");
+    const navbar = document.getElementById('navbar');
+    const menuToggle = document.getElementById('menu-toggle');
+    if (!navbar || !menuToggle) return;
+
+    navbar.classList.toggle('menu-open');
     const icon = menuToggle.querySelector('.material-symbols-outlined');
     if (icon) {
-        icon.textContent = navbar?.classList.contains('menu-open') ? 'close' : 'menu';
+        icon.textContent = navbar.classList.contains('menu-open') ? 'close' : 'menu';
     }
-});
+}
+(window as any).toggleMobileMenu = toggleMobileMenu;
 
 // Update handleNavigation to close menu on mobile
 // Removed redundant override as it's now integrated in the main handleNavigation function.
