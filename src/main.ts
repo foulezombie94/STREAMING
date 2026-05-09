@@ -109,8 +109,9 @@ class HeroCarouselManager {
             const rating = item.vote_average ? item.vote_average.toFixed(1) : '0.0';
             const backdropUrl = item.backdrop_path ? `${IMAGE_BASE_URL}${item.backdrop_path}` : '';
 
+            const isLongTitle = title && title.length > 18;
             return `
-                <div class="hero-slide ${index === 0 ? 'active' : ''}" style="background-image: url('${backdropUrl}')" data-index="${index}">
+                <div class="hero-slide ${index === 0 ? 'active' : ''} ${isLongTitle ? 'long-title' : ''}" style="background-image: url('${backdropUrl}')" data-index="${index}">
                     <div class="slide-content">
                         <div class="slide-info">
                             <span class="type-tag">${displayType === 'tv' ? 'SÉRIE' : 'FILM'}</span>

@@ -694,6 +694,10 @@ a {
         padding-bottom: 0 !important;
     }
 
+    .android-chrome .hero-slide.long-title .slide-content {
+        padding-top: 135px !important; /* Baissé un peu plus pour les longs titres sur Android */
+    }
+
     .slide-content h1 {
         font-size: 34px;
         color: #facc15;
@@ -764,6 +768,10 @@ a {
         justify-content: center;
         gap: 15px;
         margin-bottom: 90px; /* Réduit de 110px à 90px pour baisser sur iOS */
+    }
+
+    .hero-slide.long-title .slide-actions {
+        margin-bottom: 70px; /* Baissé encore un peu pour les longs titres sur iOS */
     }
 
     .android-chrome .slide-actions {
