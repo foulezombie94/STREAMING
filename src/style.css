@@ -520,21 +520,22 @@ a {
     }
 
     .slide-content {
-        padding: 0 20px;
+        padding: 0 20px 100px 20px; /* Ajout de padding bottom pour lever le contenu */
         align-items: center;
         text-align: center;
-        justify-content: center;
+        justify-content: flex-end; /* Aligné vers le bas mais avec du padding */
     }
 
     .slide-content h1 {
-        font-size: 38px;
-        color: #facc15; /* Jaune Premium */
+        font-size: 34px; /* Un peu plus petit pour gagner de la place */
+        color: #facc15;
         text-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        margin-bottom: 20px;
+        margin-bottom: 15px;
         letter-spacing: -1px;
         text-transform: uppercase;
         max-width: 100%;
     }
+
 
     .slide-info {
         margin-bottom: 20px;
@@ -580,16 +581,19 @@ a {
     .slide-actions {
         width: 100%;
         justify-content: center;
-        gap: 10px;
+        gap: 15px; /* PLUS D'ESPACE ENTRE LES DEUX BOUTONS */
+        margin-bottom: 80px; /* ÉVITE L'OVERLAP AVEC LA NAV BAR */
     }
+
 
     .hero-btn-play, .hero-btn-info {
         flex: 1;
-        padding: 14px 10px;
-        font-size: 16px;
-        border-radius: 16px;
-        max-width: 180px;
+        padding: 12px 8px; /* PLUS FIN */
+        font-size: 15px; /* PLUS FIN */
+        border-radius: 12px; /* PLUS MODERNE */
+        max-width: 160px;
     }
+
 
     .hero-btn-play {
         background: #ef4444;
