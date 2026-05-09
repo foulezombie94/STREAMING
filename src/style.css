@@ -689,9 +689,9 @@ a {
     }
 
     .android-chrome .slide-content {
-        padding-bottom: 0 !important;
-        justify-content: center !important; /* Centrer verticalement pour éviter tout conflit avec le bas */
-        padding-top: 60px; /* Éviter le header */
+        padding-bottom: 180px !important; /* Monter le contenu pour laisser la place aux boutons au-dessus de la barre */
+        justify-content: flex-end !important;
+        padding-top: 0;
     }
 
     .slide-content h1 {
@@ -751,6 +751,12 @@ a {
         line-clamp: 2;
         max-width: 100%;
         color: rgba(255,255,255,0.8);
+    }
+
+    .android-chrome .slide-synopsis {
+        -webkit-line-clamp: 1 !important; /* Une seule ligne sur Android pour gagner de l'espace */
+        line-clamp: 1 !important;
+        margin-bottom: 20px !important;
     }
 
     .slide-actions {
