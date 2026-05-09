@@ -355,7 +355,12 @@ a {
     height: 600px;
     border-radius: 0;
     overflow: hidden;
-    margin-bottom: 0; /* SUPPRIMÉ POUR COLLER À LA SUITE */
+    /* Fix Android Chrome: force GPU stacking context pour que overflow:hidden
+       clipe correctement les enfants animés (translateY/opacity) */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    isolation: isolate;
+    margin-bottom: 0;
     background: #000;
 }
 
@@ -659,6 +664,10 @@ a {
     .hero-slide {
         height: 100vh;
         background-position: center;
+        /* Fix Android: forcer un contexte de rendu isolé sur chaque slide */
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
+        will-change: opacity;
     }
 
     .hero-slide::after {
@@ -673,13 +682,19 @@ a {
     }
 
     .slide-content h1 {
-        font-size: 34px; /* Un peu plus petit pour gagner de la place */
+        font-size: 34px;
         color: #facc15;
         text-shadow: 0 4px 12px rgba(0,0,0,0.5);
         margin-bottom: 15px;
         letter-spacing: -1px;
         text-transform: uppercase;
         max-width: 100%;
+        /* Fix Android: évite que le texte soit rendu sur un layer séparé
+           qui peut déborder du conteneur clippé */
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
     }
 
 
