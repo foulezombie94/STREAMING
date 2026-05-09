@@ -110,10 +110,10 @@ class HeroCarouselManager {
                         <p class="slide-synopsis">${item.overview || "Aucun synopsis disponible."}</p>
                         <div class="slide-actions">
                             <button class="hero-btn-play" onclick="window.location.href='/details.html?id=${item.id}&type=${displayType}'">
-                                <span class="material-symbols-outlined">play_arrow</span> Play
+                                <span class="material-symbols-outlined">play_arrow</span> Regarder
                             </button>
                             <button class="hero-btn-info" onclick="window.location.href='/details.html?id=${item.id}&type=${displayType}'">
-                                <span class="material-symbols-outlined">info</span> More Info
+                                <span class="material-symbols-outlined">videocam</span> Bande-Annonce
                             </button>
                         </div>
                     </div>
@@ -1024,44 +1024,112 @@ async function loadXtreamData() {
 
 function renderCategories() {
     const container = document.getElementById('live-categories');
-    const categoryLabel = document.getElementById('current-category-name');
     if (!container) return;
-
-    // Style Smarters : Plat, Majuscule, Bord à bord
-    const baseClasses = "w-full px-8 py-5 flex items-center justify-between transition-all hover:bg-white/5 group text-white/40 hover:text-white cursor-pointer border-b border-white/5 border-l-4 border-l-transparent";
-    const activeClasses = "w-full px-8 py-5 flex items-center justify-between transition-all bg-[#136b7a]/20 text-[#136b7a] shadow-lg group active cursor-pointer border-b border-white/5 border-l-4 border-l-[#136b7a]";
 
     const allChannelsCount = allLiveChannels.length;
 
+    // Styles inline directs - pas de dépendance Tailwind
+    const applyBase = (el: Element) => {
+        const e = el as HTMLElement;
+        e.style.cssText = `
+            width: 100%;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            border-left: 3px solid transparent;
+            background: transparent;
+            color: rgba(255,255,255,0.35);
+            transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+            box-sizing: border-box;
+        `;
+    };
+
+    const applyActive = (el: Element) => {
+        const e = el as HTMLElement;
+        e.style.cssText = `
+            width: 100%;
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            border-left: 3px solid #ef4444;
+            background: rgba(239,68,68,0.1);
+            color: #ef4444;
+            transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+            box-sizing: border-box;
+        `;
+    };
+
     const html = `
-        <div class="${activeClasses}" data-id="all">
-            <span class="font-bold text-xs uppercase tracking-[0.2em]">All Channels</span>
-            <span class="text-[11px] font-bold opacity-60">${allChannelsCount}</span>
+        <div data-id="all">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;">All Channels</span>
+            <span style="font-size:11px;font-weight:700;opacity:0.6;">${allChannelsCount}</span>
         </div>
         ${liveCategories.map(cat => {
             const count = allLiveChannels.filter(c => c.category_id === cat.category_id).length;
             return `
-                <div class="${baseClasses}" data-id="${cat.category_id}">
-                    <span class="font-bold text-xs uppercase tracking-[0.2em] truncate max-w-[180px]">${cat.category_name}</span>
-                    <span class="text-[11px] font-bold opacity-30 group-hover:opacity-100 transition-opacity">${count}</span>
+                <div data-id="${cat.category_id}">
+                    <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;">${cat.category_name}</span>
+                    <span style="font-size:11px;font-weight:700;opacity:0.4;">${count}</span>
                 </div>
             `;
         }).join('')}
     `;
     container.innerHTML = html;
 
+    // Appliquer style de base à tous
+    container.querySelectorAll('[data-id]').forEach(btn => {
+        applyBase(btn);
+    });
+
+    // Activer le premier par défaut
+    const firstBtn = container.querySelector('[data-id="all"]');
+    if (firstBtn) applyActive(firstBtn);
+
+    // Hover effect
+    container.querySelectorAll('[data-id]').forEach(btn => {
+        btn.addEventListener('mouseenter', () => {
+            if (!(btn as HTMLElement).dataset.active) {
+                (btn as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
+                (btn as HTMLElement).style.color = 'rgba(255,255,255,0.85)';
+            }
+        });
+        btn.addEventListener('mouseleave', () => {
+            if (!(btn as HTMLElement).dataset.active) {
+                (btn as HTMLElement).style.background = 'transparent';
+                (btn as HTMLElement).style.color = 'rgba(255,255,255,0.35)';
+            }
+        });
+    });
+
+    // Clic : sélection avec flash visuel
     container.querySelectorAll('[data-id]').forEach(btn => {
         btn.addEventListener('click', () => {
             stopLiveTV();
+
+            // Retirer l'actif de tous
             container.querySelectorAll('[data-id]').forEach(b => {
-                b.className = baseClasses;
+                delete (b as HTMLElement).dataset.active;
+                applyBase(b);
             });
-            btn.className = activeClasses;
-            
-            const catId = btn.getAttribute('data-id') || 'all';
-            const catName = btn.querySelector('span:first-child')?.textContent || 'Toutes les chaînes';
-            
-            if (categoryLabel) categoryLabel.textContent = catName;
+
+            // Flash rouge immédiat puis état actif stable
+            const el = btn as HTMLElement;
+            el.style.background = 'rgba(239,68,68,0.25)';
+            el.style.borderLeftColor = '#ef4444';
+            el.style.color = '#ffffff';
+
+            setTimeout(() => {
+                el.dataset.active = '1';
+                applyActive(el);
+            }, 150);
+
+            const catId = el.getAttribute('data-id') || 'all';
             renderLiveTV('', catId);
         });
     });
@@ -1112,44 +1180,85 @@ function renderLiveTV(filter: string = '', categoryId: string = 'all') {
         nextBatch.forEach((c, index) => {
             const streamUrl = `${xtreamConfig.host}/live/${xtreamConfig.user}/${xtreamConfig.pass}/${c.stream_id}.ts`;
             const div = document.createElement('div');
-            div.className = "group relative aspect-[2/3] overflow-hidden cursor-pointer border border-white/5 bg-[#111] transition-all duration-300 fade-in-progressive";
+            div.style.cssText = `
+                position: relative;
+                aspect-ratio: 2/3;
+                overflow: hidden;
+                cursor: pointer;
+                border: 2px solid rgba(255,255,255,0.05);
+                background: #111;
+                transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+                border-radius: 6px;
+            `;
             div.style.animationDelay = `${(index % batchSize) * 20}ms`;
+            div.className = 'fade-in-progressive live-channel-card';
             div.setAttribute('data-url', streamUrl);
             
             div.innerHTML = `
                 <!-- Logo/Poster -->
-                <div class="absolute inset-0 flex items-center justify-center bg-[#1a1a1a]">
-                     <img src="${c.stream_icon || ''}" loading="lazy" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" onerror="this.src='https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&q=80&w=400';"/>
+                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#1a1a1a;">
+                     <img src="${c.stream_icon || ''}" loading="lazy" style="width:100%;height:100%;object-fit:cover;opacity:0.8;transition:opacity 0.3s,transform 0.5s;" onerror="this.src='https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&q=80&w=400';"/>
                 </div>
 
                 <!-- Overlay Gradient -->
-                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
+                <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.15) 60%,transparent 100%);transition:opacity 0.3s;"></div>
 
                 <!-- Channel Name -->
-                <div class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                    <h3 class="font-black text-lg text-white uppercase tracking-tighter leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] group-hover:text-primary transition-colors">
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:12px 8px;text-align:center;">
+                    <h3 style="font-size:11px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:-0.02em;line-height:1.3;text-shadow:0 2px 6px rgba(0,0,0,0.9);margin:0;">
                         ${c.name}
                     </h3>
                 </div>
 
-                <!-- Top Label -->
-                <div class="absolute top-3 left-3 z-10">
-                    <span class="bg-[#136b7a] text-white text-[9px] font-bold px-1.5 py-0.5 shadow-md">
-                        ${c.stream_id % 99}
-                    </span>
-                </div>
-
-                <!-- Play Icon -->
-                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                    <div class="w-12 h-12 rounded-full bg-primary/20 backdrop-blur-md border border-primary/40 flex items-center justify-center">
-                        <span class="material-symbols-outlined text-primary text-3xl">play_arrow</span>
+                <!-- Play Icon (hover) -->
+                <div class="play-icon-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;z-index:20;">
+                    <div style="width:44px;height:44px;border-radius:50%;background:rgba(239,68,68,0.25);backdrop-filter:blur(8px);border:2px solid rgba(239,68,68,0.6);display:flex;align-items:center;justify-content:center;">
+                        <span class="material-symbols-outlined" style="color:#ef4444;font-size:28px;">play_arrow</span>
                     </div>
                 </div>
             `;
 
+            // Hover
+            div.addEventListener('mouseenter', () => {
+                if (!div.dataset.playing) {
+                    div.style.borderColor = 'rgba(239,68,68,0.4)';
+                    div.style.transform = 'scale(1.03)';
+                }
+                const overlay = div.querySelector('.play-icon-overlay') as HTMLElement;
+                if (overlay) overlay.style.opacity = '1';
+            });
+            div.addEventListener('mouseleave', () => {
+                if (!div.dataset.playing) {
+                    div.style.borderColor = 'rgba(255,255,255,0.05)';
+                    div.style.transform = 'scale(1)';
+                }
+                const overlay = div.querySelector('.play-icon-overlay') as HTMLElement;
+                if (overlay) overlay.style.opacity = '0';
+            });
+
             div.addEventListener('click', () => {
                 const url = div.getAttribute('data-url');
-                const name = div.querySelector('h3')?.textContent || 'Chaîne';
+                const name = div.querySelector('h3')?.textContent?.trim() || 'Chaîne';
+
+                // Retirer le contour rouge de toutes les cartes
+                document.querySelectorAll('.live-channel-card').forEach(card => {
+                    const c = card as HTMLElement;
+                    delete c.dataset.playing;
+                    c.style.borderColor = 'rgba(255,255,255,0.05)';
+                    c.style.boxShadow = 'none';
+                    c.style.transform = 'scale(1)';
+                });
+
+                // Flash immédiat blanc → rouge persistant
+                div.style.borderColor = '#ffffff';
+                div.style.boxShadow = '0 0 0 2px rgba(239,68,68,0.6)';
+                setTimeout(() => {
+                    div.dataset.playing = '1';
+                    div.style.borderColor = '#ef4444';
+                    div.style.boxShadow = '0 0 20px rgba(239,68,68,0.35), 0 0 0 2px #ef4444';
+                    div.style.transform = 'scale(1)';
+                }, 120);
+
                 if (url) playLiveChannel(url, name);
             });
 
