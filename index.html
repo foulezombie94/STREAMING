@@ -21,6 +21,7 @@
     <!-- 1. En-tête (Tout en haut) -->
     <header class="navbar" id="navbar">
         <div class="logo">MOVIEVERSE</div>
+        
         <ul class="nav-links">
             <li><a href="#" class="nav-item active" data-type="trending">Accueil</a></li>
             <li><a href="#" class="nav-item" data-type="tv">Séries</a></li>
@@ -28,59 +29,40 @@
             <li><a href="#" class="nav-item" data-type="iptv">Direct TV</a></li>
             <li><a href="#" class="nav-item" data-type="reprendre">Reprendre</a></li>
         </ul>
+
         <div class="nav-actions">
-            <svg class="icon bell-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
-            </svg>
-            <label class="search-container" id="search-container">
-                <svg class="icon search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 40 40" height="24" width="24">
-                  <g clip-path="url(#search-clip)">
-                    <path fill="#00034a" stroke="#00034a" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="M5.66201 5.653C12.914 -1.571 20.85 -0.847996 27.361 5.653c0.465 0.466 0.957 0.903 1.424 1.369 5.503 5.512 6.85 12.057 2.766 18.319 0.385 0.289 0.786 0.601 1.213 0.941 3.426 2.715 9.263 7.274 5.045 11.491 -4.171 4.171 -8.858 -1.611 -11.536 -5.01 -0.3216 -0.4082 -0.6396 -0.8192 -0.954 -1.233 -6.242 4.022 -12.75 2.664 -18.23299 -2.82 -0.466 -0.465 -0.958 -0.902 -1.424 -1.368 -6.500001 -6.501 -7.252 -14.465 0 -21.689Z" stroke-width="1"></path>
-                    <path fill="#9bff00" stroke="#00034a" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="M27.36 5.653c-6.51 -6.500996 -14.446 -7.224 -21.69799 0 -7.252 7.223 -6.500001 15.188 0 21.689C11.239 32.918 17.874 34.228 24.212 29.952c0.558 0.886 1.232 1.752 2.06 2.812 6.02 7.637 8.495 5.258 10.113 3.64 1.618 -1.618 3.987 -4.093 -3.621 -10.122 -1.04 -0.828 -1.926 -1.492 -2.803 -2.06 4.286 -6.338 2.976 -12.983 -2.6 -18.57l-0.001 0.001Z" stroke-width="1"></path>
-                    <path fill="#ffffff" stroke="#00034a" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="M16.516 26.119c1.2636 0 2.5148 -0.2489 3.6822 -0.7325 1.1674 -0.4835 2.2281 -1.1923 3.1216 -2.0857 0.8935 -0.8935 1.6022 -1.9542 2.0858 -3.1216 0.4835 -1.1674 0.7324 -2.4186 0.7324 -3.6822 0 -1.2636 -0.2489 -2.5147 -0.7325 -3.6821 -0.4835 -1.1673 -1.1923 -2.2279 -2.0858 -3.12135 -0.8935 -0.89341 -1.9542 -1.60206 -3.1216 -2.08551 -1.1674 -0.48344 -2.4186 -0.73219 -3.6821 -0.73206 -1.2635 0 -2.5145 0.24885 -3.6818 0.73235 -1.1673 0.4835 -2.2279 1.19218 -3.12129 2.08557 -0.89339 0.8934 -1.60207 1.954 -2.08557 3.1213 -0.4835 1.1673 -0.73235 2.4183 -0.73235 3.6818 0 1.2634 0.24885 2.5145 0.73235 3.6818 0.4835 1.1672 1.19218 2.2279 2.08557 3.1213 0.89339 0.8933 1.95399 1.602 3.12129 2.0855 1.1673 0.4835 2.4183 0.7334 3.6818 0.7334Z" stroke-width="1"></path>
-                    <path fill="#ffffff" d="M14.272 10.613c0.6237 -0.5421 1.4148 -0.85321 2.2407 -0.88125 0.8259 -0.02804 1.6363 0.22874 2.2953 0.72725" stroke-width="1"></path>
-                    <path stroke="#00034a" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="M14.272 10.613c0.6237 -0.5421 1.4148 -0.85321 2.2407 -0.88125 0.8259 -0.02804 1.6363 0.22874 2.2953 0.72725" stroke-width="1"></path>
-                  </g>
-                  <defs>
-                    <clipPath id="search-clip">
-                      <path fill="#ffffff" d="M0 0h40v40H0z" stroke-width="1"></path>
-                    </clipPath>
-                  </defs>
-                </svg>
-                <input type="text" id="search-input" class="search-input" placeholder="Tapez votre recherche..." autocomplete="off">
-            </label>
+            <div class="search-container">
+                <span class="material-symbols-outlined search-icon">search</span>
+                <input type="text" id="search-input" class="search-input" placeholder="Rechercher...">
+            </div>
         </div>
     </header>
 
-    <main class="w-full px-4 md:px-8 lg:px-12 pt-28 md:pt-36 pb-8">
-        <!-- Section Héros -->
-        <section class="hero" id="hero-section">
-            <!-- Bouton de filtre flottant par dessus l'image -->
-            <div class="genre-filters-container" id="genre-filters-container" style="display: none;">
-                <div class="genre-filters" id="desktop-genres" style="display: none !important;"></div>
-                <button class="mobile-filter-btn" id="mobile-filter-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                    </svg>
-                    Filtrer par Genre
+    <main class="w-full px-2 md:px-4 lg:px-8 pt-20 md:pt-24 pb-8">
+        <!-- New Hero Carousel (Movix Style) -->
+        <section class="hero-carousel" id="hero-carousel">
+            <div class="hero-slides-container" id="hero-slides">
+                <!-- Slides will be injected by JS -->
+            </div>
+            
+            <!-- Carousel Navigation -->
+            <div class="carousel-nav">
+                <div class="carousel-dots" id="carousel-dots"></div>
+                <div class="carousel-timer">
+                    <div class="carousel-progress" id="carousel-progress"></div>
+                </div>
+                <button class="carousel-pause" id="carousel-pause">
+                    <span class="material-symbols-outlined">pause</span>
                 </button>
             </div>
 
-            <div class="hero-content">
-                <h1 id="hero-title">Chargement...</h1>
-                <div class="hero-meta" id="hero-meta">&nbsp;</div>
-                <p class="hero-tagline" id="hero-tagline" style="font-style: italic; color: #ef4444; margin-bottom: 10px; font-weight: 600;"></p>
-                <p class="hero-synopsis" id="hero-synopsis">Veuillez patienter pendant le chargement...</p>
-                <div class="hero-buttons">
-                    <button class="btn btn-primary" id="watch-btn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M8 5V19L19 12L8 5Z"/>
-                        </svg>
-                        Regarder
-                    </button>
-                    <button class="btn btn-secondary" id="see-more-btn">Voir Plus</button>
-                </div>
-            </div>
+            <!-- Side Navigation Arrows -->
+            <button class="carousel-arrow prev" id="carousel-prev">
+                <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+            <button class="carousel-arrow next" id="carousel-next">
+                <span class="material-symbols-outlined">chevron_right</span>
+            </button>
         </section>
 
         <!-- Section Populaire / Carrousel (Remis juste sous le film) -->

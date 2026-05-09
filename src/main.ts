@@ -8,9 +8,8 @@ const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 
-// 2. Éléments du DOM
-let currentData: any[] = []; // Stocke les données actuelles
-let activeId: number | null = null; // ID du film actuellement mis en avant
+// 2. DOM Elements & State
+let currentData: any[] = []; 
 let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' = 'trending';
 
 // Genre globals
@@ -18,37 +17,156 @@ let movieGenres: any[] = [];
 let tvGenres: any[] = [];
 let activeGenreId: number | null = null;
 
-// Éléments du DOM
+// DOM Selectors
 const navbar = document.getElementById('navbar');
 const carousel = document.getElementById('carousel') as HTMLElement | null;
-const heroSection = document.getElementById('hero-section');
-const heroTitle = document.getElementById('hero-title');
-const heroMeta = document.getElementById('hero-meta');
-const heroTagline = document.getElementById('hero-tagline');
-const heroSynopsis = document.getElementById('hero-synopsis');
-const heroContent = document.querySelector('.hero-content');
+const heroSection = document.getElementById('hero-carousel');
+const heroSlidesContainer = document.getElementById('hero-slides');
+const heroDotsContainer = document.getElementById('carousel-dots');
+const heroProgress = document.getElementById('carousel-progress');
+const heroPauseBtn = document.getElementById('carousel-pause');
+const heroPrevBtn = document.getElementById('carousel-prev');
+const heroNextBtn = document.getElementById('carousel-next');
+
 const navItems = document.querySelectorAll('.nav-item');
 const sectionTitle = document.querySelector('.section-title');
 const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
 const popularSection = document.getElementById('popular-section');
 const iptvSection = document.getElementById('iptv-section');
 
-const watchBtn = document.getElementById('watch-btn');
-const seeMoreBtn = document.getElementById('see-more-btn');
+// --- Carousel Manager (Movix Style) ---
+class HeroCarouselManager {
+    private slides: any[] = [];
+    private currentIndex: number = 0;
+    private interval: any = null;
+    private progress: number = 0;
+    private isPaused: boolean = false;
+    private readonly DURATION: number = 8000; 
+    private readonly STEP: number = 100 / (this.DURATION / 16); 
 
-// Stockage global
-let activeMediaType: 'movie' | 'tv' = 'movie';
+    constructor() {
+        this.initEventListeners();
+    }
 
-// Gestion des clics sur les boutons Hero
-function redirectToDetails() {
-    if (activeId) {
-        window.location.href = `/details.html?id=${activeId}&type=${activeMediaType}`;
+    private initEventListeners() {
+        heroPauseBtn?.addEventListener('click', () => this.togglePause());
+        heroPrevBtn?.addEventListener('click', () => this.prevSlide());
+        heroNextBtn?.addEventListener('click', () => this.nextSlide());
+    }
+
+    public setSlides(data: any[]) {
+        this.slides = data.slice(0, 8); 
+        this.renderSlides();
+        this.renderDots();
+        this.goToSlide(0);
+        this.startTimer();
+    }
+
+    private renderSlides() {
+        if (!heroSlidesContainer) return;
+        heroSlidesContainer.innerHTML = this.slides.map((item, index) => {
+            const displayType = item.media_type || (currentType === 'tv' ? 'tv' : 'movie');
+            const title = displayType === 'tv' ? (item.name || item.original_name) : (item.title || item.original_title);
+            const releaseDate = displayType === 'tv' ? item.first_air_date : item.release_date;
+            const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : 'N/A';
+            const rating = item.vote_average ? item.vote_average.toFixed(1) : '0.0';
+            const backdropUrl = item.backdrop_path ? `${IMAGE_BASE_URL}${item.backdrop_path}` : '';
+
+            return `
+                <div class="hero-slide ${index === 0 ? 'active' : ''}" style="background-image: url('${backdropUrl}')" data-index="${index}">
+                    <div class="slide-content">
+                        <h1>${title}</h1>
+                        <div class="slide-info">
+                            <span class="rating-tag">★ ${rating}</span>
+                            <span class="year-tag">${releaseYear}</span>
+                            <span class="year-tag">• ${displayType === 'tv' ? 'Série' : 'Film'}</span>
+                        </div>
+                        <p class="slide-synopsis">${item.overview || "Aucun synopsis disponible."}</p>
+                        <div class="slide-actions">
+                            <button class="hero-btn-play" onclick="window.location.href='/details.html?id=${item.id}&type=${displayType}'">
+                                <span class="material-symbols-outlined">play_arrow</span> Play
+                            </button>
+                            <button class="hero-btn-info" onclick="window.location.href='/details.html?id=${item.id}&type=${displayType}'">
+                                <span class="material-symbols-outlined">info</span> More Info
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    private renderDots() {
+        if (!heroDotsContainer) return;
+        heroDotsContainer.innerHTML = this.slides.map((_, index) => `
+            <div class="dot ${index === 0 ? 'active' : ''}" data-index="${index}"></div>
+        `).join('');
+
+        heroDotsContainer.querySelectorAll('.dot').forEach(dot => {
+            dot.addEventListener('click', () => {
+                const index = parseInt(dot.getAttribute('data-index') || '0');
+                this.goToSlide(index);
+            });
+        });
+    }
+
+    private goToSlide(index: number) {
+        this.currentIndex = index;
+        this.progress = 0;
+        this.updateDOM();
+    }
+
+    private updateDOM() {
+        const slides = document.querySelectorAll('.hero-slide');
+        const dots = document.querySelectorAll('.dot');
+        
+        slides.forEach(s => s.classList.remove('active'));
+        dots.forEach(d => d.classList.remove('active'));
+
+        slides[this.currentIndex]?.classList.add('active');
+        dots[this.currentIndex]?.classList.add('active');
+
+        if (heroProgress) heroProgress.style.width = '0%';
+    }
+
+    public nextSlide() {
+        this.currentIndex = (this.currentIndex + 1) % this.slides.length;
+        this.goToSlide(this.currentIndex);
+    }
+
+    public prevSlide() {
+        this.currentIndex = (this.currentIndex - 1 + this.slides.length) % this.slides.length;
+        this.goToSlide(this.currentIndex);
+    }
+
+    private togglePause() {
+        this.isPaused = !this.isPaused;
+        const icon = heroPauseBtn?.querySelector('.material-symbols-outlined');
+        if (icon) icon.textContent = this.isPaused ? 'play_arrow' : 'pause';
+    }
+
+    private startTimer() {
+        if (this.interval) clearInterval(this.interval);
+        this.interval = setInterval(() => {
+            if (!this.isPaused) {
+                this.progress += this.STEP;
+                if (heroProgress) heroProgress.style.width = `${this.progress}%`;
+                
+                if (this.progress >= 100) {
+                    this.nextSlide();
+                }
+            }
+        }, 16);
+    }
+
+    public stop() {
+        if (this.interval) clearInterval(this.interval);
     }
 }
-if (watchBtn) watchBtn.addEventListener('click', redirectToDetails);
-if (seeMoreBtn) seeMoreBtn.addEventListener('click', redirectToDetails);
 
-// 3. Gestion de la Navbar (Effet Glassmorphism au scroll)
+const heroCarouselManager = new HeroCarouselManager();
+
+// 3. Navbar Glassmorphism
 window.addEventListener('scroll', () => {
     if (window.scrollY > 50) {
         navbar?.classList.add('scrolled');
@@ -65,7 +183,7 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// 4. Gestion de la Navigation (Top & Bottom)
+// 4. Navigation Management
 const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
 
 function handleNavigation(type: any) {
@@ -79,7 +197,6 @@ function handleNavigation(type: any) {
     currentType = type as any;
     activeGenreId = null; 
 
-    // FERME LE LECTEUR LIVE SI ON QUITTE IPTV
     if (currentType !== 'iptv') {
         stopLiveTV();
         const liveContent = document.getElementById('live-tv-content');
@@ -88,7 +205,6 @@ function handleNavigation(type: any) {
         if (loginForm) loginForm.style.display = 'none';
     }
 
-    // Gestion de la visibilité des sections
     if (heroSection) heroSection.style.display = (currentType === 'iptv') ? 'none' : 'block';
     if (popularSection) popularSection.style.display = (currentType === 'iptv') ? 'none' : 'block';
     if (iptvSection) iptvSection.style.display = (currentType === 'iptv') ? 'block' : 'none';
@@ -137,12 +253,9 @@ const closeGenreOverlay = document.getElementById('close-genre-overlay');
 
 // Event listeners pour le mobile et PC (Overlay)
 mobileFilterBtn?.addEventListener('click', () => {
-    // On n'appelle renderGenres que si c'est nécessaire (si vide ou changement de type)
-    // Mais ici on le fait pour s'assurer que l'UI reflète l'état actuel (activeGenreId)
     renderGenres(currentType);
-    
     mobileGenreOverlay?.classList.add('active');
-    document.body.style.overflow = 'hidden'; // Bloquer le scroll
+    document.body.style.overflow = 'hidden'; 
 });
 
 closeGenreOverlay?.addEventListener('click', () => {
@@ -165,7 +278,6 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv') 
     genreFiltersContainer.style.display = 'flex';
     const genres = type === 'movie' ? movieGenres : tvGenres;
     
-    // Rendre pour Desktop (si le conteneur est affiché)
     if (desktopGenres && desktopGenres.style.display !== 'none') {
         if (genres.length === 0) {
             desktopGenres.innerHTML = `<div class="genre-label">Chargement...</div>`;
@@ -181,7 +293,6 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv') 
                     const idStr = btn.getAttribute('data-id');
                     activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
                     renderGenres(type);
-                    heroContent?.classList.add('animating');
                     if (carousel) carousel.style.opacity = '0.5';
                     fetchPopularData(type, activeGenreId);
                 });
@@ -189,7 +300,6 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv') 
         }
     }
 
-    // Rendre pour l'Overlay (Mobile & PC)
     if (mobileGenreGrid) {
         if (genres.length === 0) {
             mobileGenreGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 40px; font-weight: bold;">Chargement des catégories...</div>`;
@@ -207,7 +317,6 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv') 
                     closeGenreOverlay?.click();
                     renderGenres(type);
                     
-                    heroContent?.classList.add('animating');
                     if (carousel) carousel.style.opacity = '0.5';
                     fetchPopularData(type, activeGenreId);
                 });
@@ -229,7 +338,6 @@ if (carousel) {
     let isDragging = false;
 
     const beginDrag = (e: MouseEvent | TouchEvent) => {
-        // Uniquement clic gauche pour éviter les conflits avec le clic droit
         if ('button' in e && e.button !== 0) return;
         
         isDown = true;
@@ -250,17 +358,15 @@ if (carousel) {
         isDown = false;
         carousel.style.cursor = 'grab';
         
-        // Appliquer un effet d'inertie fluide
         const step = () => {
             if (Math.abs(velocity) > 0.2) {
                 carousel.scrollLeft -= velocity;
-                velocity *= 0.95; // Friction constante
+                velocity *= 0.95; 
                 rafId = requestAnimationFrame(step);
             }
         };
         rafId = requestAnimationFrame(step);
         
-        // Petit délai pour valider la fin du drag
         setTimeout(() => isDragging = false, 50);
     };
 
@@ -270,19 +376,16 @@ if (carousel) {
         const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
         const walk = (clientX - startX); 
         
-        // Détecter si c'est vraiment un mouvement significatif
         if (Math.abs(walk) > 3) isDragging = true;
         
         const currentTime = performance.now();
         const deltaTime = currentTime - lastTime;
         
         if (deltaTime > 0) {
-            // Calcul de la vélocité avec lissage
             const instantVelocity = (clientX - lastX) / deltaTime * 16;
             velocity = velocity * 0.2 + instantVelocity * 0.8;
         }
         
-        // Mise à jour immédiate de la position
         carousel.scrollLeft = scrollLeft - walk;
         
         lastX = clientX;
@@ -293,12 +396,10 @@ if (carousel) {
     window.addEventListener('mousemove', moveDrag);
     window.addEventListener('mouseup', endDrag);
     
-    // Support Touch
     carousel.addEventListener('touchstart', beginDrag, { passive: true });
     carousel.addEventListener('touchmove', moveDrag, { passive: true });
     carousel.addEventListener('touchend', endDrag);
     
-    // Empêcher le clic si on était en train de dragger
     carousel.addEventListener('click', (e) => {
         if (isDragging) {
             e.stopImmediatePropagation();
@@ -346,79 +447,25 @@ async function fetchPopularData(type: 'movie' | 'tv' | 'trending' | 'iptv', genr
         }
     } catch (error) {
         console.error('Erreur:', error);
-        if (heroTitle) heroTitle.textContent = "Erreur de connexion";
     }
 }
 
 function processData(results: any[]) {
     currentData = results;
     
-    // Remettre le carrousel opaque
     if (carousel) carousel.style.opacity = '1';
 
-    // Forcer le rechargement de l'ID actif
-    activeId = null;
+    // Update Hero Carousel
+    heroCarouselManager.setSlides(results);
 
-    // Initialiser avec le premier élément
-    const heroItem = currentData[0];
-    updateHeroSection(heroItem, true);
-
-    // Remplir le carrousel
+    // Populate the bottom carousel/grid
     populateCarousel(currentData);
-}
-
-// 7. Mise à jour fluide de la section Héros
-function updateHeroSection(item: any, isInitialLoad = false) {
-    if (activeId === item.id) return;
-    activeId = item.id;
-
-    const applyUpdate = () => {
-        let displayType = currentType;
-        if (currentType === 'trending' || currentType === 'reprendre') {
-            displayType = item.media_type; // L'API trending et notre stockage Reprendre utilisent media_type
-        }
-        activeMediaType = displayType as 'movie' | 'tv';
-
-        // TMDB: les films ont 'title', les séries ont 'name'
-        const title = displayType === 'tv' ? item.name : item.title;
-        const releaseDate = displayType === 'tv' ? item.first_air_date : item.release_date;
-        const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : 'N/A';
-        const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
-        const mediaLabel = displayType === 'tv' ? 'TV Show' : 'Movie';
-
-        if (heroTitle) heroTitle.textContent = title;
-        if (heroTagline) heroTagline.textContent = item.tagline ? `"${item.tagline}"` : '';
-        if (heroSynopsis) heroSynopsis.textContent = item.overview || "Aucun synopsis disponible.";
-        
-        if (heroMeta) {
-            heroMeta.innerHTML = `<span class="rating">★ ${rating}/10</span> <span>&bull; ${releaseYear}</span> <span>&bull; ${mediaLabel}</span>`;
-        }
-
-        if (heroSection) {
-            const backdropUrl = item.backdrop_path 
-                ? `${IMAGE_BASE_URL}${item.backdrop_path}`
-                : ''; 
-            
-            heroSection.style.backgroundImage = backdropUrl ? `url('${backdropUrl}')` : 'none';
-        }
-
-        // On enlève la classe d'animation pour relancer le fondu
-        heroContent?.classList.remove('animating');
-    };
-
-    if (isInitialLoad) {
-        applyUpdate();
-    } else {
-        heroContent?.classList.add('animating');
-        setTimeout(applyUpdate, 400);
-    }
 }
 
 // 8. Remplissage Carrousel interactif
 function populateCarousel(items: any[]) {
     if (!carousel) return;
     
-    // Remise à zéro fluide
     carousel.innerHTML = ''; 
     carousel.scrollLeft = 0;
 
@@ -443,23 +490,9 @@ function populateCarousel(items: any[]) {
 
         card.appendChild(img);
 
-        // Gestion du clic & double-clic (Mobile & Desktop)
-        let lastClick = 0;
         card.addEventListener('click', () => {
-            const now = Date.now();
-            const delay = now - lastClick;
-            
-            if (delay < 350 && delay > 0) {
-                // Double clic / Double tap
-                let displayType = (currentType === 'trending' || currentType === 'reprendre') ? item.media_type : currentType;
-                window.location.href = `/details.html?id=${item.id}&type=${displayType}`;
-            } else {
-                // Simple clic
-                document.querySelectorAll('.movie-card').forEach(c => c.classList.remove('active'));
-                card.classList.add('active');
-                updateHeroSection(item);
-            }
-            lastClick = now;
+            let displayType = (currentType === 'trending' || currentType === 'reprendre') ? item.media_type : currentType;
+            window.location.href = `/details.html?id=${item.id}&type=${displayType}`;
         });
 
         carousel.appendChild(card);
@@ -506,23 +539,7 @@ async function fetchGenres() {
 
 async function initApp() {
     await fetchGenres();
-    handleNavigation('trending'); // Utiliser handleNavigation pour initialiser correctement l'UI
-    setupHeroButtons();
-}
-
-function setupHeroButtons() {
-    const watchBtn = document.getElementById('watch-btn');
-    const seeMoreBtn = document.getElementById('see-more-btn');
-
-    const handleAction = () => {
-        if (!currentData || currentData.length === 0) return;
-        const currentItem = currentData.find(i => i.id === activeId) || currentData[0];
-        const displayType = (currentType === 'trending' || currentType === 'reprendre') ? currentItem.media_type : currentType;
-        window.location.href = `/details.html?id=${currentItem.id}&type=${displayType}`;
-    };
-
-    watchBtn?.addEventListener('click', handleAction);
-    seeMoreBtn?.addEventListener('click', handleAction);
+    handleNavigation('trending'); 
 }
 
 initApp();
@@ -560,14 +577,11 @@ if (searchInput) {
 
 async function performSearch(query: string) {
     try {
-        // Mettre un effet de chargement visuel
-        heroContent?.classList.add('animating');
         if (carousel) carousel.style.opacity = '0.5';
 
         const response = await fetch(`${BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(query)}&page=1`);
         const data = await response.json();
         
-        // On filtre pour ne garder que les films/séries (pas les acteurs) et ceux qui ont une affiche
         const filteredResults = data.results.filter((item: any) => 
             (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path
         );
@@ -576,23 +590,15 @@ async function performSearch(query: string) {
             currentData = filteredResults;
             
             if (sectionTitle) sectionTitle.textContent = `Résultats pour "${query}"`;
-            
             if (carousel) carousel.style.opacity = '1';
-            activeId = null; // forcer la mise à jour visuelle du héro
 
-            const heroItem = currentData[0];
-            updateHeroSection(heroItem, false);
+            heroCarouselManager.setSlides(currentData);
             populateCarousel(currentData);
         } else {
-            // Si aucun résultat
-            if (heroTitle) heroTitle.textContent = "Aucun résultat trouvé";
-            if (heroSynopsis) heroSynopsis.textContent = `Nous n'avons rien trouvé pour la recherche "${query}".`;
-            if (heroMeta) heroMeta.innerHTML = `<span>&bull; Désolé</span>`;
-            if (heroSection) heroSection.style.backgroundImage = 'none';
-            if (carousel) carousel.innerHTML = '';
-            
-            heroContent?.classList.remove('animating');
-            if (carousel) carousel.style.opacity = '1';
+            if (carousel) {
+                carousel.innerHTML = '<div class="no-results">Aucun résultat trouvé.</div>';
+                carousel.style.opacity = '1';
+            }
         }
     } catch (error) {
         console.error('Erreur recherche:', error);
@@ -606,14 +612,13 @@ function renderResumePage() {
 
     const history = ProgressManager.getHistory();
     
-    // Transformer l'historique en format TMDB-like pour réutiliser populateCarousel
     const items = history.map(h => ({
         id: h.mediaId,
         media_type: h.mediaType,
         poster_path: h.poster,
         backdrop_path: h.backdrop,
         title: h.title,
-        name: h.title, // Pour les séries
+        name: h.title, 
         overview: h.overview,
         vote_average: h.rating,
         release_date: h.year,
@@ -628,13 +633,10 @@ function renderResumePage() {
     if (items.length > 0) {
         currentData = items;
         if (carousel) carousel.style.opacity = '1';
-        activeId = null;
-        updateHeroSection(items[0], false);
         
-        // On modifie légèrement populateCarousel pour afficher le badge de progression
+        heroCarouselManager.setSlides(items);
         populateCarousel(currentData);
         
-        // Ajouter des badges de progression sur les cartes (Optionnel mais premium)
         setTimeout(() => {
             document.querySelectorAll('.movie-card').forEach((card, index) => {
                 const item = items[index];
@@ -646,7 +648,6 @@ function renderResumePage() {
                     card.appendChild(progressDiv);
                 }
                 
-                // Si c'est une série, ajouter le badge S01E01
                 if (item.media_type === 'tv' && item.season) {
                     const epBadge = document.createElement('div');
                     epBadge.className = 'episode-badge';
@@ -657,15 +658,10 @@ function renderResumePage() {
         }, 100);
 
     } else {
-        if (heroTitle) heroTitle.textContent = "Aucun historique";
-        if (heroSynopsis) heroSynopsis.textContent = "Vous n'avez pas encore commencé de films ou de séries. Vos contenus apparaîtront ici dès que vous lancerez la lecture.";
-        if (heroMeta) heroMeta.innerHTML = "<span>Commencez à regarder !</span>";
-        if (heroSection) heroSection.style.backgroundImage = 'none';
         if (carousel) {
             carousel.innerHTML = '<div class="no-results">Votre historique est vide.</div>';
             carousel.style.opacity = '1';
         }
-        heroContent?.classList.remove('animating');
     }
 }
 
@@ -1306,16 +1302,6 @@ document.getElementById('live-search')?.addEventListener('input', (e) => {
     renderLiveTV(val, activeCat);
 });
 
-// Logout feature
-document.getElementById('xtream-logout')?.addEventListener('click', () => {
-    if (confirm("Voulez-vous vraiment vous déconnecter du serveur TV ?")) {
-        localStorage.removeItem('xtream_host');
-        localStorage.removeItem('xtream_user');
-        localStorage.removeItem('xtream_pass');
-        location.reload();
-    }
-});
-
 export function stopLiveTV() {
     const playerContainer = document.getElementById('live-player-container');
     const video = document.getElementById('live-video') as HTMLVideoElement;
@@ -1357,6 +1343,3 @@ document.addEventListener('visibilitychange', () => {
         }
     }
 });
-
-// Update handleNavigation to use new init
-// (We modify the handleNavigation function in the next chunk)
