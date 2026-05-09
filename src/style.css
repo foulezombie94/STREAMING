@@ -2828,7 +2828,7 @@ a {
     .saga-header-flex { align-items: center; text-align: center; }
     .saga-header-text h1 { font-size: 32px; }
     .saga-mini-poster { width: 150px; }
-    .sagas-grid { grid-template-columns: 1fr; }
+    .sagas-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
     .saga-details-hero { padding-top: 100px; }
     .saga-global-stats { flex-wrap: wrap; gap: 15px; }
     .stat-box { min-width: 80px; }
