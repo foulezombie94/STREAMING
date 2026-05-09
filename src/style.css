@@ -648,13 +648,13 @@ a {
 /* Navigation & Elements */
 .carousel-nav {
     position: absolute;
-    bottom: 40px;
+    bottom: 30px;
     left: 50%;
-    transform: translateX(-50%); /* CENTRÉ AU MILIEU */
-    z-index: 20;
+    transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 30px;
+    gap: 20px;
+    z-index: 100;
     background: rgba(0,0,0,0.3);
     padding: 10px 25px;
     border-radius: 50px;
@@ -662,6 +662,15 @@ a {
 }
 
 @media (max-width: 768px) {
+    .carousel-nav {
+        bottom: 20px;
+        gap: 15px;
+    }
+    
+    .android-chrome .carousel-nav {
+        bottom: 25px; /* Ajustement spécifique Android */
+    }
+
     .hero-slide {
         height: 100vh;
         background-position: center;
@@ -762,7 +771,6 @@ a {
     }
 
     .carousel-nav {
-        bottom: 20px;
         width: 85%;
         max-width: 320px;
         background: rgba(15, 15, 15, 0.7);
@@ -1170,10 +1178,11 @@ a {
 @media (max-width: 768px) {
     /* 1. Navbar responsive - Retour au noir premium */
     .navbar { 
-        padding: 0.8rem 1.2rem; 
+        padding: 0.6rem 1rem; 
+        height: 64px;
         display: flex;
+        align-items: center;
         justify-content: space-between; 
-        align-items: center; 
         flex-wrap: nowrap;
         background: rgba(5, 5, 5, 0.85);
         backdrop-filter: blur(25px);
@@ -1205,14 +1214,23 @@ a {
         position: relative !important;
         display: flex !important;
         align-items: center !important;
-        width: 140px !important; /* Barre plus étroite pour éviter le débordement */
+        width: 36px !important; /* Cercle seul par défaut sur mobile */
         height: 36px !important;
         background: rgba(255, 255, 255, 0.08) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        border-radius: 8px !important; 
+        border-radius: 50% !important; 
         transition: all 0.3s ease !important;
         overflow: hidden !important;
-        margin-left: 5px !important;
+    }
+
+    .android-chrome .search-container {
+        margin-right: 8px; /* Évite de coller au menu sur Android */
+    }
+
+    .search-container.active {
+        width: 160px !important;
+        border-radius: 8px !important;
+        padding: 0 10px !important;
     }
 
     .nav-actions {
