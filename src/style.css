@@ -669,10 +669,11 @@ a {
     
     .android-chrome .carousel-nav {
         bottom: 25px; /* Ajustement spécifique Android */
+        z-index: 150;
     }
 
     .hero-slide {
-        height: 100vh;
+        height: 100dvh; /* Use dynamic height for mobile stability */
         background-position: center;
     }
 
@@ -687,6 +688,10 @@ a {
         justify-content: flex-end; /* Aligné vers le bas mais avec du padding */
     }
 
+    .android-chrome .slide-content {
+        padding-bottom: 160px !important; /* Lift significantly more on Android to avoid overlap */
+    }
+
     .slide-content h1 {
         font-size: 34px;
         color: #facc15;
@@ -695,6 +700,13 @@ a {
         letter-spacing: -1px;
         text-transform: uppercase;
         max-width: 100%;
+        line-height: 1.1;
+    }
+
+    .android-chrome .slide-content h1 {
+        line-height: 1.3 !important; /* Fix clipping on Android */
+        padding-bottom: 5px !important;
+        margin-bottom: 10px !important;
     }
 
 
@@ -744,6 +756,10 @@ a {
         justify-content: center;
         gap: 15px;
         margin-bottom: 110px; /* MONTÉ ENCORE UN PEU PLUS */
+    }
+
+    .android-chrome .slide-actions {
+        margin-bottom: 0 !important; /* Reset margin since parent padding is already lifting it */
     }
 
 
