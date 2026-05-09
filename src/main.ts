@@ -140,8 +140,7 @@ class HeroCarouselManager {
 
             const isLongTitle = title && title.length > 18;
             return `
-                <div class="hero-slide ${index === 0 ? 'active' : ''} ${isLongTitle ? 'long-title' : ''}" data-index="${index}">
-                    <img src="${backdropUrl}" alt="${title}" class="hero-backdrop">
+                <div class="hero-slide ${index === 0 ? 'active' : ''} ${isLongTitle ? 'long-title' : ''}" style="background-image: url('${backdropUrl}')" data-index="${index}">
                     <div class="slide-content">
                         <div class="slide-info">
                             <span class="type-tag">${displayType === 'tv' ? 'SÉRIE' : 'FILM'}</span>
