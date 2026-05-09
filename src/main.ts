@@ -388,20 +388,31 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                     ${conf.title}
                 </h2>
                 <div class="sagas-grid-container" id="carousel-sagas">
-                    ${sagasToDisplay.map(saga => `
-                        <div class="saga-card" onclick="renderSagaDetailsPage('${saga.id}')">
-                            <img src="${saga.poster}" alt="${saga.title}" loading="lazy">
-                            <div class="saga-card-overlay">
-                                <h3>${saga.title}</h3>
-                                <p>${saga.items.length} Films</p>
+                    ${sagasToDisplay.map((saga, index) => {
+                        const isLast = index === sagasToDisplay.length - 1;
+                        const extra = isLast ? `
+                            <div class="see-more-overlay" onclick="event.stopPropagation(); handleNavigation('sagas')">
+                                <span class="material-symbols-outlined">chevron_right</span>
                             </div>
-                        </div>
-                    `).join('')}
+                        ` : '';
+                        
+                        return `
+                            <div class="saga-card" onclick="renderSagaDetailsPage('${saga.id}')">
+                                <img src="${saga.poster}" alt="${saga.title}" loading="lazy">
+                                ${extra}
+                                <div class="saga-card-overlay">
+                                    <h3>${saga.title}</h3>
+                                    <p>${saga.items.length} Films</p>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
             `;
             mainContent.appendChild(section);
             return;
         }
+
 
 
         section.innerHTML = `
