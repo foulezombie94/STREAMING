@@ -31,14 +31,14 @@
         </ul>
 
         <div class="nav-right">
-            <div class="search-container">
-                <span class="material-symbols-outlined search-icon">search</span>
-                <input type="text" id="search-input" class="search-input" placeholder="Rechercher...">
-            </div>
+            <button class="search-trigger" id="search-trigger" aria-label="Rechercher">
+                <span class="material-symbols-outlined">search</span>
+            </button>
             <button class="menu-toggle" id="menu-toggle" aria-label="Menu">
                 <span class="material-symbols-outlined">menu</span>
             </button>
         </div>
+
     </header>
 
 
@@ -898,6 +898,20 @@
         </a>
     </nav>
 
+    <!-- Overlay de Recherche Premium -->
+    <div class="search-overlay" id="search-overlay">
+        <div class="search-overlay-content">
+            <div class="search-bar-premium">
+                <span class="material-symbols-outlined">search</span>
+                <input type="text" id="search-input-premium" placeholder="Rechercher un film, une série...">
+            </div>
+            <button class="close-search" id="close-search">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+    </div>
+
     <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
+

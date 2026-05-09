@@ -34,7 +34,11 @@ const heroNextBtn = document.getElementById('carousel-next');
 
 const navItems = document.querySelectorAll('.nav-item');
 const sectionTitle = document.querySelector('.section-title');
-const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
+const searchTrigger = document.getElementById('search-trigger');
+const searchOverlay = document.getElementById('search-overlay');
+const closeSearch = document.getElementById('close-search');
+const searchInput = document.getElementById('search-input-premium') as HTMLInputElement | null;
+
 const mainContent = document.getElementById('main-content');
 const iptvSection = document.getElementById('iptv-section');
 
@@ -219,11 +223,12 @@ window.addEventListener('keydown', (e) => {
 
 // Utilitaire pour basculer la visibilité de la recherche
 function toggleSearchVisibility(show: boolean) {
-    const searchContainer = document.querySelector('.search-container') as HTMLElement;
-    if (searchContainer) {
-        searchContainer.style.display = show ? 'flex' : 'none';
+    const trigger = document.getElementById('search-trigger');
+    if (trigger) {
+        trigger.style.display = show ? 'flex' : 'none';
     }
 }
+
 
 // 4. Navigation Management
 const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
@@ -286,6 +291,27 @@ function handleNavigation(type: any) {
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// 4b. Search Overlay Logic
+searchTrigger?.addEventListener('click', () => {
+    searchOverlay?.classList.add('active');
+    searchInput?.focus();
+    document.body.style.overflow = 'hidden'; // Empêcher le scroll
+});
+
+closeSearch?.addEventListener('click', () => {
+    searchOverlay?.classList.remove('active');
+    document.body.style.overflow = 'auto';
+});
+
+// Fermer avec Échap
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && searchOverlay?.classList.contains('active')) {
+        searchOverlay?.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+});
+
 
 function renderResumePage() {
     if (!mainContent) return;
