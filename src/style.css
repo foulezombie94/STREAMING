@@ -196,7 +196,7 @@ a {
     height: 600px;
     border-radius: 0;
     overflow: hidden;
-    margin-bottom: 40px;
+    margin-bottom: 0; /* SUPPRIMÉ POUR COLLER À LA SUITE */
     background: #000;
 }
 
@@ -497,21 +497,21 @@ a {
 /* 4. Section Populaire */
 .popular {
     position: relative;
-    margin-top: 40px; /* Espacement propre entre les filtres et les films */
+    margin-top: 20px; /* RÉDUIT POUR UN LOOK PLUS COMPACT */
     z-index: 10;
     padding-bottom: 2rem;
 }
 
 .section-title {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: 24px; /* UN PEU PLUS GRAND */
+    font-weight: 800; /* PLUS ÉPAIS */
     padding-left: 4rem;
-    margin-bottom: 20px;
-    letter-spacing: 1px;
+    margin-bottom: 25px;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .section-title::before {
