@@ -2976,3 +2976,52 @@ a {
         min-width: 0;
     }
 }
+
+/* ============================================================
+   FIX ANDROID CHROME UNIQUEMENT
+   La classe .android-chrome est ajoutée par JS (main.ts)
+   UNIQUEMENT sur Android Chrome — iOS Safari n'est jamais affecté
+   ============================================================ */
+
+/* Sur Android Chrome, les translateY des éléments animés créent
+   des GPU layers qui ignorent le overflow:hidden du parent.
+   Solution: remplacer translateY par translateY(0) → seule l'opacité anime */
+.android-chrome .slide-content h1 {
+    transform: none !important;
+    transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s !important;
+}
+
+.android-chrome .hero-slide.active .slide-content h1 {
+    transform: none !important;
+    opacity: 1 !important;
+}
+
+.android-chrome .slide-info {
+    transform: none !important;
+    transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s !important;
+}
+
+.android-chrome .hero-slide.active .slide-content .slide-info {
+    transform: none !important;
+    opacity: 1 !important;
+}
+
+.android-chrome .slide-synopsis {
+    transform: none !important;
+    transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s !important;
+}
+
+.android-chrome .hero-slide.active .slide-content .slide-synopsis {
+    transform: none !important;
+    opacity: 1 !important;
+}
+
+.android-chrome .slide-actions {
+    transform: none !important;
+    transition: opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.6s !important;
+}
+
+.android-chrome .hero-slide.active .slide-content .slide-actions {
+    transform: none !important;
+    opacity: 1 !important;
+}

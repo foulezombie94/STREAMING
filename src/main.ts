@@ -3,6 +3,12 @@ import './antiblocker';
 import { ProgressManager } from './storage';
 import { SAGAS_DATA } from './sagas_data';
 
+// Détection Android Chrome: ajoute classe sur <html> pour cibler en CSS
+// iOS Safari ne match pas car sa UA contient "iPhone"/"iPad" mais pas "Android"
+if (/Android/i.test(navigator.userAgent) && /Chrome/i.test(navigator.userAgent)) {
+    document.documentElement.classList.add('android-chrome');
+}
+
 // 1. Constantes TMDB
 const TMDB_API_KEY = 'e1a2bb6a3ed288feb5d767908732e751';
 const BASE_URL = 'https://api.themoviedb.org/3';
