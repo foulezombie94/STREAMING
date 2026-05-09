@@ -163,13 +163,7 @@ a {
     .menu-toggle {
         display: flex;
         font-size: 32px;
-        order: -1; /* Menu à gauche sur mobile */
-    }
-
-    .nav-left-mobile {
-        display: flex;
-        align-items: center;
-        gap: 15px;
+        order: 2; /* Menu à droite du search */
     }
 
     .search-container {
@@ -202,7 +196,7 @@ a {
         left: 0;
     }
 
-    .navbar.menu-open .nav-left-mobile .menu-toggle {
+    .navbar.menu-open .nav-right {
         z-index: 1100; /* Garder le bouton visible pour fermer */
     }
 

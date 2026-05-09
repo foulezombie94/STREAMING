@@ -18,13 +18,8 @@
 </head>
 <body class="bg-background text-on-surface font-body-lg min-h-screen pb-24 md:pb-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface-container-high/40 via-background to-background">
 
-    <!-- 1. En-tête (Tout en haut) -->    <header class="navbar" id="navbar">
-        <div class="nav-left-mobile">
-            <button class="menu-toggle" id="menu-toggle" aria-label="Menu">
-                <span class="material-symbols-outlined">menu</span>
-            </button>
-            <div class="logo" onclick="handleNavigation('trending')" style="cursor: pointer;">MOVIEVERSE</div>
-        </div>
+    <header class="navbar" id="navbar">
+        <div class="logo" onclick="handleNavigation('trending')" style="cursor: pointer;">MOVIEVERSE</div>
 
         <ul class="nav-links">
             <li><a href="#" class="nav-item active" data-type="trending"><span class="material-symbols-outlined">home</span>Accueil</a></li>
@@ -37,6 +32,9 @@
         <div class="nav-right">
             <button class="search-trigger" id="search-trigger" aria-label="Rechercher">
                 <span class="material-symbols-outlined">search</span>
+            </button>
+            <button class="menu-toggle" id="menu-toggle" aria-label="Menu">
+                <span class="material-symbols-outlined">menu</span>
             </button>
         </div>
     </header>
