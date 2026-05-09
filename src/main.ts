@@ -381,7 +381,10 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
         section.id = `section-${conf.id}`;
         
         if (conf.id === 'sagas') {
-            const sagasToDisplay = SAGAS_DATA.slice(0, 8); // Max 8 sagas
+            const isMobile = window.innerWidth <= 768;
+            const maxItems = isMobile ? 8 : 6;
+            const sagasToDisplay = SAGAS_DATA.slice(0, maxItems);
+
             section.innerHTML = `
                 <h2 class="section-title">
                     <span class="material-symbols-outlined">${conf.icon}</span>
@@ -412,6 +415,7 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
             mainContent.appendChild(section);
             return;
         }
+
 
 
 
