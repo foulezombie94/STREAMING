@@ -79,14 +79,15 @@ a {
 
 .nav-links a {
     font-size: 14px;
-    color: #A3A3A3;
-    transition: color 0.3s ease, transform 0.3s ease;
+    color: #E5E5E5; /* Plus blanc que le gris précédent */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
     display: flex;
     align-items: center;
-    gap: 8px; /* ESPACE ICONE-TEXTE */
+    gap: 8px;
+    opacity: 0.85;
 }
 
 .nav-links a .material-symbols-outlined {
@@ -96,6 +97,7 @@ a {
 
 .nav-links a.active {
     color: #FFFFFF;
+    opacity: 1;
     transform: translateY(-2px);
     position: relative;
     background: transparent !important;
@@ -251,7 +253,8 @@ a {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(to right, rgba(5,5,5,0.9) 0%, transparent 70%);
+    background: linear-gradient(to bottom, rgba(5,5,5,0.8) 0%, transparent 35%),
+                linear-gradient(to right, rgba(5,5,5,0.95) 0%, transparent 70%);
     z-index: 1;
 }
 
@@ -317,14 +320,14 @@ a {
 }
 
 .year-tag {
-    color: rgba(255,255,255,0.6);
+    color: rgba(255,255,255,0.85); /* Plus blanc */
     font-weight: 600;
     font-size: 16px;
 }
 
 .slide-synopsis {
     font-size: 20px; /* PLUS GRAND */
-    color: rgba(255,255,255,0.8);
+    color: rgba(255,255,255,0.95); /* Presque blanc pur */
     line-height: 1.6;
     max-width: 700px;
     margin-bottom: 35px;
