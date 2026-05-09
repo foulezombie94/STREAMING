@@ -564,6 +564,28 @@ const mobileFilterBtn = document.getElementById('mobile-filter-btn');
 const mobileGenreOverlay = document.getElementById('mobile-genre-overlay');
 const mobileGenreGrid = document.getElementById('mobile-genre-grid');
 const closeGenreOverlay = document.getElementById('close-genre-overlay');
+const mobileCategoriesBtn = document.getElementById('mobile-categories-btn');
+
+// Event listener pour le bouton Catégories dans le menu hamburger
+mobileCategoriesBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    toggleMobileMenu(); // Ferme le menu hamburger
+    
+    // Si on est sur une page qui supporte les genres (Films ou Séries)
+    if (currentType === 'movie' || currentType === 'tv') {
+        renderGenres(currentType);
+        mobileGenreOverlay?.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    } else {
+        // Sinon, on bascule vers Films par défaut pour montrer les genres
+        handleNavigation('movie');
+        setTimeout(() => {
+            renderGenres('movie');
+            mobileGenreOverlay?.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }, 100);
+    }
+});
 
 // Event listeners pour le mobile et PC (Overlay)
 mobileFilterBtn?.addEventListener('click', () => {
