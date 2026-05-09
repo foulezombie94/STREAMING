@@ -695,7 +695,7 @@ a {
     }
 
     .android-chrome .hero-slide.long-title .slide-content {
-        padding-top: 135px !important; /* Baissé un peu plus pour les longs titres sur Android */
+        padding-top: 155px !important; /* Baissé encore un tout petit peu plus pour les longs titres sur Android */
     }
 
     .slide-content h1 {
@@ -771,7 +771,7 @@ a {
     }
 
     .hero-slide.long-title .slide-actions {
-        margin-bottom: 70px; /* Baissé encore un peu pour les longs titres sur iOS */
+        margin-bottom: 55px; /* Baissé encore un tout petit peu plus pour les longs titres sur iOS */
     }
 
     .android-chrome .slide-actions {
