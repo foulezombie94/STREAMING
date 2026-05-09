@@ -178,7 +178,7 @@ export const SAGAS_DATA = [
     {
         id: 'alien',
         title: 'Alien',
-        poster: 'https://image.tmdb.org/t/p/w500/7fT980v48vU8yH7m9yH7yH7yH7y.jpg',
+        poster: 'https://media.themoviedb.org/t/p/w300_and_h450_face/ygHKpMEcbarcC7YcaKekhzz3cUl.jpg',
         backdrop: 'https://image.tmdb.org/t/p/original/7RyHsBsRkvuB7icRST8S6SwsTvi.jpg',
         description: 'Le chef-d\'œuvre de l\'horreur spatiale mettant en scène le terrifiant Xénomorphe.',
         items: [
@@ -189,7 +189,7 @@ export const SAGAS_DATA = [
     {
         id: 'bttf',
         title: 'Retour vers le futur',
-        poster: 'https://image.tmdb.org/t/p/w500/76m9S9exbiun87fDN96695.jpg',
+        poster: 'https://media.themoviedb.org/t/p/w300_and_h450_face/nykumUbCw1o43fHGkRqj9hO2c2h.jpg',
         backdrop: 'https://image.tmdb.org/t/p/original/7RyHsBsRkvuB7icRST8S6SwsTvi.jpg',
         description: 'La trilogie culte sur le voyage dans le temps à bord de la mythique DeLorean.',
         items: ["id:105", "id:165", "id:196"]
@@ -197,7 +197,7 @@ export const SAGAS_DATA = [
     {
         id: 'xmen',
         title: 'X-Men',
-        poster: 'https://image.tmdb.org/t/p/w500/7D7p5X99v5v.jpg',
+        poster: 'https://media.themoviedb.org/t/p/w300_and_h450_face/cTFXJxm054ViQEf0eaLWWN1gdiL.jpg',
         backdrop: 'https://image.tmdb.org/t/p/original/7RyHsBsRkvuB7icRST8S6SwsTvi.jpg',
         description: 'L\'univers des mutants luttant pour leur survie et la paix entre humains et mutants.',
         items: [
@@ -209,7 +209,7 @@ export const SAGAS_DATA = [
     {
         id: 'madmax',
         title: 'Mad Max',
-        poster: 'https://image.tmdb.org/t/p/w500/7D7p5X99v5v.jpg',
+        poster: 'https://media.themoviedb.org/t/p/w300_and_h450_face/tRxkZboyyXnFgCthoViWBwISZ0r.jpg',
         backdrop: 'https://image.tmdb.org/t/p/original/7RyHsBsRkvuB7icRST8S6SwsTvi.jpg',
         description: 'Une vision post-apocalyptique frénétique et sauvage dans le désert australien.',
         items: ["id:9659", "id:8810", "id:8811", "id:76341", "id:786892"]
@@ -217,7 +217,7 @@ export const SAGAS_DATA = [
     {
         id: 'hunger',
         title: 'Hunger Games',
-        poster: 'https://image.tmdb.org/t/p/w500/7D7p5X99v5v.jpg',
+        poster: 'https://media.themoviedb.org/t/p/w300_and_h450_face/59JUIv2dvzbjnZhQ99u5pvh3NRQ.jpg',
         backdrop: 'https://image.tmdb.org/t/p/original/7RyHsBsRkvuB7icRST8S6SwsTvi.jpg',
         description: 'La lutte pour la liberté dans un monde dystopique cruel et télévisé.',
         items: ["id:70160", "id:101299", "id:131631", "id:131634", "id:603692"]
@@ -225,17 +225,10 @@ export const SAGAS_DATA = [
     {
         id: 'diehard',
         title: 'Die Hard',
-        poster: 'https://image.tmdb.org/t/p/w500/7D7p5X99v5v.jpg',
+        poster: 'https://media.themoviedb.org/t/p/w300_and_h450_face/bFZRGXeLLUjnp3F8zzwkvrvPHWD.jpg',
         backdrop: 'https://image.tmdb.org/t/p/original/7RyHsBsRkvuB7icRST8S6SwsTvi.jpg',
         description: 'John McClane, le flic ordinaire confronté à des situations extraordinaires.',
         items: ["id:562", "id:1573", "id:1572", "id:1571", "id:47964"]
-    },
-    {
-        id: 'lethal',
-        title: 'L\'Arme Fatale',
-        poster: 'https://image.tmdb.org/t/p/w500/7D7p5X99v5v.jpg',
-        backdrop: 'https://image.tmdb.org/t/p/original/7RyHsBsRkvuB7icRST8S6SwsTvi.jpg',
-        description: 'Le duo de flics le plus célèbre du cinéma d\'action des années 80.',
-        items: ["id:935", "id:936", "id:937", "id:938"]
     }
 ];
+
