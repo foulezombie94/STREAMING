@@ -59,7 +59,6 @@ let activeGenreId: number | null = null;
 
 // DOM Selectors
 const navbar = document.getElementById('navbar');
-const carousel = document.getElementById('carousel') as HTMLElement | null;
 const heroSection = document.getElementById('hero-carousel');
 const heroSlidesContainer = document.getElementById('hero-slides');
 const heroDotsContainer = document.getElementById('carousel-dots');
