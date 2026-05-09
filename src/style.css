@@ -581,9 +581,10 @@ a {
     .slide-actions {
         width: 100%;
         justify-content: center;
-        gap: 15px; /* PLUS D'ESPACE ENTRE LES DEUX BOUTONS */
-        margin-bottom: 80px; /* ÉVITE L'OVERLAP AVEC LA NAV BAR */
+        gap: 15px;
+        margin-bottom: 110px; /* MONTÉ ENCORE UN PEU PLUS */
     }
+
 
 
     .hero-btn-play, .hero-btn-info {
