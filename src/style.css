@@ -682,7 +682,7 @@ a {
     }
 
     .slide-content {
-        padding: 0 20px 100px 20px; /* Ajout de padding bottom pour lever le contenu */
+        padding: 0 20px 80px 20px; /* Réduit de 100px à 80px pour baisser un peu sur iOS */
         align-items: center;
         text-align: center;
         justify-content: flex-end; /* Aligné vers le bas mais avec du padding */
@@ -763,7 +763,7 @@ a {
         width: 100%;
         justify-content: center;
         gap: 15px;
-        margin-bottom: 110px; /* MONTÉ ENCORE UN PEU PLUS */
+        margin-bottom: 90px; /* Réduit de 110px à 90px pour baisser sur iOS */
     }
 
     .android-chrome .slide-actions {
