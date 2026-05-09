@@ -55,7 +55,9 @@ class HeroCarouselManager {
     }
 
     public setSlides(data: any[]) {
-        this.slides = data.slice(0, 8); 
+        // Mélanger les données au hasard entre films et séries tendances
+        const shuffled = [...data].sort(() => 0.5 - Math.random());
+        this.slides = shuffled.slice(0, 6); 
         this.renderSlides();
         this.renderDots();
         this.goToSlide(0);
