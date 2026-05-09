@@ -230,6 +230,12 @@ const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
 
 function handleNavigation(type: any) {
     (window as any).handleNavigation = handleNavigation;
+    
+    // Fermer le menu mobile si ouvert
+    navbar?.classList.remove('menu-open');
+    const menuIcon = document.querySelector('#menu-toggle .material-symbols-outlined');
+    if (menuIcon) menuIcon.textContent = 'menu';
+
     [navItems, bottomNavItems].forEach(collection => {
         collection.forEach(i => {
             if (i.getAttribute('data-type') === type) i.classList.add('active');
@@ -1770,6 +1776,20 @@ async function renderSagaDetailsPage(sagaId: string) {
 (window as any).renderSagasPage = renderSagasPage;
 (window as any).renderSagaDetailsPage = renderSagaDetailsPage;
 
+// --- Mobile Menu Toggle ---
+const menuToggle = document.getElementById('menu-toggle');
+menuToggle?.addEventListener('click', () => {
+    navbar?.classList.toggle('menu-open');
+    const icon = menuToggle.querySelector('.material-symbols-outlined');
+    if (icon) {
+        icon.textContent = navbar?.classList.contains('menu-open') ? 'close' : 'menu';
+    }
+});
+
+// Update handleNavigation to close menu on mobile
+// Removed redundant override as it's now integrated in the main handleNavigation function.
+
+
 // Pause automatique quand on quitte l'onglet (Mobile & PC)
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
@@ -1779,3 +1799,4 @@ document.addEventListener('visibilitychange', () => {
         }
     }
 });
+
