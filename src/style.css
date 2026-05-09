@@ -24,7 +24,6 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    zoom: 1.1; /* Zoom par défaut de 110% */
 }
 
 a {
