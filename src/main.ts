@@ -270,6 +270,10 @@ function toggleSearchVisibility(show: boolean) {
 const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
 
 function handleNavigation(type: any) {
+    // Bloquer Direct TV sur Mobile
+    if (type === 'iptv' && window.innerWidth <= 768) {
+        return;
+    }
     (window as any).handleNavigation = handleNavigation;
     
     // Fermer le menu mobile si ouvert
