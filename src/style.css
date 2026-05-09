@@ -544,8 +544,8 @@ a {
 }
 
 .movie-card {
-    flex: 0 0 calc(18% - 20px);
-    min-width: 180px;
+    flex: 0 0 calc(16.5% - 20px); /* LÉGÈREMENT PLUS PETIT (était 18%) */
+    min-width: 170px; /* RÉDUIT AUSSI LE MIN */
     aspect-ratio: 2 / 3;
     border-radius: 16px;
     overflow: hidden;
