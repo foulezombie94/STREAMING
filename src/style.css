@@ -40,9 +40,9 @@ a {
     align-items: center;
     z-index: 1000;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    background: rgba(5, 5, 5, 0.4);
-    backdrop-filter: blur(25px); 
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: transparent; /* TOTALEMENT TRANSPARENT */
+    backdrop-filter: none;
+    border-bottom: none;
 }
 
 .navbar.scrolled {
