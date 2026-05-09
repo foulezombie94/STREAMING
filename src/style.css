@@ -179,25 +179,33 @@ a {
     .nav-links {
         position: fixed;
         top: 0;
-        left: -100%;
+        left: 0;
         width: 100%;
         height: 100vh;
-        background: #050505;
+        background: rgba(5, 5, 5, 0.98);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        display: flex !important;
         flex-direction: column;
         justify-content: center;
         align-items: center;
         padding: 0;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 1050;
-        gap: 40px;
+        z-index: 9999;
+        gap: 35px;
+        transform: translateX(-100%);
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+        visibility: hidden;
     }
 
     .navbar.menu-open .nav-links {
-        left: 0;
+        transform: translateX(0);
+        pointer-events: auto;
+        visibility: visible;
     }
 
     .navbar.menu-open .nav-right {
-        z-index: 1100; /* Garder le bouton visible pour fermer */
+        z-index: 10000; /* Bouton par dessus l'overlay */
     }
 
     .nav-links a {
@@ -207,12 +215,13 @@ a {
         opacity: 0.6;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 15px;
         color: #fff;
+        text-decoration: none;
     }
 
     .nav-links a .material-symbols-outlined {
-        font-size: 32px;
+        font-size: 36px;
         color: #ef4444;
     }
 
