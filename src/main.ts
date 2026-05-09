@@ -8,6 +8,9 @@ const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 
+// Cache pour la pagination des sections
+const sectionDataStore: { [key: string]: { items: any[], conf: any } } = {};
+
 // 2. DOM Elements & State
 let currentData: any[] = []; 
 let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' = 'trending';
@@ -30,10 +33,30 @@ const heroNextBtn = document.getElementById('carousel-next');
 
 const navItems = document.querySelectorAll('.nav-item');
 const sectionTitle = document.querySelector('.section-title');
-const sectionSubtitle = document.getElementById('section-subtitle');
 const searchInput = document.getElementById('search-input') as HTMLInputElement | null;
-const popularSection = document.getElementById('popular-section');
+const mainContent = document.getElementById('main-content');
 const iptvSection = document.getElementById('iptv-section');
+
+// Configuration des sections Movix
+const SECTIONS_CONFIG = [
+    { id: 'trending-day', title: 'Tendances du jour', icon: 'local_fire_department', endpoint: '/trending/all/day', mediaType: 'auto' },
+    { id: 'trending-week', title: 'Tendances', icon: 'trending_up', endpoint: '/trending/all/week', mediaType: 'auto' },
+    { id: 'sagas', title: 'Les sagas incontournables', icon: 'auto_awesome', endpoint: '/movie/top_rated', mediaType: 'movie' },
+    { id: 'pop-movies', title: 'Films populaires', icon: 'movie', endpoint: '/movie/popular', mediaType: 'movie' },
+    { id: 'pop-tv', title: 'Séries populaires', icon: 'tv', endpoint: '/tv/popular', mediaType: 'tv' },
+    { id: 'recent-tv', title: 'Séries récentes', icon: 'live_tv', endpoint: '/tv/on_the_air', mediaType: 'tv' },
+    { id: 'recent-movies', title: 'Films récents', icon: 'new_releases', endpoint: '/movie/now_playing', mediaType: 'movie' },
+    { id: 'top-tv', title: 'Séries les mieux notées', icon: 'star', endpoint: '/tv/top_rated', mediaType: 'tv' },
+    { id: 'genre-adventure', title: 'Aventure', icon: 'explore', endpoint: '/discover/movie', params: '&with_genres=12', mediaType: 'movie' },
+    { id: 'genre-fantasy', title: 'Fantastique', icon: 'magic_button', endpoint: '/discover/movie', params: '&with_genres=14', mediaType: 'movie' },
+    { id: 'genre-animation', title: 'Animation', icon: 'animation', endpoint: '/discover/movie', params: '&with_genres=16', mediaType: 'movie' },
+    { id: 'genre-drama', title: 'Drame', icon: 'theater_comedy', endpoint: '/discover/movie', params: '&with_genres=18', mediaType: 'movie' },
+    { id: 'genre-action', title: 'Action', icon: 'sports_martial_arts', endpoint: '/discover/movie', params: '&with_genres=28', mediaType: 'movie' },
+    { id: 'genre-comedy', title: 'Comédie', icon: 'sentiment_very_satisfied', endpoint: '/discover/movie', params: '&with_genres=35', mediaType: 'movie' },
+    { id: 'genre-crime', title: 'Crime', icon: 'policy', endpoint: '/discover/movie', params: '&with_genres=80', mediaType: 'movie' },
+    { id: 'tv-action', title: 'Séries d\'Action', icon: 'bolt', endpoint: '/discover/tv', params: '&with_genres=10759', mediaType: 'tv' },
+    { id: 'tv-animation', title: 'Séries Animées', icon: 'animation', endpoint: '/discover/tv', params: '&with_genres=16', mediaType: 'tv' }
+];
 
 // --- Carousel Manager (Movix Style) ---
 class HeroCarouselManager {
@@ -209,32 +232,15 @@ function handleNavigation(type: any) {
     }
 
     if (heroSection) heroSection.style.display = (currentType === 'iptv' || currentType === 'reprendre') ? 'none' : 'block';
-    if (popularSection) {
-        popularSection.style.display = (currentType === 'iptv') ? 'none' : 'block';
-        // Ajuster le padding si le hero est masqué
+    if (mainContent) {
+        mainContent.style.display = (currentType === 'iptv') ? 'none' : 'block';
         if (currentType === 'reprendre' || currentType === 'iptv') {
-            popularSection.classList.add('no-hero');
+            mainContent.classList.add('no-hero');
         } else {
-            popularSection.classList.remove('no-hero');
+            mainContent.classList.remove('no-hero');
         }
     }
     if (iptvSection) iptvSection.style.display = (currentType === 'iptv') ? 'block' : 'none';
-
-    if (sectionTitle) {
-        if (currentType === 'trending') sectionTitle.textContent = 'Tendances Actuelles';
-        else if (currentType === 'tv') sectionTitle.textContent = 'Séries Populaires';
-        else if (currentType === 'reprendre') sectionTitle.textContent = 'Reprendre la lecture';
-        else if (currentType === 'iptv') sectionTitle.textContent = 'Télévision Direct';
-        else sectionTitle.textContent = 'Films Populaires';
-    }
-
-    if (sectionSubtitle) {
-        if (currentType === 'reprendre') {
-            sectionSubtitle.textContent = 'Vous pouvez reprendre la lecture rapidement depuis cette page';
-        } else {
-            sectionSubtitle.textContent = '';
-        }
-    }
 
     if (currentType === 'iptv') {
         if (genreFiltersContainer) genreFiltersContainer.style.display = 'none';
@@ -243,9 +249,190 @@ function handleNavigation(type: any) {
         renderResumePage();
     } else {
         renderGenres(currentType as any);
-        fetchPopularData(currentType as any);
+        renderHomeSections(currentType as any);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderResumePage() {
+    if (!mainContent) return;
+    mainContent.innerHTML = '';
+
+    const history = ProgressManager.getHistory();
+
+    const section = document.createElement('section');
+    section.className = 'popular';
+    section.innerHTML = `
+        <h2 class="section-title">Continuer la lecture</h2>
+        <div class="carousel-container" id="carousel-resume">
+            ${history.length > 0 
+                ? history.map(item => {
+                    // Mapper VideoProgress vers le format attendu par renderMovieCard
+                    const cardItem = {
+                        id: item.mediaId,
+                        media_type: item.mediaType,
+                        poster_path: item.poster.replace(IMAGE_W500_URL, ''),
+                        vote_average: item.rating,
+                        title: item.title,
+                        name: item.title
+                    };
+                    return renderMovieCard(cardItem, item.mediaType);
+                }).join('')
+                : '<div class="no-history">Aucun historique de lecture disponible.</div>'
+            }
+        </div>
+    `;
+    mainContent.appendChild(section);
+}
+
+async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: number | null = null) {
+    if (!mainContent) return;
+    mainContent.innerHTML = ''; 
+
+    if (genreId !== null) {
+        // Mode Filtré (un seul carrousel/grille)
+        const section = document.createElement('section');
+        section.className = 'popular';
+        section.innerHTML = `
+            <h2 class="section-title">Résultats filtrés</h2>
+            <div class="carousel-container" id="carousel-filtered">
+                <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
+            </div>
+        `;
+        mainContent.appendChild(section);
+        
+        const endpoint = `/discover/${type}`;
+        const params = `&with_genres=${genreId}&sort_by=popularity.desc`;
+        fetchSectionData({ id: 'filtered', endpoint, params, mediaType: type });
+        return;
+    }
+
+    let configs = SECTIONS_CONFIG;
+    if (type === 'movie') {
+        configs = SECTIONS_CONFIG.filter(c => c.mediaType === 'movie');
+    } else if (type === 'tv') {
+        configs = SECTIONS_CONFIG.filter(c => c.mediaType === 'tv');
+    } else {
+        configs = SECTIONS_CONFIG.filter(c => !c.id.includes('genre-') && !c.id.includes('tv-'));
+        configs.push(...SECTIONS_CONFIG.filter(c => c.id === 'genre-action' || c.id === 'genre-animation' || c.id === 'tv-animation'));
+    }
+
+    // Créer les squelettes
+    configs.forEach(conf => {
+        const section = document.createElement('section');
+        section.className = 'popular';
+        section.id = `section-${conf.id}`;
+        section.innerHTML = `
+            <h2 class="section-title">
+                <span class="material-symbols-outlined">${conf.icon}</span>
+                ${conf.title}
+            </h2>
+            <div class="carousel-container" id="carousel-${conf.id}">
+                <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
+            </div>
+        `;
+        mainContent.appendChild(section);
+        fetchSectionData(conf);
+    });
+}
+
+async function fetchSectionData(conf: any) {
+    const container = document.getElementById(`carousel-${conf.id}`);
+    if (!container) return;
+
+    try {
+        const url = `${BASE_URL}${conf.endpoint}?api_key=${TMDB_API_KEY}&language=fr-FR${conf.params || ''}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const allItems = data.results || [];
+
+        if (allItems.length === 0) {
+            container.closest('section')?.remove();
+            return;
+        }
+
+        // Sauvegarder dans le store pour la pagination
+        sectionDataStore[conf.id] = { items: allItems, conf: conf };
+
+        // Rendu de la page 0 (6 premiers)
+        renderCarouselPage(conf.id, 0);
+
+        // Si c'est la toute première section du home, on met à jour le hero carousel
+        if (conf.id === 'trending-day' && currentType === 'trending') {
+            heroCarouselManager.setSlides(allItems);
+        }
+
+    } catch (err) {
+        console.error(`Error loading section ${conf.title}:`, err);
+    }
+}
+
+function renderCarouselPage(sectionId: string, startIndex: number) {
+    const container = document.getElementById(`carousel-${sectionId}`);
+    const data = sectionDataStore[sectionId];
+    if (!container || !data) return;
+
+    const { items, conf } = data;
+    const pageSize = 6;
+    const currentPageItems = items.slice(startIndex, startIndex + pageSize);
+
+    container.innerHTML = currentPageItems.map((item: any, index: number) => {
+        let extra = '';
+        
+        // Bouton RETOUR sur le 1er film si on n'est pas à la page 0
+        if (index === 0 && startIndex > 0) {
+            extra += `
+                <div class="see-more-overlay-left" onclick="event.stopPropagation(); renderCarouselPage('${sectionId}', ${Math.max(0, startIndex - pageSize)})">
+                    <span class="material-symbols-outlined">chevron_left</span>
+                </div>
+            `;
+        }
+
+        // Bouton SUIVANT sur le 6ème film s'il reste des films
+        if (index === pageSize - 1 && startIndex + pageSize < items.length) {
+            extra += `
+                <div class="see-more-overlay" onclick="event.stopPropagation(); renderCarouselPage('${sectionId}', ${startIndex + pageSize})">
+                    <span class="material-symbols-outlined">chevron_right</span>
+                </div>
+            `;
+        }
+
+        const cardHtml = renderMovieCard(item, conf.mediaType, extra);
+        return cardHtml.replace('class="movie-card"', `class="movie-card" style="animation-delay: ${index * 0.1}s; animation-name: fadeInUp"`);
+    }).join('');
+
+    // Scroll to start of container for a clean switch
+    container.scrollTo({ left: 0, behavior: 'smooth' });
+}
+
+// Exposer au scope global pour les onclick
+(window as any).renderCarouselPage = renderCarouselPage;
+
+function renderMovieCard(item: any, forceType: string = 'auto', extra: string = '') {
+    let displayType = item.media_type || forceType;
+    
+    // Si c'est toujours auto et pas de media_type (cas des endpoints spécifiques type /movie/popular)
+    if (displayType === 'auto') {
+        displayType = item.title ? 'movie' : 'tv';
+    }
+
+    const poster = item.poster_path ? `${IMAGE_W500_URL}${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image';
+    const rating = item.vote_average ? item.vote_average.toFixed(1) : '0.0';
+    const badgeText = displayType === 'tv' ? 'Série' : 'Film';
+    
+    return `
+        <div class="movie-card" onclick="window.location.href='/details.html?id=${item.id}&type=${displayType}'">
+            <div class="card-badge">${badgeText}</div>
+            <img src="${poster}" alt="${item.title || item.name}" loading="lazy">
+            <div class="card-overlay">
+                <div class="card-rating">★ ${rating}</div>
+                <div class="card-info">
+                    <h3 class="card-title">${item.title || item.name}</h3>
+                </div>
+            </div>
+            ${extra}
+        </div>
+    `;
 }
 
 [navItems, bottomNavItems].forEach(collection => {
@@ -312,13 +499,12 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv') 
                     const idStr = btn.getAttribute('data-id');
                     activeGenreId = idStr === 'all' ? null : parseInt(idStr!);
                     renderGenres(type);
-                    if (carousel) carousel.style.opacity = '0.5';
-                    fetchPopularData(type, activeGenreId);
+                    renderHomeSections(type, activeGenreId);
                 });
             });
         }
     }
-
+    
     if (mobileGenreGrid) {
         if (genres.length === 0) {
             mobileGenreGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 40px; font-weight: bold;">Chargement des catégories...</div>`;
@@ -335,9 +521,7 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv') 
                     
                     closeGenreOverlay?.click();
                     renderGenres(type);
-                    
-                    if (carousel) carousel.style.opacity = '0.5';
-                    fetchPopularData(type, activeGenreId);
+                    renderHomeSections(type, activeGenreId);
                 });
             });
         }
@@ -429,94 +613,7 @@ if (carousel) {
     carousel.style.transition = 'opacity 0.3s ease';
 }
 
-// 6. Fetch Data (Films, Séries ou Trending)
-async function fetchPopularData(type: 'movie' | 'tv' | 'trending' | 'iptv', genreId: number | null = null) {
-    try {
-        let endpoint = '';
-        let queryParams = `api_key=${TMDB_API_KEY}&language=fr-FR&page=1`;
-
-        if (genreId !== null && type !== 'trending') {
-            endpoint = `discover/${type}`;
-            queryParams += `&with_genres=${genreId}&sort_by=popularity.desc`;
-        } else {
-            if (type === 'trending') {
-                endpoint = 'trending/all/week';
-            } else if (type === 'tv') {
-                endpoint = 'tv/popular';
-            } else {
-                endpoint = 'movie/popular';
-            }
-        }
-
-        const cacheKey = `cache_${endpoint}_${genreId || 'all'}`;
-        const cachedData = sessionStorage.getItem(cacheKey);
-
-        if (cachedData) {
-            const parsedData = JSON.parse(cachedData);
-            processData(parsedData);
-            return;
-        }
-
-        const response = await fetch(`${BASE_URL}/${endpoint}?${queryParams}`);
-        const data = await response.json();
-        
-        if (data.results && data.results.length > 0) {
-            sessionStorage.setItem(cacheKey, JSON.stringify(data.results));
-            processData(data.results);
-        }
-    } catch (error) {
-        console.error('Erreur:', error);
-    }
-}
-
-function processData(results: any[]) {
-    currentData = results;
-    
-    if (carousel) carousel.style.opacity = '1';
-
-    // Update Hero Carousel
-    heroCarouselManager.setSlides(results);
-
-    // Populate the bottom carousel/grid
-    populateCarousel(currentData);
-}
-
-// 8. Remplissage Carrousel interactif
-function populateCarousel(items: any[]) {
-    if (!carousel) return;
-    
-    carousel.innerHTML = ''; 
-    carousel.scrollLeft = 0;
-
-    items.forEach((item, index) => {
-        if (!item.poster_path) return;
-
-        const card = document.createElement('div');
-        card.className = `movie-card ${index === 0 ? 'active' : ''}`;
-        card.dataset.id = item.id;
-
-        let displayType = currentType;
-        if (currentType === 'trending' || currentType === 'reprendre') {
-            displayType = item.media_type;
-        }
-        const title = displayType === 'tv' ? item.name : item.title;
-        
-        const img = document.createElement('img');
-        img.src = `${IMAGE_W500_URL}${item.poster_path}`;
-        img.alt = title;
-        img.loading = 'lazy';
-        img.draggable = false; 
-
-        card.appendChild(img);
-
-        card.addEventListener('click', () => {
-            let displayType = (currentType === 'trending' || currentType === 'reprendre') ? item.media_type : currentType;
-            window.location.href = `/details.html?id=${item.id}&type=${displayType}`;
-        });
-
-        carousel.appendChild(card);
-    });
-}
+// 9. Démarrage de l'application
 
 // 9. Démarrage de l'application
 async function fetchGenres() {
@@ -588,7 +685,7 @@ if (searchInput) {
             } else if (currentType === 'iptv') {
                 initLiveTV();
             } else {
-                fetchPopularData(currentType);
+                renderHomeSections(currentType as any);
             }
         }
     });
@@ -596,8 +693,6 @@ if (searchInput) {
 
 async function performSearch(query: string) {
     try {
-        if (carousel) carousel.style.opacity = '0.5';
-
         const response = await fetch(`${BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(query)}&page=1`);
         const data = await response.json();
         
@@ -608,15 +703,23 @@ async function performSearch(query: string) {
         if (filteredResults.length > 0) {
             currentData = filteredResults;
             
-            if (sectionTitle) sectionTitle.textContent = `Résultats pour "${query}"`;
-            if (carousel) carousel.style.opacity = '1';
+            if (mainContent) {
+                mainContent.innerHTML = '';
+                const section = document.createElement('section');
+                section.className = 'popular';
+                section.innerHTML = `
+                    <h2 class="section-title">Résultats pour "${query}"</h2>
+                    <div class="carousel-container">
+                        ${filteredResults.map((item: any) => renderMovieCard(item)).join('')}
+                    </div>
+                `;
+                mainContent.appendChild(section);
+            }
 
             heroCarouselManager.setSlides(currentData);
-            populateCarousel(currentData);
         } else {
-            if (carousel) {
-                carousel.innerHTML = '<div class="no-results">Aucun résultat trouvé.</div>';
-                carousel.style.opacity = '1';
+            if (mainContent) {
+                mainContent.innerHTML = `<div class="no-results" style="padding: 100px; text-align: center; color: white; opacity: 0.5;">Aucun résultat trouvé pour "${query}".</div>`;
             }
         }
     } catch (error) {
@@ -624,65 +727,6 @@ async function performSearch(query: string) {
     }
 }
 
-// 11. Fonction pour la page "Reprendre"
-function renderResumePage() {
-    if (genreFiltersContainer) genreFiltersContainer.style.display = 'none';
-    if (carousel) carousel.style.opacity = '0.5';
-
-    const history = ProgressManager.getHistory();
-    
-    const items = history.map(h => ({
-        id: h.mediaId,
-        media_type: h.mediaType,
-        poster_path: h.poster,
-        backdrop_path: h.backdrop,
-        title: h.title,
-        name: h.title, 
-        overview: h.overview,
-        vote_average: h.rating,
-        release_date: h.year,
-        first_air_date: h.year,
-        tagline: h.tagline,
-        season: h.season,
-        episode: h.episode,
-        time: h.time,
-        duration: h.duration
-    }));
-
-    if (items.length > 0) {
-        currentData = items;
-        if (carousel) carousel.style.opacity = '1';
-        
-        heroCarouselManager.setSlides(items);
-        populateCarousel(currentData);
-        
-        setTimeout(() => {
-            document.querySelectorAll('.movie-card').forEach((card, index) => {
-                const item = items[index];
-                if (item.time && item.duration) {
-                    const percent = (item.time / item.duration) * 100;
-                    const progressDiv = document.createElement('div');
-                    progressDiv.className = 'progress-bar-mini';
-                    progressDiv.innerHTML = `<div class="progress-fill" style="width: ${percent}%"></div>`;
-                    card.appendChild(progressDiv);
-                }
-                
-                if (item.media_type === 'tv' && item.season) {
-                    const epBadge = document.createElement('div');
-                    epBadge.className = 'episode-badge';
-                    epBadge.textContent = `S${item.season}E${item.episode}`;
-                    card.appendChild(epBadge);
-                }
-            });
-        }, 100);
-
-    } else {
-        if (carousel) {
-            carousel.innerHTML = '<div class="no-results">Votre historique est vide.</div>';
-            carousel.style.opacity = '1';
-        }
-    }
-}
 
 // --- LIVE TV SECTION (Xtream Codes API) ---
 let liveTVInitialized = false;
