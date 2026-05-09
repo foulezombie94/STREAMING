@@ -689,9 +689,9 @@ a {
     }
 
     .android-chrome .slide-content {
-        padding-bottom: 180px !important; /* Monter le contenu pour laisser la place aux boutons au-dessus de la barre */
-        justify-content: flex-end !important;
-        padding-top: 0;
+        padding-top: 110px !important; /* Juste un peu en bas du header */
+        justify-content: flex-start !important;
+        padding-bottom: 0 !important;
     }
 
     .slide-content h1 {
