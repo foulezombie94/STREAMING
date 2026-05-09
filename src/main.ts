@@ -207,7 +207,7 @@ function handleNavigation(type: any) {
         if (loginForm) loginForm.style.display = 'none';
     }
 
-    if (heroSection) heroSection.style.display = (currentType === 'iptv') ? 'none' : 'block';
+    if (heroSection) heroSection.style.display = (currentType === 'iptv' || currentType === 'reprendre') ? 'none' : 'block';
     if (popularSection) popularSection.style.display = (currentType === 'iptv') ? 'none' : 'block';
     if (iptvSection) iptvSection.style.display = (currentType === 'iptv') ? 'block' : 'none';
 
