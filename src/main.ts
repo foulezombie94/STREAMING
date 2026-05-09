@@ -1689,7 +1689,7 @@ async function renderSagaDetailsPage(sagaId: string) {
     if (!grid) return;
 
     // Charger les films
-    const moviePromises = saga.items.map(async (title) => {
+    const moviePromises = saga.items.map(async (title: string) => {
         try {
             if (title.startsWith('id:')) {
                 const movieId = title.split(':')[1];
