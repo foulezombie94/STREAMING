@@ -20,12 +20,8 @@
 
     <!-- 1. En-tête (Tout en haut) -->
     <header class="navbar" id="navbar">
-        <button class="menu-toggle" id="menu-toggle" aria-label="Menu">
-            <span class="material-symbols-outlined">menu</span>
-        </button>
         <div class="logo" onclick="handleNavigation('trending')" style="cursor: pointer;">MOVIEVERSE</div>
 
-        
         <ul class="nav-links">
             <li><a href="#" class="nav-item active" data-type="trending"><span class="material-symbols-outlined">home</span>Accueil</a></li>
             <li><a href="#" class="nav-item" data-type="tv"><span class="material-symbols-outlined">tv</span>Séries</a></li>
@@ -34,13 +30,17 @@
             <li><a href="#" class="nav-item" data-type="reprendre"><span class="material-symbols-outlined">history</span>Reprendre</a></li>
         </ul>
 
-        <div class="nav-actions">
+        <div class="nav-right">
             <div class="search-container">
                 <span class="material-symbols-outlined search-icon">search</span>
                 <input type="text" id="search-input" class="search-input" placeholder="Rechercher...">
             </div>
+            <button class="menu-toggle" id="menu-toggle" aria-label="Menu">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
         </div>
     </header>
+
 
     <main class="w-full px-2 md:px-4 lg:px-8 pt-20 md:pt-24 pb-8">
         <!-- New Hero Carousel (Movix Style) -->
