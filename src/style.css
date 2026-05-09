@@ -663,12 +663,14 @@ a {
 
 @media (max-width: 768px) {
     .carousel-nav {
-        bottom: 20px;
+        bottom: 25px;
         gap: 15px;
+        width: 90%;
+        padding: 8px 15px;
     }
     
     .android-chrome .carousel-nav {
-        bottom: 25px; /* Ajustement spécifique Android */
+        bottom: 30px; /* Plus d'espace sur Android */
     }
 
     .hero-slide {
@@ -681,20 +683,28 @@ a {
     }
 
     .slide-content {
-        padding: 0 20px 100px 20px; /* Ajout de padding bottom pour lever le contenu */
+        padding: 0 20px 140px 20px; /* MONTÉ POUR ÉVITER LE BARRE DE NAV */
         align-items: center;
         text-align: center;
-        justify-content: flex-end; /* Aligné vers le bas mais avec du padding */
+        justify-content: flex-end; 
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .android-chrome .slide-content {
+        padding-bottom: 150px; /* Sécurité Android */
     }
 
     .slide-content h1 {
-        font-size: 34px;
+        font-size: 28px; /* PLUS PETIT POUR ÉVITER LES SOUCIS */
         color: #facc15;
-        text-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        margin-bottom: 15px;
-        letter-spacing: -1px;
+        text-shadow: 0 4px 12px rgba(0,0,0,0.8);
+        margin-bottom: 12px;
+        letter-spacing: -0.5px;
         text-transform: uppercase;
-        max-width: 100%;
+        max-width: 90%;
+        line-height: 1.1;
     }
 
 
@@ -743,7 +753,7 @@ a {
         width: 100%;
         justify-content: center;
         gap: 15px;
-        margin-bottom: 110px; /* MONTÉ ENCORE UN PEU PLUS */
+        margin-bottom: 50px; /* Réajusté car le padding-bottom de slide-content fait déjà le travail */
     }
 
 
