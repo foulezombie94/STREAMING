@@ -334,7 +334,7 @@
                 /* === CHANNELS GRID === */
                 #live-grid {
                     display: grid;
-                    grid-template-columns: repeat(4, 1fr);
+                    /* Suppression du repeat(4, 1fr) forcé qui cassait le responsive sur Android */
                     gap: 8px;
                     padding-bottom: 80px;
                 }

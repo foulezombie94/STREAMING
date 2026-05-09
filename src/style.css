@@ -5,6 +5,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 input, select, textarea, button {
@@ -20,10 +21,20 @@ body {
     background-color: #050505; /* Noir plus profond/premium */
     color: #FFFFFF;
     overflow-x: hidden;
+    width: 100%;
+    position: relative;
     color-scheme: dark;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    /* Fix Android overscroll/jitter */
+    overscroll-behavior-y: none;
+}
+
+html {
+    overflow-x: hidden;
+    width: 100%;
+    -webkit-text-size-adjust: 100%;
 }
 
 a {
@@ -180,8 +191,8 @@ a {
         position: fixed;
         top: 0;
         left: -100%;
-        width: 100%;
         height: 100vh;
+        height: 100dvh;
         background: #050505;
         flex-direction: column;
         justify-content: center;
@@ -347,28 +358,38 @@ a {
 /* 3. Section Hero (Carousel Style Movix) */
 .hero-carousel {
     position: relative;
-    width: 100vw;
-    left: 50%;
-    right: 50%;
-    margin-left: -50vw;
-    margin-right: -50vw;
+    width: 100%; /* Fix Android: évite le 100vw qui cause du scroll horizontal */
     height: 600px;
+    height: 600px;
+    height: 60dvh; /* Hauteur dynamique */
+    min-height: 500px;
     border-radius: 0;
     overflow: hidden;
-    /* Fix Android Chrome: contain:paint force le navigateur à clipper
-       correctement les enfants GPU composités (translateY/opacity animés)
-       sans affecter iOS/WebKit qui gère ça nativement */
-    contain: paint;
+    /* Fix Android Chrome: contain:layout paint force le navigateur à clipper
+       correctement les enfants GPU composités sans fuites mémoire */
+    contain: layout paint;
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
     margin-bottom: 0;
     background: #000;
 }
 
+/* On retire le hack du 100vw s'il n'est plus nécessaire ou on le sécurise */
+.android-chrome .hero-carousel {
+    width: 100vw;
+    left: 50%;
+    margin-left: -50vw;
+    contain: content;
+}
+
 @media (max-width: 768px) {
     .hero-carousel {
         height: 500px;
+        height: 55dvh;
         border-radius: 20px;
+        width: 100% !important;
+        margin-left: 0 !important;
+        left: 0 !important;
     }
 }
 
@@ -664,6 +685,7 @@ a {
 @media (max-width: 768px) {
     .hero-slide {
         height: 100vh;
+        height: 100dvh;
         background-position: center;
     }
 
@@ -1205,7 +1227,7 @@ a {
         position: relative !important;
         display: flex !important;
         align-items: center !important;
-        width: 140px !important; /* Barre plus étroite pour éviter le débordement */
+        width: 120px !important; /* Un peu plus petit pour éviter les conflits */
         height: 36px !important;
         background: rgba(255, 255, 255, 0.08) !important;
         border: 1px solid rgba(255, 255, 255, 0.15) !important;
@@ -1213,6 +1235,10 @@ a {
         transition: all 0.3s ease !important;
         overflow: hidden !important;
         margin-left: 5px !important;
+    }
+
+    .android-chrome .search-container {
+        width: 100px !important; /* Encore plus de sécurité sur Android */
     }
 
     .nav-actions {
@@ -1524,6 +1550,7 @@ a {
 .details-hero {
     position: relative;
     min-height: 100vh;
+    min-height: 100dvh;
     width: 100%;
     background-size: cover;
     background-position: center;
