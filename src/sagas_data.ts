@@ -151,7 +151,7 @@ export const SAGAS_DATA = [
     {
         id: 'matrix',
         title: 'The Matrix',
-        poster: 'https://image.tmdb.org/t/p/w500/lh4Y7uEqjlcu79Kpq0ByFAuquBR.jpg',
+        poster: 'https://media.themoviedb.org/t/p/w300_and_h450_face/alQ1yfJR9cxAPOx0WsTYj37HawI.jpg',
         backdrop: 'https://image.tmdb.org/t/p/original/7RyHsBsRkvuB7icRST8S6SwsTvi.jpg',
         description: 'La saga cyberpunk qui a révolutionné le cinéma d\'action et de science-fiction.',
         items: ["id:603", "id:604", "id:605", "id:624860"]
@@ -159,7 +159,7 @@ export const SAGAS_DATA = [
     {
         id: 'terminator',
         title: 'Terminator',
-        poster: 'https://image.tmdb.org/t/p/w500/vxi91IDYp7tIn796Xv66A9SJCpA.jpg',
+        poster: 'https://media.themoviedb.org/t/p/w300_and_h450_face/oiC9rL7BRx8hqlG7Sak7r1nM4uw.jpg',
         backdrop: 'https://image.tmdb.org/t/p/original/7RyHsBsRkvuB7icRST8S6SwsTvi.jpg',
         description: 'L\'affrontement mythique entre l\'humanité et l\'intelligence artificielle Skynet.',
         items: ["id:218", "id:280", "id:296", "id:19866", "id:87101", "id:290859"]
@@ -167,7 +167,7 @@ export const SAGAS_DATA = [
     {
         id: 'rocky',
         title: 'Rocky & Creed',
-        poster: 'https://image.tmdb.org/t/p/w500/7I9n9L4jG6XpU9H2y2W2f7v7W7W.jpg',
+        poster: 'https://media.themoviedb.org/t/p/w300_and_h450_face/1olW2Uk9GBJ9Qq5SQmbN7Mzk9HD.jpg',
         backdrop: 'https://image.tmdb.org/t/p/original/7RyHsBsRkvuB7icRST8S6SwsTvi.jpg',
         description: 'L\'ascension légendaire de Rocky Balboa et l\'héritage d\'Adonis Creed.',
         items: [

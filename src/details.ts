@@ -41,18 +41,30 @@ window.addEventListener('scroll', () => {
 });
 
 // Gestion du bouton Retour (Saga ou Home)
-const fromSagaId = urlParams.get('fromSaga');
-const backBtn = document.querySelector('.back-home-btn');
-if (fromSagaId && backBtn) {
-    const backBtnText = backBtn.querySelector('span');
-    if (backBtnText) backBtnText.textContent = "Retour à la Saga";
+function setupBackButton() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromSagaId = urlParams.get('fromSaga');
+    const backBtn = document.querySelector('.back-home-btn');
     
-    backBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        // Rediriger vers l'accueil avec un paramètre pour rouvrir la saga
-        window.location.href = `/?openSaga=${fromSagaId}`;
-    });
+    if (fromSagaId && backBtn) {
+        const backBtnText = backBtn.querySelector('span');
+        if (backBtnText) {
+            backBtnText.textContent = "Retour à la Saga";
+            backBtnText.style.color = "#ef4444"; // Coloration en rouge pour signaler le retour spécial
+        }
+        
+        // Supprimer les anciens écouteurs en remplaçant l'élément ou via onclick
+        (backBtn as HTMLElement).onclick = (e) => {
+            e.preventDefault();
+            console.log("Navigation vers la saga:", fromSagaId);
+            window.location.href = `/?openSaga=${fromSagaId}`;
+        };
+    }
 }
+
+// Appeler setupBackButton immédiatement et au chargement du DOM
+setupBackButton();
+document.addEventListener('DOMContentLoaded', setupBackButton);
 
 async function fetchDetails() {
     if (!mediaId || !mediaType) {

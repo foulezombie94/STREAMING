@@ -210,6 +210,14 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
+// Utilitaire pour basculer la visibilité de la recherche
+function toggleSearchVisibility(show: boolean) {
+    const searchContainer = document.querySelector('.search-container') as HTMLElement;
+    if (searchContainer) {
+        searchContainer.style.display = show ? 'flex' : 'none';
+    }
+}
+
 // 4. Navigation Management
 const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
 
@@ -247,9 +255,13 @@ function handleNavigation(type: any) {
     if (currentType === 'iptv') {
         if (navbar) navbar.style.display = 'none';
         if (genreFiltersContainer) genreFiltersContainer.style.display = 'none';
+        toggleSearchVisibility(false);
         initLiveTV();
     } else {
         if (navbar) navbar.style.display = 'flex';
+        // Afficher la recherche sauf pour les sagas
+        toggleSearchVisibility(currentType !== 'sagas');
+        
         if (currentType === 'reprendre') {
             renderResumePage();
         } else if (currentType === 'sagas') {
@@ -696,6 +708,8 @@ async function initApp() {
     
     if (sagaId) {
         renderSagaDetailsPage(sagaId);
+        // Nettoyer l'URL pour éviter que le paramètre ne reste affiché
+        window.history.replaceState({}, document.title, window.location.pathname);
     } else {
         handleNavigation('trending'); 
     }
@@ -1583,8 +1597,9 @@ async function renderSagaDetailsPage(sagaId: string) {
     const saga = SAGAS_DATA.find(s => s.id === sagaId);
     if (!saga || !mainContent) return;
 
-    // Masquer le hero carousel si présent
+    // Masquer le hero carousel et la recherche
     if (heroSection) heroSection.style.display = 'none';
+    toggleSearchVisibility(false);
     mainContent.classList.add('no-hero');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
