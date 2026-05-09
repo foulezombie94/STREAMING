@@ -34,7 +34,7 @@ a {
     top: 0;
     left: 0;
     width: 100%;
-    padding: 0.8rem 4rem;
+    padding: 1.2rem 5rem; /* UN PEU PLUS GRAND */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -53,9 +53,9 @@ a {
 }
 
 .logo {
-    font-size: 22px;
+    font-size: 26px; /* UN PEU PLUS GRAND */
     font-weight: 800;
-    letter-spacing: 2px;
+    letter-spacing: 2.5px;
     background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
     -webkit-background-clip: text;
     background-clip: text;
@@ -71,16 +71,16 @@ a {
     transform: translateX(-50%);
     display: flex;
     list-style: none;
-    gap: 35px;
+    gap: 45px; /* PLUS D'ESPACE */
 }
 
 .nav-links a {
-    font-size: 14px;
+    font-size: 15px; /* UN PEU PLUS GRAND */
     color: #A3A3A3;
     transition: color 0.3s ease, transform 0.3s ease;
-    font-weight: 600;
+    font-weight: 700; /* PLUS GRAS */
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 1.2px;
 }
 
 .nav-links a.active {
@@ -131,7 +131,7 @@ a {
 .search-container {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 6px 14px;
+    padding: 10px 20px; /* PLUS GRAND */
     border-radius: 50px;
     display: flex;
     align-items: center;
