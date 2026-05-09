@@ -18,14 +18,18 @@
 </head>
 <body class="bg-background text-on-surface font-body-lg min-h-screen pb-24 md:pb-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface-container-high/40 via-background to-background">
 
-    <!-- 1. En-tête (Tout en haut) -->
-    <header class="navbar" id="navbar">
-        <div class="logo" onclick="handleNavigation('trending')" style="cursor: pointer;">MOVIEVERSE</div>
+    <!-- 1. En-tête (Tout en haut) -->    <header class="navbar" id="navbar">
+        <div class="nav-left-mobile">
+            <button class="menu-toggle" id="menu-toggle" aria-label="Menu">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            <div class="logo" onclick="handleNavigation('trending')" style="cursor: pointer;">MOVIEVERSE</div>
+        </div>
 
         <ul class="nav-links">
             <li><a href="#" class="nav-item active" data-type="trending"><span class="material-symbols-outlined">home</span>Accueil</a></li>
-            <li><a href="#" class="nav-item" data-type="tv"><span class="material-symbols-outlined">tv</span>Séries</a></li>
             <li><a href="#" class="nav-item" data-type="movie"><span class="material-symbols-outlined">movie</span>Films</a></li>
+            <li><a href="#" class="nav-item" data-type="tv"><span class="material-symbols-outlined">tv</span>Séries</a></li>
             <li><a href="#" class="nav-item" data-type="iptv"><span class="material-symbols-outlined">live_tv</span>Direct TV</a></li>
             <li><a href="#" class="nav-item" data-type="reprendre"><span class="material-symbols-outlined">history</span>Reprendre</a></li>
         </ul>
@@ -34,12 +38,9 @@
             <button class="search-trigger" id="search-trigger" aria-label="Rechercher">
                 <span class="material-symbols-outlined">search</span>
             </button>
-            <button class="menu-toggle" id="menu-toggle" aria-label="Menu">
-                <span class="material-symbols-outlined">menu</span>
-            </button>
         </div>
-
     </header>
+
 
 
     <main class="w-full px-2 md:px-4 lg:px-8 pt-20 md:pt-24 pb-8">

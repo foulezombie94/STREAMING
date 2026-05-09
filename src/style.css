@@ -163,7 +163,13 @@ a {
     .menu-toggle {
         display: flex;
         font-size: 32px;
-        order: 2; /* Menu à droite du search */
+        order: -1; /* Menu à gauche sur mobile */
+    }
+
+    .nav-left-mobile {
+        display: flex;
+        align-items: center;
+        gap: 15px;
     }
 
     .search-container {
@@ -187,9 +193,8 @@ a {
         justify-content: center;
         align-items: center;
         padding: 0;
-        transition: all 0.4s ease;
-        z-index: 1000;
-        transform: none;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1050;
         gap: 40px;
     }
 
@@ -197,15 +202,24 @@ a {
         left: 0;
     }
 
-    .navbar.menu-open .nav-right {
-        z-index: 1001; /* Reste au dessus du menu */
+    .navbar.menu-open .nav-left-mobile .menu-toggle {
+        z-index: 1100; /* Garder le bouton visible pour fermer */
     }
 
     .nav-links a {
-        font-size: 24px;
+        font-size: 28px;
         font-weight: 800;
         letter-spacing: 2px;
         opacity: 0.6;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #fff;
+    }
+
+    .nav-links a .material-symbols-outlined {
+        font-size: 32px;
+        color: #ef4444;
     }
 
     .nav-links a.active {
