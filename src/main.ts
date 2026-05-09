@@ -296,21 +296,19 @@ function handleNavigation(type: any) {
 searchTrigger?.addEventListener('click', () => {
     searchOverlay?.classList.add('active');
     searchInput?.focus();
-    document.body.style.overflow = 'hidden'; // Empêcher le scroll
 });
 
 closeSearch?.addEventListener('click', () => {
     searchOverlay?.classList.remove('active');
-    document.body.style.overflow = 'auto';
 });
 
 // Fermer avec Échap
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && searchOverlay?.classList.contains('active')) {
         searchOverlay?.classList.remove('active');
-        document.body.style.overflow = 'auto';
     }
 });
+
 
 
 function renderResumePage() {
