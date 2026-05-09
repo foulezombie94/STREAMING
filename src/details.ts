@@ -40,6 +40,20 @@ window.addEventListener('scroll', () => {
     }
 });
 
+// Gestion du bouton Retour (Saga ou Home)
+const fromSagaId = urlParams.get('fromSaga');
+const backBtn = document.querySelector('.back-home-btn');
+if (fromSagaId && backBtn) {
+    const backBtnText = backBtn.querySelector('span');
+    if (backBtnText) backBtnText.textContent = "Retour à la Saga";
+    
+    backBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        // Rediriger vers l'accueil avec un paramètre pour rouvrir la saga
+        window.location.href = `/?openSaga=${fromSagaId}`;
+    });
+}
+
 async function fetchDetails() {
     if (!mediaId || !mediaType) {
         if (titleEl) titleEl.textContent = "Erreur : Médias introuvables.";

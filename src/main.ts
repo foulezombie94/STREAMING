@@ -1,6 +1,7 @@
 import './style.css';
 import './antiblocker';
 import { ProgressManager } from './storage';
+import { SAGAS_DATA } from './sagas_data';
 
 // 1. Constantes TMDB
 const TMDB_API_KEY = 'e1a2bb6a3ed288feb5d767908732e751';
@@ -13,7 +14,7 @@ const sectionDataStore: { [key: string]: { items: any[], conf: any } } = {};
 
 // 2. DOM Elements & State
 let currentData: any[] = []; 
-let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' = 'trending';
+let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' | 'sagas' = 'trending';
 
 // Genre globals
 let movieGenres: any[] = [];
@@ -213,6 +214,7 @@ window.addEventListener('keydown', (e) => {
 const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
 
 function handleNavigation(type: any) {
+    (window as any).handleNavigation = handleNavigation;
     [navItems, bottomNavItems].forEach(collection => {
         collection.forEach(i => {
             if (i.getAttribute('data-type') === type) i.classList.add('active');
@@ -250,6 +252,8 @@ function handleNavigation(type: any) {
         if (navbar) navbar.style.display = 'flex';
         if (currentType === 'reprendre') {
             renderResumePage();
+        } else if (currentType === 'sagas') {
+            renderSagasPage();
         } else {
             renderGenres(currentType as any);
             renderHomeSections(currentType as any);
@@ -326,6 +330,29 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
         const section = document.createElement('section');
         section.className = 'popular';
         section.id = `section-${conf.id}`;
+        
+        if (conf.id === 'sagas') {
+            section.innerHTML = `
+                <h2 class="section-title">
+                    <span class="material-symbols-outlined">${conf.icon}</span>
+                    ${conf.title}
+                </h2>
+                <div class="carousel-container" id="carousel-sagas" style="display: flex; overflow-x: auto; gap: 12px; padding: 10px 4rem 2rem 4rem;">
+                    ${SAGAS_DATA.map(saga => `
+                        <div class="saga-card" onclick="renderSagaDetailsPage('${saga.id}')" style="flex: 0 0 16.5%; min-width: 150px;">
+                            <img src="${saga.poster}" alt="${saga.title}" loading="lazy">
+                            <div class="saga-card-overlay">
+                                <h3 style="font-size: 14px;">${saga.title}</h3>
+                                <p style="font-size: 10px;">${saga.items.length} Films</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            mainContent.appendChild(section);
+            return; // On ne fait pas fetchSectionData pour les sagas
+        }
+
         section.innerHTML = `
             <h2 class="section-title">
                 <span class="material-symbols-outlined">${conf.icon}</span>
@@ -412,26 +439,30 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
 // Exposer au scope global pour les onclick
 (window as any).renderCarouselPage = renderCarouselPage;
 
-function renderMovieCard(item: any, forceType: string = 'auto', extra: string = '') {
+function renderMovieCard(item: any, forceType: string = 'auto', extra: string = '', extraUrlParams: string = '') {
     let displayType = item.media_type || forceType;
     
     // Si c'est toujours auto et pas de media_type (cas des endpoints spécifiques type /movie/popular)
     if (displayType === 'auto') {
         displayType = item.title ? 'movie' : 'tv';
     }
-
+ 
     const poster = item.poster_path ? `${IMAGE_W500_URL}${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image';
     const rating = item.vote_average ? item.vote_average.toFixed(1) : '0.0';
     const badgeText = displayType === 'tv' ? 'Série' : 'Film';
     
+    const releaseDate = item.release_date || item.first_air_date;
+    const year = releaseDate ? new Date(releaseDate).getFullYear() : '';
+    
     return `
-        <div class="movie-card" onclick="window.location.href='/details.html?id=${item.id}&type=${displayType}'">
+        <div class="movie-card" onclick="window.location.href='/details.html?id=${item.id}&type=${displayType}${extraUrlParams}'">
             <div class="card-badge">${badgeText}</div>
             <img src="${poster}" alt="${item.title || item.name}" loading="lazy">
             <div class="card-overlay">
                 <div class="card-rating">★ ${rating}</div>
                 <div class="card-info">
                     <h3 class="card-title">${item.title || item.name}</h3>
+                    ${year ? `<span class="card-year">${year}</span>` : ''}
                 </div>
             </div>
             ${extra}
@@ -477,10 +508,10 @@ mobileGenreOverlay?.addEventListener('click', (e) => {
     if (e.target === mobileGenreOverlay) closeGenreOverlay?.click();
 });
 
-function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv') {
+function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' | 'sagas') {
     if (!genreFiltersContainer) return;
     
-    if (type === 'trending' || type === 'reprendre' || type === 'iptv') {
+    if (type === 'trending' || type === 'reprendre' || type === 'iptv' || type === 'sagas') {
         genreFiltersContainer.style.display = 'none';
         return;
     }
@@ -659,7 +690,15 @@ async function fetchGenres() {
 
 async function initApp() {
     await fetchGenres();
-    handleNavigation('trending'); 
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const sagaId = urlParams.get('openSaga');
+    
+    if (sagaId) {
+        renderSagaDetailsPage(sagaId);
+    } else {
+        handleNavigation('trending'); 
+    }
 }
 
 initApp();
@@ -1513,6 +1552,170 @@ document.getElementById('close-player')?.addEventListener('click', () => {
 document.getElementById('close-live-tv')?.addEventListener('click', () => {
     handleNavigation('trending');
 });
+
+// --- Sagas System ---
+async function renderSagasPage() {
+    if (!mainContent) return;
+    
+    // Titre de la page
+    mainContent.innerHTML = `
+        <section class="popular">
+            <h2 class="section-title" style="margin-bottom: 30px;">
+                <span class="material-symbols-outlined">auto_awesome</span>
+                Sagas Incontournables
+            </h2>
+            <div class="sagas-grid">
+                ${SAGAS_DATA.map(saga => `
+                    <div class="saga-card" onclick="renderSagaDetailsPage('${saga.id}')">
+                        <img src="${saga.poster}" alt="${saga.title}" loading="lazy">
+                        <div class="saga-card-overlay">
+                            <h3>${saga.title}</h3>
+                            <p>${saga.items.length} Films</p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </section>
+    `;
+}
+
+async function renderSagaDetailsPage(sagaId: string) {
+    const saga = SAGAS_DATA.find(s => s.id === sagaId);
+    if (!saga || !mainContent) return;
+
+    // Masquer le hero carousel si présent
+    if (heroSection) heroSection.style.display = 'none';
+    mainContent.classList.add('no-hero');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    mainContent.innerHTML = `
+        <div class="saga-details-hero" style="background-image: url('${saga.backdrop}')">
+            <div class="saga-details-content">
+                <button class="back-btn-saga" onclick="handleNavigation('sagas')">
+                    <span class="material-symbols-outlined">arrow_back</span> Retour aux Sagas
+                </button>
+                <div class="saga-header-flex">
+                    <img src="${saga.poster}" class="saga-mini-poster" />
+                    <div class="saga-header-text">
+                        <h1>${saga.title}</h1>
+                        <p class="saga-desc">${saga.description}</p>
+                        <div class="saga-stats">
+                            <span class="tag">${saga.items.length} Films</span>
+                            <span class="tag">Collection Complète</span>
+                        </div>
+                    </div>
+                    <div class="saga-global-stats">
+                        <div class="stat-box">
+                            <span class="stat-value" id="total-duration">--</span>
+                            <span class="stat-label">Durée Totale</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-value" id="avg-rating">--</span>
+                            <span class="stat-label">Note Moyenne</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-value" id="total-budget">--</span>
+                            <span class="stat-label">Budget</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-value" id="total-revenue">--</span>
+                            <span class="stat-label">Recettes</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-value" id="saga-years">--</span>
+                            <span class="stat-label">Période</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <section class="popular">
+            <h2 class="section-title">Les films de la collection</h2>
+            <div class="carousel-container" id="saga-movies-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; padding: 20px; overflow: visible;">
+                <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
+                <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
+                <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
+            </div>
+        </section>
+    `;
+
+    const grid = document.getElementById('saga-movies-grid');
+    if (!grid) return;
+
+    // Charger les films
+    const moviePromises = saga.items.map(async (title) => {
+        try {
+            if (title.startsWith('id:')) {
+                const movieId = title.split(':')[1];
+                const detailRes = await fetch(`${BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
+                return await detailRes.json();
+            }
+            // Search movie
+            const searchRes = await fetch(`${BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(title)}&page=1`);
+            const searchData = await searchRes.json();
+            if (searchData.results && searchData.results.length > 0) {
+                const movie = searchData.results[0];
+                // Fetch full details for runtime, budget, revenue
+                const detailRes = await fetch(`${BASE_URL}/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=fr-FR`);
+                return await detailRes.json();
+            }
+            return null;
+        } catch (e) { return null; }
+    });
+
+    const movies = (await Promise.all(moviePromises)).filter(m => m !== null);
+    grid.innerHTML = movies.map(m => renderMovieCard(m, 'movie', '', `&fromSaga=${saga.id}`)).join('');
+
+    // Calculer les statistiques globales
+    let totalMinutes = 0;
+    let totalRating = 0;
+    let totalBudget = 0;
+    let totalRevenue = 0;
+    let years: number[] = [];
+
+    movies.forEach(m => {
+        if (m.runtime) totalMinutes += m.runtime;
+        if (m.vote_average) totalRating += m.vote_average;
+        if (m.budget) totalBudget += m.budget;
+        if (m.revenue) totalRevenue += m.revenue;
+        if (m.release_date) years.push(new Date(m.release_date).getFullYear());
+    });
+
+    const durationEl = document.getElementById('total-duration');
+    const ratingEl = document.getElementById('avg-rating');
+    const budgetEl = document.getElementById('total-budget');
+    const revenueEl = document.getElementById('total-revenue');
+    const yearsEl = document.getElementById('saga-years');
+
+    const formatCurrency = (amount: number) => {
+        const euroAmount = amount * 0.93; // Conversion approx USD to EUR
+        if (euroAmount >= 1e9) return `${(euroAmount / 1e9).toFixed(1)} Md €`;
+        if (euroAmount >= 1e6) return `${(euroAmount / 1e6).toFixed(0)} M €`;
+        return `${Math.round(euroAmount).toLocaleString()} €`;
+    };
+
+    if (durationEl) {
+        const hours = Math.floor(totalMinutes / 60);
+        const mins = totalMinutes % 60;
+        durationEl.textContent = `${hours}h ${mins}m`;
+    }
+    if (ratingEl) {
+        const avg = movies.length > 0 ? (totalRating / movies.length).toFixed(1) : '0.0';
+        ratingEl.textContent = `${avg}/10`;
+    }
+    if (budgetEl) budgetEl.textContent = formatCurrency(totalBudget);
+    if (revenueEl) revenueEl.textContent = formatCurrency(totalRevenue);
+    
+    if (yearsEl && years.length > 0) {
+        const minYear = Math.min(...years);
+        const maxYear = Math.max(...years);
+        yearsEl.textContent = minYear === maxYear ? `${minYear}` : `${minYear}-${maxYear}`;
+    }
+}
+
+// Exposer au global
+(window as any).renderSagasPage = renderSagasPage;
+(window as any).renderSagaDetailsPage = renderSagaDetailsPage;
 
 // Pause automatique quand on quitte l'onglet (Mobile & PC)
 document.addEventListener('visibilitychange', () => {
