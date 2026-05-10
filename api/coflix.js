@@ -118,22 +118,12 @@ async function extractPlayers(pageUrl) {
 async function searchCoflix(title, type) {
     try {
         const query = normalizeTitle(title);
-        let url = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(query)}`;
+        const url = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(query)}`;
         console.log(`Searching Coflix: ${url}`);
         
-        let res = await axios.get(url, { headers: HEADERS, timeout: 8000 });
-        let data = res.data;
+        const res = await axios.get(url, { headers: HEADERS, timeout: 8000 });
+        const data = res.data;
         
-        if (!Array.isArray(data) || data.length === 0) {
-            const simpleQuery = query.split(' ').slice(0, 3).join(' ');
-            if (simpleQuery && simpleQuery !== query) {
-                console.log(`Fallback search: ${simpleQuery}`);
-                url = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(simpleQuery)}`;
-                res = await axios.get(url, { headers: HEADERS, timeout: 8000 });
-                data = res.data;
-            }
-        }
-
         if (!Array.isArray(data)) {
             console.error("Coflix search returned non-array data:", typeof data);
             return [];
