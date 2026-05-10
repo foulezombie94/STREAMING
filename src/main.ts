@@ -236,6 +236,18 @@ class HeroCarouselManager {
     public stop() {
         if (this.interval) clearInterval(this.interval);
     }
+
+    public getSlidesCount(): number {
+        return this.slides.length;
+    }
+
+    public getCurrentIndex(): number {
+        return this.currentIndex;
+    }
+
+    public refresh() {
+        this.updateDOM();
+    }
 }
 
 const heroCarouselManager = new HeroCarouselManager();
@@ -274,6 +286,14 @@ function handleNavigation(type: any) {
     if (type === 'iptv' && window.innerWidth <= 768) {
         return;
     }
+
+    // Sécurité: Si le hero va être affiché mais est vide, on le charge
+    if (type !== 'iptv' && type !== 'reprendre' && heroCarouselManager.getSlidesCount() === 0) {
+        fetch(`${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`)
+            .then(res => res.json())
+            .then(data => heroCarouselManager.setSlides(data.results || []));
+    }
+
     
     // Fermer le menu mobile si ouvert
     navbar?.classList.remove('menu-open');
@@ -298,7 +318,12 @@ function handleNavigation(type: any) {
         if (loginForm) loginForm.style.display = 'none';
     }
 
-    if (heroSection) heroSection.style.display = (currentType === 'iptv' || currentType === 'reprendre') ? 'none' : 'block';
+    if (heroSection) {
+        const isHidden = (currentType === 'iptv' || currentType === 'reprendre');
+        heroSection.style.display = isHidden ? 'none' : 'block';
+        if (!isHidden) heroCarouselManager.refresh();
+    }
+
     if (mainContent) {
         mainContent.style.display = (currentType === 'iptv') ? 'none' : 'block';
         if (currentType === 'reprendre' || currentType === 'iptv') {
@@ -788,6 +813,11 @@ async function initApp() {
     const sagaId = urlParams.get('openSaga');
     
     if (sagaId) {
+        // Toujours initialiser le hero en arrière-plan si on commence sur une saga
+        fetch(`${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`)
+            .then(res => res.json())
+            .then(data => heroCarouselManager.setSlides(data.results || []));
+            
         renderSagaDetailsPage(sagaId);
         // Nettoyer l'URL pour éviter que le paramètre ne reste affiché
         window.history.replaceState({}, document.title, window.location.pathname);
