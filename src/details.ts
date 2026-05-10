@@ -12,6 +12,7 @@ const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 const urlParams = new URLSearchParams(window.location.search);
 const mediaId = urlParams.get('id');
 const mediaType = urlParams.get('type');
+const GLOBAL_BLACKLIST_IDS = ['36659']; // ID 36659 is 'Septem' (2006)
 
 // 3. Éléments du DOM
 const heroSection = document.getElementById('details-hero');
@@ -69,6 +70,12 @@ document.addEventListener('DOMContentLoaded', setupBackButton);
 async function fetchDetails() {
     if (!mediaId || !mediaType) {
         if (titleEl) titleEl.textContent = "Erreur : Médias introuvables.";
+        return;
+    }
+
+    if (GLOBAL_BLACKLIST_IDS.includes(mediaId)) {
+        if (titleEl) titleEl.textContent = "Contenu indisponible.";
+        if (synopsisEl) synopsisEl.textContent = "Ce film a été retiré de la plateforme.";
         return;
     }
 

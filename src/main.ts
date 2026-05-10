@@ -15,6 +15,9 @@ const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 
+// Global Blacklist for specific movies/series
+const GLOBAL_BLACKLIST_IDS = ['36659']; // ID 36659 is 'Septem' (2006)
+
 // Cache pour la pagination des sections
 const sectionDataStore: { [key: string]: { items: any[], conf: any } } = {};
 
@@ -425,7 +428,7 @@ function renderResumePage() {
         <h2 class="section-title">Continuer la lecture</h2>
         <div class="carousel-container resume-grid" id="carousel-resume">
             ${history.length > 0 
-                ? history.map(item => {
+                ? history.filter(item => !GLOBAL_BLACKLIST_IDS.includes(item.mediaId.toString())).map(item => {
                     // Mapper VideoProgress vers le format attendu par renderMovieCard
                     const cardItem = {
                         id: item.mediaId,
@@ -609,6 +612,11 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
 (window as any).renderCarouselPage = renderCarouselPage;
 
 function renderMovieCard(item: any, forceType: string = 'auto', extra: string = '', extraUrlParams: string = '') {
+    // Check if item is blacklisted
+    if (item.id && GLOBAL_BLACKLIST_IDS.includes(item.id.toString())) {
+        return '';
+    }
+    
     let displayType = item.media_type || forceType;
     
     // Si c'est toujours auto et pas de media_type (cas des endpoints spécifiques type /movie/popular)
