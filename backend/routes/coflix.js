@@ -7,20 +7,25 @@ const COFLIX_BASE_URL = "https://coflix.date";
 const HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Referer": COFLIX_BASE_URL + "/",
-    "Origin": COFLIX_BASE_URL
+    "Origin": COFLIX_BASE_URL,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
 };
 
-/**
- * Normalize title for Coflix search
- */
 function normalizeTitle(title) {
+    if (!title) return "";
     return title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s]/gi, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/**
- * Identify the host name from a URL
- */
+function fixUrl(url) {
+    if (!url) return "";
+    if (url.startsWith("//")) return "https:" + url;
+    if (url.startsWith("/")) return COFLIX_BASE_URL + url;
+    return url;
+}
+
 function getHostName(url) {
+    if (!url) return "Direct";
     const u = url.toLowerCase();
     if (u.includes("vidoza")) return "Vidoza";
     if (u.includes("uqload")) return "Uqload";
@@ -42,159 +47,153 @@ function getHostName(url) {
     }
 }
 
-/**
- * Search Coflix by title
- */
-async function searchCoflix(title, type) {
-    try {
-        const query = normalizeTitle(title);
-        const url = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(query)}`;
-        console.log(`[Coflix Search] Query: "${query}", Type: ${type}`);
-        
-        const res = await axios.get(url, { headers: HEADERS, timeout: 5000 });
-        if (!Array.isArray(res.data)) return [];
-        
-        // Log all results for debugging
-        console.log(`[Coflix Search] Found ${res.data.length} results`);
-
-        // Filter by type
-        const filtered = res.data.filter(item => {
-            const pType = item.post_type.toLowerCase();
-            if (type === "movie") return pType === "movies" || pType === "movie";
-            return pType === "series" || pType === "tvshows" || pType === "tvshow" || pType === "tv";
-        });
-
-        console.log(`[Coflix Search] Filtered results: ${filtered.length}`);
-        return filtered;
-    } catch (e) {
-        console.error("[Coflix Search Error]", e.message);
-        return [];
-    }
-}
-
 async function extractPlayers(pageUrl) {
     if (!pageUrl) return [];
-    if (typeof pageUrl === 'object' && pageUrl.url) pageUrl = pageUrl.url;
-
     try {
-        console.log(`[Coflix Extraction] Fetching page: ${pageUrl}`);
-        const res = await axios.get(pageUrl, { headers: HEADERS, timeout: 5000 });
-        const $ = cheerio.load(res.data);
+        console.log(`[Coflix] Extracting from: ${pageUrl}`);
+        const res = await axios.get(pageUrl, { headers: HEADERS, timeout: 8000 });
+        const html = res.data;
+        let $ = cheerio.load(html);
         
-        // Find the main iframe
         let iframeSrc = $("iframe").attr("src");
-        let container = res.data;
+        let container = html;
 
         if (iframeSrc) {
-            if (iframeSrc.startsWith("/")) iframeSrc = COFLIX_BASE_URL + iframeSrc;
-            const iframeRes = await axios.get(iframeSrc, { headers: HEADERS, timeout: 5000 });
-            container = iframeRes.data;
+            iframeSrc = fixUrl(iframeSrc);
+            try {
+                const iframeRes = await axios.get(iframeSrc, { headers: HEADERS, timeout: 5000 });
+                container = iframeRes.data;
+            } catch (err) {
+                console.error(`[Coflix] Iframe fetch failed: ${iframeSrc}`);
+            }
         }
 
         const $if = cheerio.load(container);
         const players = [];
         
+        // Pattern 1: showVideo (Base64)
         $if('li[onclick*="showVideo"]').each((i, el) => {
             const onClick = $if(el).attr("onclick");
             const base64Match = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
             
             if (base64Match && base64Match[1]) {
-                const decodedUrl = Buffer.from(base64Match[1], 'base64').toString('utf8');
-                const quality = $if(el).find("span").text().trim() || "HD";
-                const langInfo = $if(el).find("p").text().toLowerCase();
-                
-                let lang = "VF";
-                if (langInfo.includes("vostfr")) lang = "VOSTFR";
-                else if (langInfo.includes("english") || langInfo.includes("vo")) lang = "VO";
+                try {
+                    const decodedUrl = Buffer.from(base64Match[1], 'base64').toString('utf8');
+                    const quality = $if(el).find("span").text().trim() || "HD";
+                    const langInfo = $if(el).find("p").text().toLowerCase();
+                    
+                    let lang = "VF";
+                    if (langInfo.includes("vostfr")) lang = "VOSTFR";
+                    else if (langInfo.includes("english") || langInfo.includes("vo")) lang = "VO";
 
-                const host = getHostName(decodedUrl);
-
-                players.push({
-                    name: host,
-                    url: decodedUrl,
-                    lang: lang,
-                    quality: quality
-                });
+                    players.push({
+                        name: getHostName(decodedUrl),
+                        url: decodedUrl,
+                        lang: lang,
+                        quality: quality
+                    });
+                } catch (e) {}
             }
         });
 
-        console.log(`[Coflix Extraction] Found ${players.length} players`);
+        // Pattern 2: Fallback Selectors
+        if (players.length === 0) {
+            $if('.dooplay_player_option, .source-box, li[data-type]').each((i, el) => {
+                const url = $if(el).attr('data-url') || $if(el).attr('data-link');
+                if (url) {
+                    const name = $if(el).find('.title, .name, span').text().trim() || "Server " + (i+1);
+                    players.push({
+                        name: getHostName(url),
+                        url: fixUrl(url),
+                        lang: "VF",
+                        quality: "HD"
+                    });
+                }
+            });
+        }
+
         return players;
     } catch (e) {
-        console.error("[Coflix Extraction Error]", e.message);
+        console.error(`[Coflix] Extraction error: ${e.message}`);
         return [];
     }
 }
 
-// Routes
+async function searchCoflix(title, type) {
+    try {
+        const query = normalizeTitle(title);
+        const url = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(query)}`;
+        const res = await axios.get(url, { headers: HEADERS, timeout: 5000 });
+        const data = res.data;
+        
+        if (!Array.isArray(data)) return [];
+        
+        return data.filter(item => {
+            const pType = (item.post_type || "").toLowerCase();
+            if (type === "movie") return pType === "movies" || pType === "movie";
+            return pType === "series" || pType === "tvshows" || pType === "tvshow" || pType === "tv";
+        });
+    } catch (e) {
+        return [];
+    }
+}
+
 router.get("/movie/:tmdbId", async (req, res) => {
     const { tmdbId } = req.params;
-    const title = req.query.title;
-
-    if (!title) return res.status(400).json({ success: false, error: "Title is required for scraping" });
+    const { title } = req.query;
+    if (!title) return res.status(400).json({ success: false, error: "Title required" });
 
     try {
         const results = await searchCoflix(title, "movie");
         if (results.length === 0) return res.json({ success: true, sources: [] });
-
-        const movieUrl = results[0].url;
-        const players = await extractPlayers(movieUrl);
-
+        const players = await extractPlayers(results[0].url);
         res.json({ success: true, tmdbId, sources: players });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+    } catch (err) {
+        res.json({ success: false, error: err.message });
     }
 });
 
 router.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
     const { tmdbId, season, episode } = req.params;
-    const title = req.query.title;
-
-    if (!title) return res.status(400).json({ success: false, error: "Title is required for scraping" });
+    const { title } = req.query;
+    if (!title) return res.status(400).json({ success: false, error: "Title required" });
 
     try {
         const results = await searchCoflix(title, "tv");
         if (results.length === 0) return res.json({ success: true, sources: [] });
 
         const seriesId = results[0].ID;
-        const seriesSlug = results[0].url.split('/').filter(Boolean).pop();
-        
-        // Pattern 1: WP-JSON API
-        const patterns = [
-            `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${seriesId}/${season}`,
-            `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${seriesId}`,
-            `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}/` // URL Directe (Scraping HTML)
+        const seriesSlug = (results[0].url || "").split('/').filter(Boolean).pop() || normalizeTitle(results[0].title || results[0].post_title).replace(/\s+/g, '-').toLowerCase();
+
+        // Try WP-JSON
+        try {
+            const apiPath = `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${seriesId}/${season}`;
+            const apiRes = await axios.get(apiPath, { headers: HEADERS, timeout: 4000 });
+            if (apiRes.data && Array.isArray(apiRes.data.episodes)) {
+                const targetEp = apiRes.data.episodes.find(ep => parseInt(ep.number) === parseInt(episode));
+                if (targetEp && targetEp.links) {
+                    const players = await extractPlayers(targetEp.links);
+                    if (players.length > 0) return res.json({ success: true, sources: players });
+                }
+            }
+        } catch (err) {}
+
+        // Try HTML patterns
+        const slugPatterns = [
+            `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}/`,
+            `${COFLIX_BASE_URL}/episode/${seriesSlug}-${season}x${episode}/`,
+            `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}-streaming/`,
+            `${COFLIX_BASE_URL}/${seriesSlug}-saison-${season}-episode-${episode}/`
         ];
 
-        for (const url of patterns) {
-            try {
-                console.log(`[Coflix TV] Trying pattern: ${url}`);
-                if (url.includes('wp-json')) {
-                    const apiRes = await axios.get(url, { headers: HEADERS, timeout: 4000 });
-                    if (apiRes.data && Array.isArray(apiRes.data.episodes)) {
-                        const targetEpisode = apiRes.data.episodes.find(ep => parseInt(ep.number) === parseInt(episode));
-                        if (targetEpisode && targetEpisode.links) {
-                            const players = await extractPlayers(targetEpisode.links);
-                            if (players.length > 0) return res.json({ success: true, tmdbId, season, episode, sources: players });
-                        }
-                    } else if (apiRes.data && apiRes.data.links) {
-                        // Cas où l'API renvoie directement l'épisode
-                        const players = await extractPlayers(apiRes.data.links);
-                        if (players.length > 0) return res.json({ success: true, tmdbId, season, episode, sources: players });
-                    }
-                } else {
-                    // Scraping HTML direct de la page de l'épisode
-                    const players = await extractPlayers(url);
-                    if (players.length > 0) return res.json({ success: true, tmdbId, season, episode, sources: players });
-                }
-            } catch (err) {
-                console.warn(`[Coflix TV Pattern Failed] ${url}: ${err.message}`);
-            }
+        for (const path of slugPatterns) {
+            const players = await extractPlayers(path);
+            if (players.length > 0) return res.json({ success: true, sources: players });
         }
-        
+
         res.json({ success: true, sources: [] });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+    } catch (err) {
+        res.json({ success: false, error: err.message });
     }
 });
 

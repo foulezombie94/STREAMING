@@ -444,6 +444,7 @@ async function fetchCoflixSources(type: string, id: string, season?: string, epi
             : `/api/coflix/movie/${id}${titleUrl}`;
 
         const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
         if (data.success && data.sources && data.sources.length > 0) {
