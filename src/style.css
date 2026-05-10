@@ -1384,7 +1384,7 @@ a {
     }
 
     .bottom-nav { display: flex; }
-    [data-type="iptv"] { display: none !important; }
+    .nav-links li:has([data-type="iptv"]) { display: none !important; }
     
     .hero-content { width: 90%; padding: 0; margin: auto; }
     .hero h1 { font-size: 28px; line-height: 1.2; }
