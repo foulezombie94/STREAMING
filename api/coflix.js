@@ -5,7 +5,11 @@ const COFLIX_BASE_URL = "https://coflix.date";
 const HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Referer": COFLIX_BASE_URL + "/",
-    "Origin": COFLIX_BASE_URL
+    "Origin": COFLIX_BASE_URL,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache"
 };
 
 function normalizeTitle(title) {
@@ -115,10 +119,15 @@ async function searchCoflix(title, type) {
     try {
         const query = normalizeTitle(title);
         const url = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(query)}`;
-        const res = await axios.get(url, { headers: HEADERS });
+        console.log(`Searching Coflix: ${url}`);
+        
+        const res = await axios.get(url, { headers: HEADERS, timeout: 8000 });
         const data = res.data;
         
-        if (!Array.isArray(data)) return [];
+        if (!Array.isArray(data)) {
+            console.error("Coflix search returned non-array data:", typeof data);
+            return [];
+        }
         
         return data.filter(item => {
             const pType = (item.post_type || "").toLowerCase();
@@ -126,6 +135,7 @@ async function searchCoflix(title, type) {
             return pType === "series" || pType === "tvshows" || pType === "tvshow" || pType === "tv";
         });
     } catch (e) {
+        console.error("Coflix search error:", e.message);
         return [];
     }
 }
@@ -192,6 +202,11 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, error: "Type not supported" });
 
     } catch (error) {
-        return res.status(200).json({ success: false, error: error.message });
+        console.error("Coflix handler error:", error.message);
+        return res.status(200).json({ 
+            success: false, 
+            error: error.message,
+            debug: "Production environments like Vercel are sometimes blocked by Coflix IP filters. Try local testing or a different proxy."
+        });
     }
 }
