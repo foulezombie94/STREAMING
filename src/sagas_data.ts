@@ -81,15 +81,15 @@ export const SAGAS_DATA: any[] = [
         ]
     },
     {
-        "id": "thegodfather",
-        "title": "Le Parrain",
-        "poster": "https://media.themoviedb.org/t/p/w300_and_h450_face/BI1pFbDL2UdBmsQXjwt0CLeB2n.jpg",
-        "backdrop": "https://image.tmdb.org/t/p/original/rSPw7162X90q79qv9kg6X9aoEm3.jpg",
-        "description": "Le chef-d'œuvre absolu du film de gangsters, qui suit l'évolution tragique de la famille mafieuse Corleone.",
+        "id": "leseigneurdesan",
+        "title": "Le Seigneur des anneaux - Saga",
+        "poster": "https://image.tmdb.org/t/p/w500/owezkcniN34siliFqUqypdCH78Z.jpg",
+        "backdrop": "https://image.tmdb.org/t/p/original/bccR2CGTWVVSZAG0yqmy3DIvhTX.jpg",
+        "description": "Dans les Terres du Milieu, l'Anneau unique forgé par Sauron le maléfique pour dominer les hommes, les elfes et les nains est tombé par inadvertance dans les mains de Frodon, paisible hobbit. Ce n'est qu'une question de temps avant que les sinistres Cavaliers Noirs, les Servants de l'Anneau, retrouvent sa trace. Sous la direction de Gandalf le magicien, une expédition est alors montée avec pour mission une tâche quasi-impossible : détruire l'Anneau, en le jetant dans le feu de la Montagne du Destin, au cœur du territoire ennemi…",
         "items": [
-            "id:238",
-            "id:240",
-            "id:242"
+            "id:120",
+            "id:121",
+            "id:122"
         ]
     },
     {
@@ -106,17 +106,23 @@ export const SAGAS_DATA: any[] = [
         ]
     },
     {
-        "id": "jasonbourne",
-        "title": "Jason Bourne",
-        "poster": "https://media.themoviedb.org/t/p/w300_and_h450_face/AgyElzl57k8dCNSH9FU3gpZP9tP.jpg",
-        "backdrop": "https://image.tmdb.org/t/p/original/7RyHsBsRkvuB7icRST8S6SwsTvi.jpg",
-        "description": "La saga d'espionnage réaliste et brutale qui a redéfini les scènes de combat rapproché.",
+        "id": "fastandfuriouss",
+        "title": "Fast and Furious - Saga",
+        "poster": "https://image.tmdb.org/t/p/w500/cKuTjUOCW2w6klACMOotvVy3LOM.jpg",
+        "backdrop": "https://image.tmdb.org/t/p/original/z5A5W3WYJc3UVEWljSGwdjDgQ0j.jpg",
+        "description": "Fast and Furious est une série de films d'action avec comme toile de fond les courses de rue illégales et des braquages.",
         "items": [
-            "id:2501",
-            "id:2502",
-            "id:2503",
-            "id:49040",
-            "id:324668"
+            "id:9799",
+            "id:584",
+            "id:9615",
+            "id:13804",
+            "id:51497",
+            "id:82992",
+            "id:168259",
+            "id:337339",
+            "id:385128",
+            "id:385687",
+            "id:755679"
         ]
     },
     {
@@ -528,15 +534,15 @@ export const SAGAS_DATA: any[] = [
         ]
     },
     {
-        "id": "leseigneurdesan",
-        "title": "Le Seigneur des anneaux - Saga",
-        "poster": "https://image.tmdb.org/t/p/w500/owezkcniN34siliFqUqypdCH78Z.jpg",
-        "backdrop": "https://image.tmdb.org/t/p/original/bccR2CGTWVVSZAG0yqmy3DIvhTX.jpg",
-        "description": "Dans les Terres du Milieu, l'Anneau unique forgé par Sauron le maléfique pour dominer les hommes, les elfes et les nains est tombé par inadvertance dans les mains de Frodon, paisible hobbit. Ce n'est qu'une question de temps avant que les sinistres Cavaliers Noirs, les Servants de l'Anneau, retrouvent sa trace. Sous la direction de Gandalf le magicien, une expédition est alors montée avec pour mission une tâche quasi-impossible : détruire l'Anneau, en le jetant dans le feu de la Montagne du Destin, au cœur du territoire ennemi…",
+        "id": "thegodfather",
+        "title": "Le Parrain",
+        "poster": "https://media.themoviedb.org/t/p/w300_and_h450_face/BI1pFbDL2UdBmsQXjwt0CLeB2n.jpg",
+        "backdrop": "https://image.tmdb.org/t/p/original/rSPw7162X90q79qv9kg6X9aoEm3.jpg",
+        "description": "Le chef-d'œuvre absolu du film de gangsters, qui suit l'évolution tragique de la famille mafieuse Corleone.",
         "items": [
-            "id:120",
-            "id:121",
-            "id:122"
+            "id:238",
+            "id:240",
+            "id:242"
         ]
     },
     {
@@ -1027,23 +1033,17 @@ export const SAGAS_DATA: any[] = [
         ]
     },
     {
-        "id": "fastandfuriouss",
-        "title": "Fast and Furious - Saga",
-        "poster": "https://image.tmdb.org/t/p/w500/cKuTjUOCW2w6klACMOotvVy3LOM.jpg",
-        "backdrop": "https://image.tmdb.org/t/p/original/z5A5W3WYJc3UVEWljSGwdjDgQ0j.jpg",
-        "description": "Fast and Furious est une série de films d'action avec comme toile de fond les courses de rue illégales et des braquages.",
+        "id": "jasonbourne",
+        "title": "Jason Bourne",
+        "poster": "https://media.themoviedb.org/t/p/w300_and_h450_face/AgyElzl57k8dCNSH9FU3gpZP9tP.jpg",
+        "backdrop": "https://image.tmdb.org/t/p/original/7RyHsBsRkvuB7icRST8S6SwsTvi.jpg",
+        "description": "La saga d'espionnage réaliste et brutale qui a redéfini les scènes de combat rapproché.",
         "items": [
-            "id:9799",
-            "id:584",
-            "id:9615",
-            "id:13804",
-            "id:51497",
-            "id:82992",
-            "id:168259",
-            "id:337339",
-            "id:385128",
-            "id:385687",
-            "id:755679"
+            "id:2501",
+            "id:2502",
+            "id:2503",
+            "id:49040",
+            "id:324668"
         ]
     },
     {
