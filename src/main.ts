@@ -476,7 +476,7 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
         configs = SECTIONS_CONFIG.filter(c => c.mediaType === 'tv');
     } else {
         configs = SECTIONS_CONFIG.filter(c => !c.id.includes('genre-') && !c.id.includes('tv-'));
-        configs.push(...SECTIONS_CONFIG.filter(c => c.id === 'genre-action' || c.id === 'genre-animation' || c.id === 'tv-animation'));
+        configs.push(...SECTIONS_CONFIG.filter(c => c.id === 'tv-action' || c.id === 'genre-action' || c.id === 'genre-animation' || c.id === 'tv-animation'));
     }
 
     // Créer les squelettes
