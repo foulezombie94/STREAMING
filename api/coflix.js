@@ -144,19 +144,43 @@ async function searchCoflix(title, type) {
         if (!globalCookies) await initSession();
         
         const query = normalizeTitle(title);
-        const url = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(query)}`;
-        console.log(`Searching Coflix: ${url}`);
+        const suggestUrl = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(query)}`;
+        console.log(`Searching Coflix Suggest API: ${suggestUrl}`);
         
-        const res = await axios.get(url, { 
+        const res = await axios.get(suggestUrl, { 
             headers: { ...HEADERS, "Cookie": globalCookies, "X-Requested-With": "XMLHttpRequest" }, 
             timeout: 8000 
         });
-        const data = res.data;
+        let data = res.data;
         
-        if (!Array.isArray(data)) {
-            console.error("Coflix search returned non-array data:", typeof data);
-            return [];
+        // If Suggest API fails or is empty, try the main search page HTML
+        if (!Array.isArray(data) || data.length === 0) {
+            console.log("Suggest API empty, trying HTML search page...");
+            const searchUrl = `${COFLIX_BASE_URL}/?s=${encodeURIComponent(query)}`;
+            const searchRes = await axios.get(searchUrl, { 
+                headers: { ...HEADERS, "Cookie": globalCookies },
+                timeout: 10000
+            });
+            const html = searchRes.data;
+            const $ = cheerio.load(html);
+            
+            data = [];
+            $('.result-item').each((i, el) => {
+                const link = $(el).find('a').attr('href');
+                const pTitle = $(el).find('.title a').text().trim();
+                const pType = link.includes('/series/') ? 'series' : 'movies';
+                if (link && pTitle) {
+                    data.push({
+                        url: link,
+                        title: pTitle,
+                        post_title: pTitle,
+                        post_type: pType
+                    });
+                }
+            });
         }
+
+        if (!Array.isArray(data)) return [];
         
         return data.filter(item => {
             const pType = (item.post_type || "").toLowerCase();
