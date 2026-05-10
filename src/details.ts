@@ -396,34 +396,6 @@ const closePlayerBtn = document.getElementById('close-player-btn');
 let currentSeasonsCount = 0;
 let currentServer = 'videasy'; // Default server
 
-// Server URL builders
-function getMovieUrl(server: string, id: string | null): string {
-    switch (server) {
-        case 'multiembed':
-            return `https://multiembed.mov/?video_id=${id}&tmdb=1`;
-        case 'moviesapi':
-            return `https://moviesapi.club/movie/${id}`;
-        case 'vidfast':
-            return `https://vidfast.pro/movie/${id}`;
-        case 'videasy':
-        default:
-            return `https://player.videasy.net/movie/${id}`;
-    }
-}
-
-function getTvUrl(server: string, id: string | null, season: string, episode: string): string {
-    switch (server) {
-        case 'multiembed':
-            return `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${episode}`;
-        case 'moviesapi':
-            return `https://moviesapi.club/tv/${id}/${season}/${episode}`;
-        case 'vidfast':
-            return `https://vidfast.pro/tv/${id}/${season}/${episode}`;
-        case 'videasy':
-        default:
-            return `https://player.videasy.net/tv/${id}/${season}/${episode}`;
-    }
-}
 
 // Dynamic Sources logic
 const serverButtonsContainer = document.querySelector('.server-buttons');
@@ -488,14 +460,6 @@ function renderSourceButtons() {
 }
 
 
-function updateTvIframe() {
-    if (!videoIframe || !seasonSelect || !episodeSelect) return;
-    const s = seasonSelect.value || "1";
-    const e = episodeSelect.value || "1";
-    const targetUrl = getTvUrl(currentServer, mediaId, s, e);
-    videoIframe.setAttribute('referrerpolicy', 'no-referrer');
-    videoIframe.src = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
-}
 
 if (watchMovieBtn && playerSection && videoIframe) {
     watchMovieBtn.addEventListener('click', () => {
