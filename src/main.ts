@@ -16,7 +16,7 @@ const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 
 // Global Blacklist for specific movies/series
-const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '1017007', '1025539']; 
+const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '1017007', '1025539', '1013441']; 
 
 // Cache pour la pagination des sections
 const sectionDataStore: { [key: string]: { items: any[], conf: any } } = {};
