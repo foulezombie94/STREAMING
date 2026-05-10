@@ -46,14 +46,14 @@ function setupBackButton() {
     const urlParams = new URLSearchParams(window.location.search);
     const fromSagaId = urlParams.get('fromSaga');
     const backBtn = document.querySelector('.back-home-btn');
-    
+
     if (fromSagaId && backBtn) {
         const backBtnText = backBtn.querySelector('span');
         if (backBtnText) {
             backBtnText.textContent = "Retour à la Saga";
             backBtnText.style.color = "#ef4444"; // Coloration en rouge pour signaler le retour spécial
         }
-        
+
         // Supprimer les anciens écouteurs en remplaçant l'élément ou via onclick
         (backBtn as HTMLElement).onclick = (e) => {
             e.preventDefault();
@@ -84,12 +84,12 @@ async function fetchDetails() {
         const response = await fetch(`${BASE_URL}/${mediaType}/${mediaId}?api_key=${TMDB_API_KEY}&language=fr-FR&append_to_response=credits,videos`);
         const data = await response.json();
         currentMediaData = data;
-        
+
         // Background
         if (heroSection && data.backdrop_path) {
             heroSection.style.backgroundImage = `url('${IMAGE_BASE_URL}${data.backdrop_path}')`;
         }
-        
+
         // Poster
         if (posterEl && data.poster_path) {
             posterEl.src = `${IMAGE_W500_URL}${data.poster_path}`;
@@ -99,28 +99,28 @@ async function fetchDetails() {
 
         // Titre
         if (titleEl) titleEl.textContent = data.title || data.name;
-        
+
         // Tagline
         if (taglineEl) taglineEl.textContent = data.tagline ? `"${data.tagline}"` : '';
-        
+
         // Synopsis
         if (synopsisEl) synopsisEl.textContent = data.overview || "Aucun synopsis disponible.";
-        
+
         // Meta (Année, Note, Durée)
         const releaseDate = data.release_date || data.first_air_date;
         const year = releaseDate ? new Date(releaseDate).getFullYear() : 'N/A';
         const rating = data.vote_average ? data.vote_average.toFixed(1) : 'N/A';
         const duration = data.runtime ? `${Math.floor(data.runtime / 60)}h ${data.runtime % 60}m` : (data.number_of_seasons ? `${data.number_of_seasons} Saisons` : '');
-        
+
         if (metaEl) {
             metaEl.innerHTML = `<span class="rating">★ ${rating}/10</span> <span>&bull; ${year}</span> ${duration ? `<span>&bull; ${duration}</span>` : ''}`;
         }
-        
+
         // Genres
         if (genresEl && data.genres) {
             genresEl.innerHTML = data.genres.map((g: any) => `<span class="genre-tag">${g.name}</span>`).join('');
         }
-        
+
         // Extra Info Grid
         const extraInfoGrid = document.getElementById('extra-info-grid');
         const extraInfo = [];
@@ -131,7 +131,7 @@ async function fetchDetails() {
         if (mediaType === 'movie') {
             const director = data.credits?.crew?.find((c: any) => c.job === 'Director');
             if (director) extraInfo.push({ label: 'Réalisateur', value: director.name });
-            
+
             if (data.budget && data.budget > 0) {
                 extraInfo.push({ label: 'Budget', value: `$${(data.budget / 1000000).toFixed(1)}M` });
             }
@@ -140,7 +140,7 @@ async function fetchDetails() {
             }
         } else if (mediaType === 'tv') {
             if (data.created_by && data.created_by.length > 0) {
-                extraInfo.push({ label: 'Créateur', value: data.created_by.map((c:any) => c.name).join(', ') });
+                extraInfo.push({ label: 'Créateur', value: data.created_by.map((c: any) => c.name).join(', ') });
             }
             if (data.number_of_episodes) {
                 extraInfo.push({ label: 'Épisodes', value: data.number_of_episodes.toString() });
@@ -185,7 +185,7 @@ async function fetchDetails() {
             const hoverRole = document.getElementById('hover-card-role');
             const hoverMeta = document.getElementById('hover-card-meta');
             const hoverBio = document.getElementById('hover-card-bio');
-            
+
             const actorCache: Record<string, any> = {};
             (window as any).actorCache = actorCache; // Partager le cache avec la modale
             let hoverTimeout: any;
@@ -205,7 +205,7 @@ async function fetchDetails() {
                     if (hoverCard) {
                         const rect = card.getBoundingClientRect();
                         hoverCard.style.left = `${rect.left + rect.width / 2}px`;
-                        
+
                         // Si la carte est trop haute, on affiche en dessous, sinon au dessus
                         if (rect.top > 300) {
                             hoverCard.style.top = `${rect.top - 20}px`;
@@ -223,7 +223,7 @@ async function fetchDetails() {
                         if (hoverRole) hoverRole.textContent = roleStr || '';
                         if (hoverMeta) hoverMeta.innerHTML = '';
                         if (hoverBio) hoverBio.textContent = '';
-                        
+
                         if (hoverCard) {
                             hoverCard.classList.add('show');
                             const rect = card.getBoundingClientRect();
@@ -279,7 +279,7 @@ async function fetchDetails() {
 
         // Animer l'entrée
         document.querySelector('.info-container')?.classList.add('loaded');
-        
+
     } catch (error) {
         console.error('Erreur', error);
         if (titleEl) titleEl.textContent = "Erreur de chargement";
@@ -300,7 +300,7 @@ if (closeModalBtn) {
     closeModalBtn.addEventListener('click', () => {
         if (trailerModal && trailerIframe) {
             trailerModal.classList.remove('active');
-            trailerIframe.src = ''; 
+            trailerIframe.src = '';
         }
     });
 }
@@ -326,7 +326,7 @@ const actorModalBio = document.getElementById('actor-modal-bio');
 async function openActorModal(actorId: string) {
     if (!actorModal) return;
     actorModal.classList.add('active');
-    
+
     // Reset contents
     if (actorModalImg) actorModalImg.src = '';
     if (actorModalName) actorModalName.textContent = 'Chargement...';
@@ -336,7 +336,7 @@ async function openActorModal(actorId: string) {
     try {
         const cache = (window as any).actorCache || {};
         let data;
-        
+
         if (cache[actorId]) {
             data = cache[actorId];
         } else {
@@ -348,9 +348,9 @@ async function openActorModal(actorId: string) {
         if (actorModalImg) {
             actorModalImg.src = data.profile_path ? `${IMAGE_W500_URL}${data.profile_path}` : 'https://i.pravatar.cc/100?img=11';
         }
-        
+
         if (actorModalName) actorModalName.textContent = data.name;
-        
+
         if (actorModalMeta) {
             const birthday = data.birthday ? new Date(data.birthday).toLocaleDateString('fr-FR') : 'Date de naissance inconnue';
             const place = data.place_of_birth || 'Lieu inconnu';
@@ -360,7 +360,7 @@ async function openActorModal(actorId: string) {
                 actorModalMeta.innerHTML += `<span>✝️ ${deathday}</span>`;
             }
         }
-        
+
         if (actorModalBio) {
             actorModalBio.textContent = data.biography || "Aucune biographie traduite en français n'est disponible pour cet acteur.";
         }
@@ -426,34 +426,111 @@ function getTvUrl(server: string, id: string | null, season: string, episode: st
     }
 }
 
-// Server button click handlers
-serverButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        serverButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentServer = (btn as HTMLElement).dataset.server || 'videasy';
-        // Reload current content with new server
-        if (videoIframe && videoIframe.src && videoIframe.src !== '') {
+// Dynamic Sources logic
+const serverButtonsContainer = document.querySelector('.server-buttons');
+let coflixSources: any[] = [];
+
+async function fetchCoflixSources(type: string, id: string, season?: string, episode?: string) {
+    if (!serverButtonsContainer) return;
+
+    serverButtonsContainer.innerHTML = '<span class="loading-sources">🔍 Recherche de sources live...</span>';
+
+    try {
+        const title = currentMediaData?.title || currentMediaData?.name;
+        if (!title) throw new Error("Title missing");
+
+        const titleUrl = `?title=${encodeURIComponent(title)}`;
+        const url = type === 'tv' 
+            ? `/api/coflix/tv/${id}/${season}/${episode}${titleUrl}`
+            : `/api/coflix/movie/${id}${titleUrl}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.success && data.sources && data.sources.length > 0) {
+            coflixSources = data.sources;
+            renderSourceButtons();
+        } else {
+            serverButtonsContainer.innerHTML = '<span class="no-sources">⚠️ Aucune source live trouvée.</span>';
+            // Optional: fallback to static servers
+            renderStaticServers();
+        }
+    } catch (e) {
+        console.error("Coflix Error", e);
+        serverButtonsContainer.innerHTML = '<span class="no-sources">❌ Erreur de recherche.</span>';
+        renderStaticServers();
+    }
+}
+
+function renderSourceButtons() {
+    if (!serverButtonsContainer) return;
+    serverButtonsContainer.innerHTML = '';
+
+    coflixSources.forEach((source, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'server-btn' + (index === 0 ? ' active' : '');
+        btn.textContent = `${source.lang} - ${source.name}`;
+        btn.onclick = () => {
+            document.querySelectorAll('.server-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (videoIframe) {
+                const proxiedUrl = `/api/proxy?url=${encodeURIComponent(source.url)}`;
+                videoIframe.setAttribute('referrerpolicy', 'no-referrer');
+                videoIframe.src = proxiedUrl;
+            }
+        };
+        serverButtonsContainer.appendChild(btn);
+    });
+
+    // Auto-play first source
+    if (coflixSources.length > 0 && videoIframe) {
+        const firstUrl = coflixSources[0].url;
+        videoIframe.setAttribute('referrerpolicy', 'no-referrer');
+        videoIframe.src = `/api/proxy?url=${encodeURIComponent(firstUrl)}`;
+    }
+}
+
+function renderStaticServers() {
+    if (!serverButtonsContainer) return;
+    const servers = [
+        { name: 'Multiembed', id: 'multiembed' },
+        { name: 'MoviesAPI', id: 'moviesapi' },
+        { name: 'Videasy', id: 'videasy' }
+    ];
+
+    servers.forEach((s, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'server-btn' + (index === 0 ? ' active' : '');
+        btn.textContent = s.name;
+        btn.onclick = () => {
+            document.querySelectorAll('.server-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (videoIframe) videoIframe.setAttribute('referrerpolicy', 'no-referrer');
             if (mediaType === 'movie') {
-                videoIframe.src = getMovieUrl(currentServer, mediaId);
+                const targetUrl = getMovieUrl(s.id, mediaId);
+                if (videoIframe) videoIframe.src = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
             } else {
+                currentServer = s.id;
                 updateTvIframe();
             }
-        }
+        };
+        serverButtonsContainer.appendChild(btn);
     });
-});
+}
 
 function updateTvIframe() {
     if (!videoIframe || !seasonSelect || !episodeSelect) return;
     const s = seasonSelect.value || "1";
     const e = episodeSelect.value || "1";
-    videoIframe.src = getTvUrl(currentServer, mediaId, s, e);
+    const targetUrl = getTvUrl(currentServer, mediaId, s, e);
+    videoIframe.setAttribute('referrerpolicy', 'no-referrer');
+    videoIframe.src = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
 }
 
 if (watchMovieBtn && playerSection && videoIframe) {
     watchMovieBtn.addEventListener('click', () => {
         playerSection.style.display = 'block';
-        
+
         // Petit délai pour laisser l'animation fadeIn s'enclencher proprement
         setTimeout(() => {
             playerSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -476,14 +553,23 @@ if (watchMovieBtn && playerSection && videoIframe) {
             });
         }
 
+        if (serverButtonsContainer) {
+            serverButtonsContainer.innerHTML = '<span class="loading-sources">🔍 Recherche de sources live...</span>';
+        }
+
         if (mediaType === 'movie') {
             if (playerControls) playerControls.style.display = 'none';
-            videoIframe.src = getMovieUrl(currentServer, mediaId);
+            if (videoIframe) {
+                videoIframe.setAttribute('referrerpolicy', 'no-referrer');
+                const targetUrl = getMovieUrl(currentServer, mediaId);
+                videoIframe.src = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
+            }
+            fetchCoflixSources('movie', mediaId!);
         } else {
             if (playerControls) playerControls.style.display = 'flex';
-            // On a déjà récupéré le nombre de saisons lors du fetchDetails initial
+            
+            // Si on n'a pas encore de sélecteurs (premier clic)
             if (seasonSelect && (seasonSelect.value === '' || seasonSelect.options.length <= 1) && currentSeasonsCount > 0) {
-                // Charger la dernière progression si elle existe
                 const lastProgress = ProgressManager.getProgress(mediaId!, 'tv');
                 if (lastProgress && lastProgress.season) {
                     populateSeasonSelect(lastProgress.season);
@@ -492,8 +578,9 @@ if (watchMovieBtn && playerSection && videoIframe) {
                     populateSeasonSelect(1);
                     fetchEpisodes(1);
                 }
-            } else if (seasonSelect) {
-                updateTvIframe();
+            } else if (seasonSelect && episodeSelect) {
+                // Si déjà peuplé, on lance la recherche directement
+                fetchCoflixSources('tv', mediaId!, seasonSelect.value, episodeSelect.value);
             }
         }
     });
@@ -527,7 +614,7 @@ function populateSeasonSelect(targetSeason: number = 1) {
         if (i === targetSeason) option.selected = true;
         seasonSelect.appendChild(option);
     }
-    
+
     seasonSelect.addEventListener('change', (e) => {
         const selectedSeason = parseInt((e.target as HTMLSelectElement).value);
         fetchEpisodes(selectedSeason);
@@ -538,7 +625,7 @@ function populateSeasonSelect(targetSeason: number = 1) {
 function fetchEpisodes(seasonNumber: number, targetEpisode: number | null = null) {
     if (!episodeSelect) return;
     episodeSelect.innerHTML = '<option value="">Chargement...</option>';
-    
+
     fetch(`${BASE_URL}/tv/${mediaId}/season/${seasonNumber}?api_key=${TMDB_API_KEY}&language=fr-FR`)
         .then(res => res.json())
         .then(data => {
@@ -553,22 +640,22 @@ function fetchEpisodes(seasonNumber: number, targetEpisode: number | null = null
                     }
                     episodeSelect.appendChild(option);
                 });
-                updateTvIframe();
+                fetchCoflixSources('tv', mediaId!, seasonNumber.toString(), episodeSelect.value);
             } else {
                 episodeSelect.innerHTML = '<option value="1">Épisode 1</option>';
-                updateTvIframe();
+                fetchCoflixSources('tv', mediaId!, seasonNumber.toString(), '1');
             }
         })
         .catch(err => {
             console.error("Error fetching episodes:", err);
             episodeSelect.innerHTML = '<option value="1">Épisode 1</option>';
-            updateTvIframe();
+            fetchCoflixSources('tv', mediaId!, seasonNumber.toString(), '1');
         });
 }
 
 if (episodeSelect) {
     episodeSelect.addEventListener('change', () => {
-        updateTvIframe();
+        if (seasonSelect) fetchCoflixSources('tv', mediaId!, seasonSelect.value, episodeSelect.value);
         updateTvProgress();
     });
 }

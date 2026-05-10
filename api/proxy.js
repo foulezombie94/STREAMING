@@ -19,7 +19,7 @@ export default async function handler(request) {
     }
 
     // SÉCURITÉ : Restriction aux domaines IPTV autorisés ou aux requêtes API/Médias
-    const allowedDomains = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium', 'tv', 'live', 'play', 'vod', 'video', 'cdn', 'media', 'net', 'pro', 'top', 'host', 'box']; 
+    const allowedDomains = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium', 'tv', 'live', 'play', 'vod', 'video', 'cdn', 'media', 'net', 'pro', 'top', 'host', 'box', 'voe', 'uqload', 'vidoza', 'dood', 'upstream', 'fembed', 'vidsrc', 'embed']; 
     const targetHost = urlObj.hostname;
     const isWhitelistedDomain = allowedDomains.some(d => targetHost.includes(d));
     
