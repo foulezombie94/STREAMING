@@ -394,7 +394,6 @@ const videoIframe = document.getElementById('video-iframe') as HTMLIFrameElement
 const closePlayerBtn = document.getElementById('close-player-btn');
 
 let currentSeasonsCount = 0;
-let currentServer = 'videasy'; // Default server
 
 
 // Dynamic Sources logic
