@@ -16,7 +16,7 @@ const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 
 // Global Blacklist for specific movies/series
-const GLOBAL_BLACKLIST_IDS = ['36659', '927306']; // 36659: Septem (2006), 927306: Das Schaf im Wolfspelz
+const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '622242', '212502', '77150', '77151', '1017007']; 
 
 // Cache pour la pagination des sections
 const sectionDataStore: { [key: string]: { items: any[], conf: any } } = {};
