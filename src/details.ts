@@ -392,7 +392,6 @@ const seasonSelect = document.getElementById('season-select') as HTMLSelectEleme
 const episodeSelect = document.getElementById('episode-select') as HTMLSelectElement | null;
 const videoIframe = document.getElementById('video-iframe') as HTMLIFrameElement | null;
 const closePlayerBtn = document.getElementById('close-player-btn');
-const serverButtons = document.querySelectorAll('.server-btn');
 
 let currentSeasonsCount = 0;
 let currentServer = 'videasy'; // Default server

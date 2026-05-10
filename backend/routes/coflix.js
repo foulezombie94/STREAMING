@@ -72,39 +72,6 @@ async function searchCoflix(title, type) {
     }
 }
 
-/**
- * Verify if a link is likely to be functional
- */
-async function verifyLink(source) {
-    try {
-        const res = await axios.get(source.url, { 
-            headers: { "User-Agent": HEADERS["User-Agent"] },
-            timeout: 3000,
-            maxRedirects: 3
-        });
-        
-        const content = res.data.toString().toLowerCase();
-        
-        // Detect common "Deleted" or "Not Found" patterns
-        if (content.includes("file was deleted") || 
-            content.includes("video not found") || 
-            content.includes("file not found") ||
-            content.includes("deleted or expired") ||
-            content.includes("video is no longer available") ||
-            content.includes("ce fichier n'existe plus")) {
-            return null;
-        }
-        
-        return source;
-    } catch (e) {
-        // If it's a 404 or timeout, we assume it's dead
-        return null;
-    }
-}
-
-/**
- * Extract players from a Coflix page or iframe
- */
 async function extractPlayers(pageUrl) {
     if (!pageUrl) return [];
     if (typeof pageUrl === 'object' && pageUrl.url) pageUrl = pageUrl.url;
@@ -125,7 +92,7 @@ async function extractPlayers(pageUrl) {
         }
 
         const $if = cheerio.load(container);
-        const rawPlayers = [];
+        const players = [];
         
         $if('li[onclick*="showVideo"]').each((i, el) => {
             const onClick = $if(el).attr("onclick");
@@ -142,7 +109,7 @@ async function extractPlayers(pageUrl) {
 
                 const host = getHostName(decodedUrl);
 
-                rawPlayers.push({
+                players.push({
                     name: host,
                     url: decodedUrl,
                     lang: lang,
@@ -151,14 +118,8 @@ async function extractPlayers(pageUrl) {
             }
         });
 
-        console.log(`[Coflix Extraction] Found ${rawPlayers.length} raw players. Verifying...`);
-        
-        // Verify links in parallel
-        const verificationPromises = rawPlayers.map(p => verifyLink(p));
-        const verifiedPlayers = (await Promise.all(verificationPromises)).filter(p => p !== null);
-
-        console.log(`[Coflix Extraction] ${verifiedPlayers.length} players verified functional`);
-        return verifiedPlayers;
+        console.log(`[Coflix Extraction] Found ${players.length} players`);
+        return players;
     } catch (e) {
         console.error("[Coflix Extraction Error]", e.message);
         return [];
