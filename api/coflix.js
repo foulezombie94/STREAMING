@@ -34,6 +34,8 @@ async function initSession() {
     } catch (e) {
         console.warn("Init session failed:", e.message);
     }
+}
+
 function normalizeTitle(title) {
     if (!title) return "";
     return title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s]/gi, ' ').replace(/\s+/g, ' ').trim();
