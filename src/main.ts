@@ -131,41 +131,47 @@ class HeroCarouselManager {
     private renderSlides() {
         if (!heroSlidesContainer) return;
         heroSlidesContainer.innerHTML = this.slides.map((item, index) => {
-            const displayType = item.media_type || (currentType === 'tv' ? 'tv' : 'movie');
-            const title = displayType === 'tv' ? (item.name || item.original_name) : (item.title || item.original_title);
-            const releaseDate = displayType === 'tv' ? item.first_air_date : item.release_date;
-            const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : 'N/A';
-            const rating = item.vote_average ? item.vote_average.toFixed(1) : '0.0';
-            const backdropUrl = item.backdrop_path ? `${IMAGE_BASE_URL}${item.backdrop_path}` : '';
+            const isSaga = !!item.isSaga;
+            const displayType = isSaga ? 'saga' : (item.media_type || (currentType === 'tv' ? 'tv' : 'movie'));
+            const title = isSaga ? item.title : (displayType === 'tv' ? (item.name || item.original_name) : (item.title || item.original_title));
+            const releaseDate = isSaga ? null : (displayType === 'tv' ? item.first_air_date : item.release_date);
+            const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : (isSaga ? 'SAGA' : 'N/A');
+            const rating = isSaga ? 'N/A' : (item.vote_average ? item.vote_average.toFixed(1) : '0.0');
+            const backdropUrl = item.backdrop || (item.backdrop_path ? `${IMAGE_BASE_URL}${item.backdrop_path}` : '');
+            const overview = item.description || item.overview || "Aucun synopsis disponible.";
 
             const isLongTitle = title && title.length > 18;
+            
+            const actionOnClick = isSaga 
+                ? `renderSagaDetailsPage('${item.id}')`
+                : `window.location.href='/details.html?id=${item.id}&type=${displayType}'`;
+
             return `
                 <div class="hero-slide ${index === 0 ? 'active' : ''} ${isLongTitle ? 'long-title' : ''}" style="background-image: url('${backdropUrl}')" data-index="${index}">
                     <div class="slide-content">
                         <div class="slide-info">
-                            <span class="type-tag">${displayType === 'tv' ? 'SÉRIE' : 'FILM'}</span>
+                            <span class="type-tag">${isSaga ? 'COLLECTION' : (displayType === 'tv' ? 'SÉRIE' : 'FILM')}</span>
                             <span class="year-tag">
                                 <span class="material-symbols-outlined">calendar_today</span>
                                 ${releaseYear}
                             </span>
-                            <span class="rating-tag">
+                            <span class="rating-tag" style="${isSaga ? 'display:none' : ''}">
                                 <span class="material-symbols-outlined">star</span>
                                 ${rating}
                             </span>
                         </div>
                         <h1>${title}</h1>
-                        <p class="slide-synopsis">${item.overview || "Aucun synopsis disponible."}</p>
+                        <p class="slide-synopsis">${overview}</p>
                         <div class="slide-actions">
-                            <button class="hero-btn-play" onclick="window.location.href='/details.html?id=${item.id}&type=${displayType}'">
-                                <span class="material-symbols-outlined">play_arrow</span> Lecture
+                            <button class="hero-btn-play" onclick="${actionOnClick}">
+                                <span class="material-symbols-outlined">${isSaga ? 'visibility' : 'play_arrow'}</span> ${isSaga ? 'Découvrir' : 'Lecture'}
                             </button>
-                            <button class="hero-btn-info" onclick="window.location.href='/details.html?id=${item.id}&type=${displayType}'">
+                            <button class="hero-btn-info" onclick="${actionOnClick}">
                                 <span class="material-symbols-outlined">info</span> Plus d'infos
                             </button>
                         </div>
                     </div>
                 </div>
-
             `;
         }).join('');
     }
@@ -248,6 +254,18 @@ class HeroCarouselManager {
     public refresh() {
         this.updateDOM();
     }
+
+    public setSagaSlides() {
+        // Prendre les 50 premières sagas (les plus connues)
+        const topSagas = SAGAS_DATA.slice(0, 50);
+        // En choisir 6 au hasard
+        const shuffled = [...topSagas].sort(() => 0.5 - Math.random());
+        this.slides = shuffled.slice(0, 6).map(s => ({ ...s, isSaga: true }));
+        this.renderSlides();
+        this.renderDots();
+        this.goToSlide(0);
+        this.startTimer();
+    }
 }
 
 const heroCarouselManager = new HeroCarouselManager();
@@ -289,10 +307,20 @@ function handleNavigation(type: any) {
 
     // Sécurité: Si le hero va être affiché mais est vide, on le charge
     if (type !== 'iptv' && type !== 'reprendre' && heroCarouselManager.getSlidesCount() === 0) {
-        fetch(`${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`)
-            .then(res => res.json())
-            .then(data => heroCarouselManager.setSlides(data.results || []));
+        if (type === 'sagas') {
+            heroCarouselManager.setSagaSlides();
+        } else {
+            fetch(`${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`)
+                .then(res => res.json())
+                .then(data => heroCarouselManager.setSlides(data.results || []));
+        }
     }
+
+    // Si on passe aux sagas, on met à jour le hero avec des sagas au hasard
+    if (type === 'sagas') {
+        heroCarouselManager.setSagaSlides();
+    }
+
 
     
     // Fermer le menu mobile si ouvert
