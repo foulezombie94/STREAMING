@@ -16,7 +16,7 @@ const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 
 // Global Blacklist for specific movies/series
-const GLOBAL_BLACKLIST_IDS = ['36659']; // ID 36659 is 'Septem' (2006)
+const GLOBAL_BLACKLIST_IDS = ['36659', '927306']; // 36659: Septem (2006), 927306: Das Schaf im Wolfspelz
 
 // Cache pour la pagination des sections
 const sectionDataStore: { [key: string]: { items: any[], conf: any } } = {};
@@ -1848,8 +1848,19 @@ async function renderSagaDetailsPage(sagaId: string) {
         try {
             if (title.startsWith('id:')) {
                 const movieId = title.split(':')[1];
+                if (GLOBAL_BLACKLIST_IDS.includes(movieId)) return null;
                 const detailRes = await fetch(`${BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
-                return await detailRes.json();
+                const data = await detailRes.json();
+                data.media_type = 'movie'; // Ensure media_type is set
+                return data;
+            }
+            if (title.startsWith('tv:')) {
+                const tvId = title.split(':')[1];
+                if (GLOBAL_BLACKLIST_IDS.includes(tvId)) return null;
+                const detailRes = await fetch(`${BASE_URL}/tv/${tvId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
+                const data = await detailRes.json();
+                data.media_type = 'tv'; // Ensure media_type is set
+                return data;
             }
             // Search movie
             const searchRes = await fetch(`${BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(title)}&page=1`);
@@ -1864,7 +1875,14 @@ async function renderSagaDetailsPage(sagaId: string) {
         } catch (e) { return null; }
     });
 
-    const movies = (await Promise.all(moviePromises)).filter(m => m !== null);
+    const movies = (await Promise.all(moviePromises)).filter(m => m !== null && m.id);
+    
+    // Si pas de résultats
+    if (movies.length === 0) {
+        grid.innerHTML = '<p style="padding: 20px; color: #aaa;">Aucun contenu disponible pour cette saga.</p>';
+        return;
+    }
+
     grid.innerHTML = movies.map(m => renderMovieCard(m, 'movie', '', `&fromSaga=${saga.id}`)).join('');
 
     // Calculer les statistiques globales
