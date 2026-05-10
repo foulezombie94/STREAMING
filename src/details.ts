@@ -451,14 +451,11 @@ async function fetchCoflixSources(type: string, id: string, season?: string, epi
             coflixSources = data.sources;
             renderSourceButtons();
         } else {
-            serverButtonsContainer.innerHTML = '<span class="no-sources">⚠️ Aucune source live trouvée.</span>';
-            // Optional: fallback to static servers
-            renderStaticServers();
+            serverButtonsContainer.innerHTML = `<span class="no-sources">⚠️ Aucune source live trouvée pour "${title}".</span>`;
         }
     } catch (e) {
         console.error("Coflix Error", e);
-        serverButtonsContainer.innerHTML = '<span class="no-sources">❌ Erreur de recherche.</span>';
-        renderStaticServers();
+        serverButtonsContainer.innerHTML = '<span class="no-sources">❌ Erreur de recherche (Coflix).</span>';
     }
 }
 
@@ -490,33 +487,6 @@ function renderSourceButtons() {
     }
 }
 
-function renderStaticServers() {
-    if (!serverButtonsContainer) return;
-    const servers = [
-        { name: 'Multiembed', id: 'multiembed' },
-        { name: 'MoviesAPI', id: 'moviesapi' },
-        { name: 'Videasy', id: 'videasy' }
-    ];
-
-    servers.forEach((s, index) => {
-        const btn = document.createElement('button');
-        btn.className = 'server-btn' + (index === 0 ? ' active' : '');
-        btn.textContent = s.name;
-        btn.onclick = () => {
-            document.querySelectorAll('.server-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            if (videoIframe) videoIframe.setAttribute('referrerpolicy', 'no-referrer');
-            if (mediaType === 'movie') {
-                const targetUrl = getMovieUrl(s.id, mediaId);
-                if (videoIframe) videoIframe.src = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
-            } else {
-                currentServer = s.id;
-                updateTvIframe();
-            }
-        };
-        serverButtonsContainer.appendChild(btn);
-    });
-}
 
 function updateTvIframe() {
     if (!videoIframe || !seasonSelect || !episodeSelect) return;
@@ -559,11 +529,6 @@ if (watchMovieBtn && playerSection && videoIframe) {
 
         if (mediaType === 'movie') {
             if (playerControls) playerControls.style.display = 'none';
-            if (videoIframe) {
-                videoIframe.setAttribute('referrerpolicy', 'no-referrer');
-                const targetUrl = getMovieUrl(currentServer, mediaId);
-                videoIframe.src = `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
-            }
             fetchCoflixSources('movie', mediaId!);
         } else {
             if (playerControls) playerControls.style.display = 'flex';
