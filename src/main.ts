@@ -274,7 +274,6 @@ function handleNavigation(type: any) {
     if (type === 'iptv' && window.innerWidth <= 768) {
         return;
     }
-    (window as any).handleNavigation = handleNavigation;
     
     // Fermer le menu mobile si ouvert
     navbar?.classList.remove('menu-open');
@@ -331,6 +330,8 @@ function handleNavigation(type: any) {
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+(window as any).handleNavigation = handleNavigation;
+
 
 // 4b. Search Overlay Logic
 searchTrigger?.addEventListener('click', () => {
