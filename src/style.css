@@ -2427,6 +2427,37 @@ a {
 }
 
 /* --- REPRENDRE PAGE STYLES --- */
+.resume-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 30px;
+    padding: 20px 4rem 4rem 4rem !important;
+    overflow-x: visible !important;
+    flex-wrap: wrap;
+}
+
+/* Sur PC : 5 par ligne comme demandé */
+@media (min-width: 1024px) {
+    .resume-grid {
+        grid-template-columns: repeat(5, 1fr) !important;
+    }
+}
+
+/* Sur Mobile : 2 par ligne pour la lisibilité */
+@media (max-width: 768px) {
+    .resume-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        padding: 20px 1.2rem !important;
+        gap: 15px;
+    }
+}
+
+.resume-grid .movie-card {
+    flex: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+}
+
 .progress-bar-mini {
     position: absolute;
     bottom: 0;

@@ -423,7 +423,7 @@ function renderResumePage() {
     section.className = 'popular';
     section.innerHTML = `
         <h2 class="section-title">Continuer la lecture</h2>
-        <div class="carousel-container" id="carousel-resume">
+        <div class="carousel-container resume-grid" id="carousel-resume">
             ${history.length > 0 
                 ? history.map(item => {
                     // Mapper VideoProgress vers le format attendu par renderMovieCard
