@@ -3,6 +3,10 @@
     {
       "source": "/api/proxy",
       "destination": "/api/proxy"
+    },
+    {
+      "source": "/api/coflix/:path*",
+      "destination": "/api/coflix?path=:path*"
     }
   ],
   "headers": [
