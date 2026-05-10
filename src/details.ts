@@ -12,7 +12,7 @@ const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 const urlParams = new URLSearchParams(window.location.search);
 const mediaId = urlParams.get('id');
 const mediaType = urlParams.get('type');
-const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '622242', '212502', '77150', '77151', '1017007'];
+const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '1017007'];
 
 // 3. Éléments du DOM
 const heroSection = document.getElementById('details-hero');
