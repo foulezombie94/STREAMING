@@ -138,12 +138,11 @@ class HeroCarouselManager {
             const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : (isSaga ? 'SAGA' : 'N/A');
             const rating = isSaga ? 'N/A' : (item.vote_average ? item.vote_average.toFixed(1) : '0.0');
             
-            // Gestion intelligente du backdrop : Fallback élégant si manquant ou cassé
-            let backdropUrl = item.backdrop || (item.backdrop_path ? `${IMAGE_BASE_URL}${item.backdrop_path}` : '');
+            // Pour les sagas, on utilise l'image des icônes (poster) comme demandé par l'utilisateur
+            let backdropUrl = isSaga ? item.poster : (item.backdrop || (item.backdrop_path ? `${IMAGE_BASE_URL}${item.backdrop_path}` : ''));
             
-            // Si c'est une saga et que le backdrop est invalide (chaîne vide, null, ou lien connu comme cassé)
-            if (isSaga && (!backdropUrl || backdropUrl.includes('86Yp1S669SFWFWFW') || backdropUrl === '')) {
-                // Utilisation d'une image de secours premium (cinéma) pour garantir la qualité visuelle
+            // Si l'image est manquante ou cassée
+            if (!backdropUrl || backdropUrl.includes('86Yp1S669SFWFWFW') || backdropUrl === '') {
                 backdropUrl = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop';
             }
 
