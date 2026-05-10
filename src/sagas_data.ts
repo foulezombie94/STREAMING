@@ -47,7 +47,7 @@ export const SAGAS_DATA: any[] = [
         "id": "starwars",
         "title": "Star Wars",
         "poster": "https://image.tmdb.org/t/p/w500/6mHkagjziBPth2Mx0VpEercocm4.jpg",
-        "backdrop": "https://image.tmdb.org/t/p/original/86Yp1S669SFWFWFW.jpg",
+        "backdrop": "https://image.tmdb.org/t/p/original/d8duYadR69XlXp0d6Xg37d9jJ1w.jpg",
         "description": "La saga complète de la galaxie lointaine, très lointaine...",
         "items": [
             "id:11",

@@ -137,7 +137,16 @@ class HeroCarouselManager {
             const releaseDate = isSaga ? null : (displayType === 'tv' ? item.first_air_date : item.release_date);
             const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : (isSaga ? 'SAGA' : 'N/A');
             const rating = isSaga ? 'N/A' : (item.vote_average ? item.vote_average.toFixed(1) : '0.0');
-            const backdropUrl = item.backdrop || (item.backdrop_path ? `${IMAGE_BASE_URL}${item.backdrop_path}` : '');
+            
+            // Gestion intelligente du backdrop : Fallback élégant si manquant ou cassé
+            let backdropUrl = item.backdrop || (item.backdrop_path ? `${IMAGE_BASE_URL}${item.backdrop_path}` : '');
+            
+            // Si c'est une saga et que le backdrop est invalide (chaîne vide, null, ou lien connu comme cassé)
+            if (isSaga && (!backdropUrl || backdropUrl.includes('86Yp1S669SFWFWFW') || backdropUrl === '')) {
+                // Utilisation d'une image de secours premium (cinéma) pour garantir la qualité visuelle
+                backdropUrl = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop';
+            }
+
             const overview = item.description || item.overview || "Aucun synopsis disponible.";
 
             const isLongTitle = title && title.length > 18;
