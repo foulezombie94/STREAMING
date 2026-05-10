@@ -6,11 +6,34 @@ const cheerio = require('cheerio');
 const COFLIX_BASE_URL = "https://coflix.date";
 const HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Cache-Control": "max-age=0",
     "Referer": COFLIX_BASE_URL + "/",
-    "Origin": COFLIX_BASE_URL,
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-    "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
+    "Origin": COFLIX_BASE_URL
 };
+
+let globalCookies = "";
+
+async function initSession() {
+    try {
+        const res = await axios.get(COFLIX_BASE_URL + "/", { 
+            headers: HEADERS,
+            timeout: 5000 
+        });
+        const setCookie = res.headers['set-cookie'];
+        if (setCookie) {
+            globalCookies = setCookie.map(c => c.split(';')[0]).join('; ');
+        }
+    } catch (e) {}
+}
 
 function normalizeTitle(title) {
     if (!title) return "";
@@ -121,9 +144,13 @@ async function extractPlayers(pageUrl) {
 
 async function searchCoflix(title, type) {
     try {
+        if (!globalCookies) await initSession();
         const query = normalizeTitle(title);
         const url = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(query)}`;
-        const res = await axios.get(url, { headers: HEADERS, timeout: 5000 });
+        const res = await axios.get(url, { 
+            headers: { ...HEADERS, "Cookie": globalCookies, "X-Requested-With": "XMLHttpRequest" }, 
+            timeout: 5000 
+        });
         const data = res.data;
         
         if (!Array.isArray(data)) return [];
