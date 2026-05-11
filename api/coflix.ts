@@ -1,5 +1,5 @@
 import { IncomingMessage, ServerResponse } from 'http';
-import { ScraperRegistry } from '../backend/utils/scraper-registry.js';
+import ScraperRegistry from '../backend/utils/scraper-registry.js';
 
 // Define Vercel-like types to avoid missing dependency errors
 interface VercelRequest extends IncomingMessage {
@@ -61,8 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     } catch (error: any) {
         console.error("[Coflix API Error]", error);
-        // Ensure res.status and res.json are available in catch block too
-        const status = res.status ? res.status.bind(res) : (code: number) => { res.statusCode = code; return res; };
+        // Ensure res.json is available in catch block too
         const json = res.json ? res.json.bind(res) : (body: any) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(body)); return res; };
         
         return json({ 

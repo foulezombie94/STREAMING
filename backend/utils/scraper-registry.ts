@@ -1,7 +1,7 @@
 import type { PlayerInfo } from './types.js';
 import { CoflixScraper } from '../scrapers/coflix.js';
 
-export class ScraperRegistry {
+export default class ScraperRegistry {
     private coflix: CoflixScraper;
 
     constructor() {
