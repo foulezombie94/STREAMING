@@ -49,35 +49,40 @@ const customLookup = (hostname, options, callback) => {
 const httpsAgent = new https.Agent({ lookup: customLookup, keepAlive: true });
 const httpAgent = new http.Agent({ lookup: customLookup, keepAlive: true });
 
-const ALLOWED_DOMAINS = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium', 'tv', 'live', 'play', 'vod', 'video', 'cdn', 'media', 'net', 'pro', 'top', 'host', 'box', 'voe', 'uqload', 'vidoza', 'dood', 'upstream', 'fembed', 'vidsrc', 'embed', 'frembed', 'coflix'];
+const ALLOWED_DOMAINS = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium', 'tv', 'live', 'play', 'vod', 'video', 'cdn', 'media', 'net', 'pro', 'top', 'host', 'box', 'voe', 'uqload', 'vidoza', 'dood', 'upstream', 'fembed', 'vidsrc', 'embed', 'frembed', 'coflix', 'lecteurvideo'];
 
-router.get('/*', async (req, res) => {
-    const targetUrl = req.query.url || req.params[0];
-    if (!targetUrl) return res.status(400).send('Missing URL');
+router.get('/', async (req, res) => {
+    const targetUrl = req.query.url;
+    if (!targetUrl) return res.status(400).send('Missing url parameter');
 
     try {
         const urlObj = new URL(targetUrl);
         const targetHost = urlObj.hostname;
         
-        // Security check
         const isWhitelisted = ALLOWED_DOMAINS.some(d => targetHost.includes(d));
-        if (!isWhitelisted) {
-            console.warn(`[Proxy Warning] Domain not in whitelist: ${targetHost}`);
+        const isIptvRequest = targetUrl.includes('player_api.php') || targetUrl.includes('get.php') || targetUrl.includes('.m3u8');
+
+        if (!isWhitelisted && !isIptvRequest) {
+            return res.status(403).send('Access Denied');
         }
+
+        const useBrowserUA = targetUrl.includes('embed') || targetUrl.includes('php');
+        const referer = targetUrl.includes('lecteurvideo') || targetUrl.includes('coflix') ? 'https://coflix.date/' : (urlObj.origin + '/');
 
         const response = await axios({
             method: 'get',
             url: targetUrl,
             responseType: 'stream',
-            httpsAgent: targetUrl.startsWith('https') ? httpsAgent : undefined,
-            httpAgent: targetUrl.startsWith('http') ? httpAgent : undefined,
+            httpsAgent,
+            httpAgent,
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-                'Referer': urlObj.origin + '/',
+                'User-Agent': useBrowserUA ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' : 'VLC/3.0.23 LibVLC/3.0.23',
+                'Referer': referer,
                 'Origin': urlObj.origin
             },
             timeout: 15000,
-            maxRedirects: 5
+            maxRedirects: 5,
+            proxy: false
         });
 
         // Strip security headers that block embedding

@@ -44,7 +44,7 @@ const httpsAgent = isVercel ? undefined : new https.Agent({ lookup: customLookup
 const httpAgent = isVercel ? undefined : new http.Agent({ lookup: customLookup, keepAlive: true });
 
 
-const ALLOWED_DOMAINS = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium', 'tv', 'live', 'play', 'vod', 'video', 'cdn', 'media', 'net', 'pro', 'top', 'host', 'box', 'voe', 'uqload', 'vidoza', 'dood', 'upstream', 'fembed', 'vidsrc', 'embed', 'frembed', 'coflix'];
+const ALLOWED_DOMAINS = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium', 'tv', 'live', 'play', 'vod', 'video', 'cdn', 'media', 'net', 'pro', 'top', 'host', 'box', 'voe', 'uqload', 'vidoza', 'dood', 'upstream', 'fembed', 'vidsrc', 'embed', 'frembed', 'coflix', 'lecteurvideo'];
 
 export default async function handler(req, res) {
     // Manual URL parsing to avoid legacy req.query
@@ -52,7 +52,6 @@ export default async function handler(req, res) {
     const targetUrl = fullUrl.searchParams.get('url');
 
     if (!targetUrl) return res.status(400).send('Missing url parameter');
-
 
     try {
         const urlObj = new URL(targetUrl);
@@ -66,6 +65,10 @@ export default async function handler(req, res) {
             return res.status(403).send('Access Denied');
         }
 
+        // Use a real browser User-Agent for embeds, and Coflix as Referer
+        const useBrowserUA = targetUrl.includes('embed') || targetUrl.includes('php');
+        const referer = targetUrl.includes('lecteurvideo') || targetUrl.includes('coflix') ? 'https://coflix.date/' : (urlObj.origin + '/');
+
         const response = await axios({
             method: 'get',
             url: targetUrl,
@@ -73,14 +76,15 @@ export default async function handler(req, res) {
             httpsAgent: targetUrl.startsWith('https') ? httpsAgent : undefined,
             httpAgent: targetUrl.startsWith('http') ? httpAgent : undefined,
             headers: {
-                'User-Agent': 'VLC/3.0.23 LibVLC/3.0.23',
-                'Referer': urlObj.origin + '/',
+                'User-Agent': useBrowserUA ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' : 'VLC/3.0.23 LibVLC/3.0.23',
+                'Referer': referer,
                 'Origin': urlObj.origin
             },
             timeout: 15000,
             maxRedirects: 5,
             proxy: false
         });
+
 
         // Strip security headers
         const headers = { ...response.headers };
