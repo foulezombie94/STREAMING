@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
-import { ScraperEngine } from '../utils/scraper-engine';
-import { rankResults } from '../utils/similarity';
-import { PlayerInfo, SearchResult } from '../utils/types';
+import { ScraperEngine } from '../utils/scraper-engine.js';
+import { rankResults } from '../utils/similarity.js';
+import { PlayerInfo, SearchResult } from '../utils/types.js';
 
 export class CoflixScraper {
     private engine: ScraperEngine;
