@@ -182,20 +182,21 @@ async function extractPlayers(pageUrl) {
         const iframes = $("iframe").toArray();
         for (const el of iframes) {
             let src = $(el).attr('src');
-            if (src && src.includes('lecteurvideo')) {
+            if (!src) continue;
+
+            if (src.includes('lecteurvideo')) {
                 try {
                     const cleanSrc = fixUrl(src).replace('&ads=true', '');
                     
-                    // 1. Get cookies first (Warmup)
+                    // Warmup and Fetch
                     let cookieHeader = "";
                     try {
-                        const warm = await axios.get('https://coflix.date/', { headers: HEADERS, timeout: 3000 });
+                        const warm = await axios.get('https://coflix.date/', { headers: HEADERS, timeout: 2000 });
                         if (warm.headers['set-cookie']) {
                             cookieHeader = warm.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
                         }
                     } catch (e) {}
 
-                    // 2. Fetch iframe content with full browser headers
                     const iframeRes = await axios.get(cleanSrc, { 
                         headers: {
                             ...HEADERS,
@@ -203,10 +204,11 @@ async function extractPlayers(pageUrl) {
                             'Origin': 'https://coflix.date',
                             'Cookie': cookieHeader
                         },
-                        timeout: 5000 
+                        timeout: 4000 
                     });
                     
                     const $if = cheerio.load(iframeRes.data);
+                    const foundInIframe = [];
                     $if('li[onclick*="showVideo"]').each((i, ifEl) => {
                         const onClick = $if(ifEl).attr('onclick');
                         const base64Match = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
@@ -214,7 +216,7 @@ async function extractPlayers(pageUrl) {
                             try {
                                 const decoded = Buffer.from(base64Match[1], 'base64').toString('utf-8');
                                 const name = $if(ifEl).find('p').text().trim() || getHostName(decoded);
-                                players.push({
+                                foundInIframe.push({
                                     name: name,
                                     url: fixUrl(decoded),
                                     lang: "VF",
@@ -223,18 +225,30 @@ async function extractPlayers(pageUrl) {
                             } catch (e) {}
                         }
                     });
+
+                    if (foundInIframe.length > 0) {
+                        players.push(...foundInIframe);
+                    } else {
+                        // If deep extraction found nothing but it's a valid iframe, add the iframe itself as fallback
+                        players.push({ name: "Serveur Principal", url: cleanSrc, lang: "VF", quality: "" });
+                    }
                 } catch (e) {
-                    console.error(`[Coflix] Deep extraction failed for ${src}: ${e.message}`);
+                    console.error(`[Coflix] Deep extraction failed, using fallback for: ${src}`);
+                    players.push({ name: "Serveur de Secours", url: fixUrl(src), lang: "VF", quality: "" });
                 }
-            } else if (src && !src.includes('google') && !src.includes('facebook') && !src.includes('doubleclick') && !src.includes('twitter')) {
-                players.push({
-                    name: getHostName(src),
-                    url: fixUrl(src),
-                    lang: "VF",
-                    quality: ""
-                });
+            } else if (!src.includes('google') && !src.includes('facebook') && !src.includes('doubleclick') && !src.includes('twitter')) {
+                players.push({ name: getHostName(src), url: fixUrl(src), lang: "VF", quality: "" });
             }
         }
+
+        // Emergency Pattern: If still 0, look for ANY link that looks like a video link
+        if (players.length === 0) {
+            $('a[href*="vidoza"], a[href*="upstream"], a[href*="vidoza"]').each((i, el) => {
+                const href = $(el).attr('href');
+                players.push({ name: getHostName(href), url: fixUrl(href), lang: "VF", quality: "" });
+            });
+        }
+
 
 
 
