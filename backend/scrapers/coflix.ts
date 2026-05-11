@@ -44,7 +44,7 @@ export class CoflixScraper {
                 const mapped = results.map(r => ({
                     title: r.post_title || r.title,
                     url: r.url,
-                    type: (r.url.includes('/series/') || r.post_type === 'series') ? 'series' : 'movie'
+                    type: ((r.url.includes('/series/') || r.post_type === 'series') ? 'series' : 'movie') as 'movie' | 'series'
                 }));
                 const ranked = rankResults(mapped, title, year);
                 if (ranked.length > 0) return ranked.filter(r => r.type === type);
