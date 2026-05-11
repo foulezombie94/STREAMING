@@ -308,56 +308,64 @@ export default async function handler(req, res) {
         const parts = path.split('/').filter(Boolean);
         const type = parts[0]; 
         const tmdbId = parts[1];
+        const season = parts[2];
+        const episode = parts[3];
 
         if (type === 'movie') {
             const results = await searchCoflix(title, "movie");
             if (results.length === 0) return res.json({ success: true, sources: [] });
             const players = await extractPlayers(results[0].url);
             return res.json({ success: true, tmdbId, sources: players });
-        } 
-        
-        if (type === 'tv') {
-            const season = parts[2];
-            const episode = parts[3];
-            const results = await searchCoflix(title, "tv");
+        } else {
+            // Series/TV logic
+            const results = await searchCoflix(title, "series");
             if (results.length === 0) return res.json({ success: true, sources: [] });
-
-            const seriesId = results[0].ID;
-            const seriesSlug = (results[0].url || "").split('/').filter(Boolean).pop() || normalizeTitle(results[0].title || results[0].post_title).replace(/\s+/g, '-').toLowerCase();
             
-            // Pattern 1: WP-JSON API
-            try {
-                const apiPath = `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${seriesId}/${season}`;
-                const apiRes = await axios.get(apiPath, { headers: HEADERS });
-                const apiData = apiRes.data;
-                if (apiData && Array.isArray(apiData.episodes)) {
-                    const targetEp = apiData.episodes.find(ep => parseInt(ep.number) === parseInt(episode));
-                    if (targetEp && targetEp.links) {
-                        const players = await extractPlayers(targetEp.links);
-                        if (players.length > 0) return res.json({ success: true, sources: players });
+            let seriesUrl = results[0].url;
+            let finalUrl = seriesUrl;
+
+            // If we have season/episode, we need to find the episode link
+            if (season && episode) {
+                try {
+                    // 1. Try common slug patterns first (faster)
+                    const seriesSlug = seriesUrl.split('/').filter(Boolean).pop();
+                    const slugPatterns = [
+                        `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}/`,
+                        `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}-streaming/`,
+                        `${COFLIX_BASE_URL}/episode/${seriesSlug}-${season}x${episode}/`
+                    ];
+
+                    for (const pattern of slugPatterns) {
+                        const testPlayers = await extractPlayers(pattern);
+                        if (testPlayers.length > 0) {
+                            return res.json({ success: true, tmdbId, sources: testPlayers });
+                        }
                     }
-                }
-            } catch (err) {}
 
-            // Try multiple HTML patterns
-            const slugPatterns = [
-                `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}/`,
-                `${COFLIX_BASE_URL}/episode/${seriesSlug}-${season}x${episode}/`,
-                `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}-streaming/`,
-                `${COFLIX_BASE_URL}/${seriesSlug}-saison-${season}-episode-${episode}/`
-            ];
+                    // 2. Fallback: Parse the series page for links
+                    const seriesRes = await axios.get(seriesUrl, { headers: HEADERS, timeout: 5000 });
+                    const $ = cheerio.load(seriesRes.data);
+                    const epSearch = `s${season}-e${episode}`;
+                    const epSearchLong = `saison-${season}-episode-${episode}`;
+                    
+                    let foundUrl = "";
+                    $('a').each((i, el) => {
+                        const href = $(el).attr('href');
+                        if (href && (href.toLowerCase().includes(epSearch) || href.toLowerCase().includes(epSearchLong))) {
+                            foundUrl = fixUrl(href);
+                        }
+                    });
 
-            for (const path of slugPatterns) {
-                const players = await extractPlayers(path);
-                if (players && players.length > 0) {
-                    return res.json({ success: true, sources: players });
+                    if (foundUrl) finalUrl = foundUrl;
+                } catch (e) {
+                    console.error(`[Coflix] Series navigation failed: ${e.message}`);
                 }
             }
-            
-            return res.json({ success: true, sources: [] });
+
+            const players = await extractPlayers(finalUrl);
+            return res.json({ success: true, tmdbId, sources: players });
         }
 
-        return res.status(404).json({ success: false, error: "Type not supported" });
 
     } catch (error) {
         console.error("Coflix handler error:", error.message);
