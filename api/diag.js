@@ -31,9 +31,28 @@ export default async function handler(req, res) {
             statusCode: testRes.status,
             cookies: testRes.headers['set-cookie'] ? 'received' : 'none'
         };
+    // Test 3: Search test
+    try {
+        const query = req.query.test || 'Star Wars';
+        const searchUrl = `https://coflix.date/suggest.php?query=${encodeURIComponent(query)}`;
+        const searchRes = await axios.get(searchUrl, { 
+            headers: { 
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            timeout: 5000,
+            proxy: false
+        });
+        report.tests.search_test = { 
+            status: 'ok', 
+            query,
+            resultCount: Array.isArray(searchRes.data) ? searchRes.data.length : 'not_an_array',
+            firstResult: Array.isArray(searchRes.data) && searchRes.data[0] ? searchRes.data[0].title : null
+        };
     } catch (e) {
-        report.tests.coflix_connectivity = { status: 'error', error: e.message };
+        report.tests.search_test = { status: 'error', error: e.message };
     }
 
     res.status(200).json(report);
 }
+
