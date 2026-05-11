@@ -1,6 +1,42 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const dns = require('dns');
+const https = require('https');
+const http = require('http');
+
+// Configure custom DNS servers (Cloudflare and Google)
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+
+/**
+ * Custom lookup function that uses dns.resolve4 (bypassing system hosts file)
+ */
+const customLookup = (hostname, options, callback) => {
+    if (typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+
+    dns.lookup(hostname, options, (err, address, family) => {
+        if (err || address === '127.0.0.1' || address === '::1') {
+            dns.resolve4(hostname, (err4, addresses) => {
+                if (!err4 && addresses && addresses.length > 0) {
+                    return callback(null, addresses[0], 4);
+                }
+                // Prevent returning local loopback for external domains
+                return callback(err || new Error(`ENOTFOUND: ${hostname} is blocked locally`), null, family);
+            });
+        } else {
+            callback(err, address, family);
+        }
+    });
+};
+
+
+
+
+const httpsAgent = new https.Agent({ lookup: customLookup, keepAlive: true });
+const httpAgent = new http.Agent({ lookup: customLookup, keepAlive: true });
 
 const ALLOWED_DOMAINS = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium', 'tv', 'live', 'play', 'vod', 'video', 'cdn', 'media', 'net', 'pro', 'top', 'host', 'box', 'voe', 'uqload', 'vidoza', 'dood', 'upstream', 'fembed', 'vidsrc', 'embed', 'frembed', 'coflix'];
 
@@ -15,7 +51,6 @@ router.get('/*', async (req, res) => {
         // Security check
         const isWhitelisted = ALLOWED_DOMAINS.some(d => targetHost.includes(d));
         if (!isWhitelisted) {
-            // Log it but allow for now if it's a known streaming URL pattern
             console.warn(`[Proxy Warning] Domain not in whitelist: ${targetHost}`);
         }
 
@@ -23,6 +58,8 @@ router.get('/*', async (req, res) => {
             method: 'get',
             url: targetUrl,
             responseType: 'stream',
+            httpsAgent: targetUrl.startsWith('https') ? httpsAgent : undefined,
+            httpAgent: targetUrl.startsWith('http') ? httpAgent : undefined,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
                 'Referer': urlObj.origin + '/',
@@ -56,5 +93,6 @@ router.get('/*', async (req, res) => {
 });
 
 module.exports = router;
+
 
 

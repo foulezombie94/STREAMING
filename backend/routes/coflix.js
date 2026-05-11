@@ -26,14 +26,18 @@ async function initSession() {
     try {
         const res = await axios.get(COFLIX_BASE_URL + "/", { 
             headers: HEADERS,
-            timeout: 5000 
+            timeout: 5000,
+            proxy: false
         });
         const setCookie = res.headers['set-cookie'];
         if (setCookie) {
             globalCookies = setCookie.map(c => c.split(';')[0]).join('; ');
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error(`[Coflix] Session initialization failed for ${COFLIX_BASE_URL}: ${e.message}`);
+    }
 }
+
 
 function normalizeTitle(title) {
     if (!title) return "";
@@ -137,7 +141,7 @@ async function extractPlayers(pageUrl) {
 
         return players;
     } catch (e) {
-        console.error(`[Coflix] Extraction error: ${e.message}`);
+        console.error(`[Coflix] Extraction error for ${pageUrl}: ${e.message}`);
         return [];
     }
 }
@@ -147,23 +151,33 @@ async function searchCoflix(title, type) {
         if (!globalCookies) await initSession();
         const query = normalizeTitle(title);
         const url = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(query)}`;
+        console.log(`[Coflix] Searching: ${url}`);
+        
         const res = await axios.get(url, { 
             headers: { ...HEADERS, "Cookie": globalCookies, "X-Requested-With": "XMLHttpRequest" }, 
             timeout: 5000 
         });
         const data = res.data;
         
-        if (!Array.isArray(data)) return [];
+        if (!Array.isArray(data)) {
+            console.warn(`[Coflix] Search response for "${title}" is not an array`);
+            return [];
+        }
         
-        return data.filter(item => {
+        const filtered = data.filter(item => {
             const pType = (item.post_type || "").toLowerCase();
             if (type === "movie") return pType === "movies" || pType === "movie";
             return pType === "series" || pType === "tvshows" || pType === "tvshow" || pType === "tv";
         });
+
+        console.log(`[Coflix] Found ${filtered.length} matching results for "${title}"`);
+        return filtered;
     } catch (e) {
+        console.error(`[Coflix] Search error for "${title}": ${e.message}`);
         return [];
     }
 }
+
 
 router.get("/movie/:tmdbId", async (req, res) => {
     const { tmdbId } = req.params;
