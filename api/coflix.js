@@ -162,11 +162,11 @@ async function extractPlayers(pageUrl) {
             }
         });
 
-        // Pattern 2: iFrame direct
-        if (players.length === 0) {
-            const iframe = $("iframe").attr("src");
-            if (iframe && !iframe.includes("google") && !iframe.includes("facebook") && !iframe.includes("doubleclick")) {
-                const cleanUrl = fixUrl(iframe);
+        // Pattern 2: Dooplay/Source Boxes (Additive)
+        $('.dooplay_player_option, .source-box, li[data-type], .server').each((i, el) => {
+            const url = $(el).attr('data-url') || $(el).attr('data-link') || $(el).attr('data-href');
+            if (url) {
+                const cleanUrl = fixUrl(url);
                 players.push({
                     name: getHostName(cleanUrl),
                     url: cleanUrl,
@@ -174,16 +174,17 @@ async function extractPlayers(pageUrl) {
                     quality: ""
                 });
             }
-        }
+        });
 
-        // Pattern 3: Dooplay/Source Boxes
-        if (players.length === 0) {
-            $('.dooplay_player_option, .source-box, li[data-type]').each((i, el) => {
-                const url = $(el).attr('data-url') || $(el).attr('data-link');
-                if (url) {
+        // Pattern 3: iFrame direct (Last resort if still few)
+        if (players.length < 2) {
+            $("iframe").each((i, el) => {
+                const src = $(el).attr("src");
+                if (src && !src.includes("google") && !src.includes("facebook") && !src.includes("doubleclick") && !src.includes("twitter")) {
+                    const cleanUrl = fixUrl(src);
                     players.push({
-                        name: getHostName(url),
-                        url: fixUrl(url),
+                        name: getHostName(cleanUrl),
+                        url: cleanUrl,
                         lang: "VF",
                         quality: ""
                     });
@@ -191,13 +192,24 @@ async function extractPlayers(pageUrl) {
             });
         }
 
-        console.log(`[Coflix] Extraction complete. Found ${players.length} players.`);
-        return players;
+        // De-duplicate by URL
+        const uniquePlayers = [];
+        const seenUrls = new Set();
+        for (const p of players) {
+            if (!seenUrls.has(p.url)) {
+                seenUrls.add(p.url);
+                uniquePlayers.push(p);
+            }
+        }
+
+        console.log(`[Coflix] Extraction complete. Found ${uniquePlayers.length} unique players.`);
+        return uniquePlayers;
     } catch (e) {
         console.error(`[Coflix] Extraction failed for ${pageUrl}: ${e.message}`);
         return [];
     }
 }
+
 
 
 async function searchCoflix(title, type) {
