@@ -150,14 +150,13 @@ async function extractPlayers(pageUrl) {
             if (base64Match && base64Match[1]) {
                 try {
                     const decodedUrl = Buffer.from(base64Match[1], 'base64').toString('utf8');
-                    const quality = $(el).find("span").text().trim() || "HD";
                     const langInfo = $(el).find("p").text().toLowerCase();
                     let lang = langInfo.includes("vostfr") ? "VOSTFR" : (langInfo.includes("vo") ? "VO" : "VF");
                     players.push({
                         name: getHostName(decodedUrl),
                         url: decodedUrl,
                         lang,
-                        quality
+                        quality: ""
                     });
                 } catch (e) {}
             }
@@ -172,7 +171,7 @@ async function extractPlayers(pageUrl) {
                     name: getHostName(cleanUrl),
                     url: cleanUrl,
                     lang: "VF",
-                    quality: "HD"
+                    quality: ""
                 });
             }
         }
@@ -186,7 +185,7 @@ async function extractPlayers(pageUrl) {
                         name: getHostName(url),
                         url: fixUrl(url),
                         lang: "VF",
-                        quality: "HD"
+                        quality: ""
                     });
                 }
             });

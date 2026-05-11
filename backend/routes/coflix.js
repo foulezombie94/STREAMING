@@ -116,8 +116,8 @@ async function extractPlayers(pageUrl) {
                     players.push({
                         name: getHostName(decodedUrl),
                         url: decodedUrl,
-                        lang: lang,
-                        quality: quality
+                        lang,
+                        quality: ""
                     });
                 } catch (e) {}
             }
