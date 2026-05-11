@@ -233,15 +233,22 @@ async function searchCoflix(title, type) {
             return [];
         }
         
+        // Lenient filtering: prioritize matching type, but accept others if they match the query
         const filtered = data.filter(item => {
             const pType = (item.post_type || "").toLowerCase();
-            if (type === "movie") return pType === "movies" || pType === "movie";
-            return pType === "series" || pType === "tvshows" || pType === "tvshow" || pType === "tv";
+            if (type === "movie") {
+                return pType === "movies" || pType === "movie" || pType === "post" || !pType;
+            }
+            return pType === "series" || pType === "tvshows" || pType === "tvshow" || pType === "tv" || pType === "post" || !pType;
         });
 
-        console.log(`[Coflix] Final filtered results: ${filtered.length}`);
-        return filtered;
+        // If filtering was too strict and removed everything, take the first result as a last resort
+        const finalResults = filtered.length > 0 ? filtered : data.slice(0, 1);
+
+        console.log(`[Coflix] Final filtered results: ${finalResults.length}`);
+        return finalResults;
     } catch (e) {
+
         console.error(`[Coflix] Search error for "${title}": ${e.message}`);
         return [];
     }
