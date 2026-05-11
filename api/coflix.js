@@ -284,8 +284,13 @@ export default async function handler(req, res) {
     try {
         res.setHeader('Content-Type', 'application/json');
 
-        const { path, title } = req.query;
+        // Manual URL parsing to avoid legacy req.query (which uses deprecated url.parse internally)
+        const fullUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+        const path = fullUrl.searchParams.get('path');
+        const title = fullUrl.searchParams.get('title');
+
         if (!path || !title) return res.status(400).json({ success: false, error: "Missing path or title" });
+
 
         const parts = path.split('/').filter(Boolean);
         const type = parts[0]; 

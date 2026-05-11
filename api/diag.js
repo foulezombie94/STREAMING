@@ -29,6 +29,10 @@ const httpsAgent = new https.Agent({ lookup: customLookup, keepAlive: true });
 const httpAgent = new http.Agent({ lookup: customLookup, keepAlive: true });
 
 export default async function handler(req, res) {
+    // Manual URL parsing to avoid legacy req.query
+    const fullUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const testQuery = fullUrl.searchParams.get('test') || 'Star Wars';
+
     const report = {
         timestamp: new Date().toISOString(),
         env: process.env.NODE_ENV,
@@ -36,6 +40,7 @@ export default async function handler(req, res) {
         dnsServers: dns.getServers(),
         tests: {}
     };
+
 
     // Test 1: DNS Resolution
     try {
@@ -69,8 +74,9 @@ export default async function handler(req, res) {
 
     // Test 3: Search test
     try {
-        const query = req.query.test || 'Star Wars';
+        const query = testQuery;
         const searchUrl = `https://coflix.date/suggest.php?query=${encodeURIComponent(query)}`;
+
         const searchRes = await axios.get(searchUrl, { 
             headers: { 
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",

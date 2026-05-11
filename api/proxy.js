@@ -47,9 +47,12 @@ const httpAgent = isVercel ? undefined : new http.Agent({ lookup: customLookup, 
 const ALLOWED_DOMAINS = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium', 'tv', 'live', 'play', 'vod', 'video', 'cdn', 'media', 'net', 'pro', 'top', 'host', 'box', 'voe', 'uqload', 'vidoza', 'dood', 'upstream', 'fembed', 'vidsrc', 'embed', 'frembed', 'coflix'];
 
 export default async function handler(req, res) {
-    // Vercel Node.js runtime uses (req, res)
-    const targetUrl = req.query.url;
+    // Manual URL parsing to avoid legacy req.query
+    const fullUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const targetUrl = fullUrl.searchParams.get('url');
+
     if (!targetUrl) return res.status(400).send('Missing url parameter');
+
 
     try {
         const urlObj = new URL(targetUrl);
