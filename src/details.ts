@@ -1,5 +1,4 @@
 import './style.css';
-import './antiblocker';
 import { ProgressManager } from './storage';
 
 // 1. Constantes TMDB

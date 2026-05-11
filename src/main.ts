@@ -1,5 +1,4 @@
 import './style.css';
-import './antiblocker';
 import { ProgressManager } from './storage';
 import { SAGAS_DATA } from './sagas_data';
 
