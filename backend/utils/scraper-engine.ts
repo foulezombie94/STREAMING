@@ -14,19 +14,26 @@ const USER_AGENTS = [
 export class ScraperEngine {
     private client: AxiosInstance;
     private maxRetries: number;
+    private cookies: string[] = [];
 
     constructor(baseURL: string, config: { timeout?: number; maxRetries?: number } = {}) {
         this.maxRetries = config.maxRetries || 3;
         
         this.client = axios.create({
             baseURL,
-            timeout: config.timeout || 10000,
+            timeout: config.timeout || 12000,
             httpAgent: new http.Agent({ keepAlive: true }),
             httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: false }),
             headers: {
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
                 'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Connection': 'keep-alive'
+                'Cache-Control': 'max-age=0',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Sec-Fetch-User': '?1'
             }
         });
     }
@@ -35,34 +42,67 @@ export class ScraperEngine {
         return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
     }
 
+    private updateCookies(setCookieHeader?: string[]) {
+        if (!setCookieHeader) return;
+        setCookieHeader.forEach(cookie => {
+            const cookieBase = cookie.split(';')[0];
+            const cookieName = cookieBase.split('=')[0];
+            // Remove old version of the same cookie
+            this.cookies = this.cookies.filter(c => !c.startsWith(cookieName + '='));
+            this.cookies.push(cookieBase);
+        });
+    }
+
     /**
-     * Request with Exponential Backoff and UA Rotation
+     * Request with Exponential Backoff, UA Rotation and Cookie Management
      */
     async request<T = any>(url: string, options: AxiosRequestConfig = {}): Promise<T> {
         let lastError: any;
         
         for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
             try {
+                const headers: any = {
+                    'User-Agent': this.getRandomUA(),
+                    ...options.headers
+                };
+
+                if (this.cookies.length > 0) {
+                    headers['Cookie'] = this.cookies.join('; ');
+                }
+
+                // Adjust Sec-Fetch-Site based on URL
+                if (options.headers?.Referer) {
+                    try {
+                        const refHost = new URL(options.headers.Referer).hostname;
+                        const targetHost = new URL(url.startsWith('http') ? url : (this.client.defaults.baseURL || '') + url).hostname;
+                        headers['Sec-Fetch-Site'] = refHost === targetHost ? 'same-origin' : 'cross-site';
+                    } catch {
+                        headers['Sec-Fetch-Site'] = 'cross-site';
+                    }
+                }
+
                 const response = await this.client.request({
                     ...options,
                     url,
-                    headers: {
-                        'User-Agent': this.getRandomUA(),
-                        ...options.headers
-                    }
+                    headers
                 });
+
+                // Capture cookies for future requests
+                this.updateCookies(response.headers['set-cookie']);
+
                 return response.data;
             } catch (error: any) {
                 lastError = error;
                 
-                // Don't retry on 404 or certain errors
-                if (error.response && [404, 401, 403].includes(error.response.status) && attempt > 0) {
+                // If it's a 403, it might be due to missing cookies or blocked UA
+                // Don't retry on 404
+                if (error.response && error.response.status === 404) {
                     throw error;
                 }
 
                 if (attempt < this.maxRetries) {
                     const delay = Math.pow(2, attempt) * 1000;
-                    console.log(`[ScraperEngine] Attempt ${attempt + 1} failed for ${url}. Retrying in ${delay}ms...`);
+                    console.log(`[ScraperEngine] Attempt ${attempt + 1} failed for ${url} (Status: ${error.response?.status || 'Error'}). Retrying in ${delay}ms...`);
                     await new Promise(resolve => setTimeout(resolve, delay));
                 }
             }
