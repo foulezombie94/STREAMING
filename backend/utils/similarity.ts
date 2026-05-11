@@ -1,4 +1,4 @@
-import { SearchResult } from './types';
+import { SearchResult } from './types.js';
 
 /**
  * Aggressive normalization of titles

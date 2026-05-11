@@ -35,7 +35,7 @@ export class CoflixScraper {
      */
     async search(title: string, type: 'movie' | 'series', year?: string): Promise<SearchResult[]> {
         console.log(`[Coflix] Searching for ${title} (${type})`);
-        
+
         // 1. Try Suggest API first
         try {
             const suggestData = await this.engine.get(`/suggest.php?query=${encodeURIComponent(title)}`, {
@@ -48,7 +48,7 @@ export class CoflixScraper {
                     url: item.url,
                     type: (item.url.includes('/series/') || item.post_type === 'series') ? 'series' : 'movie'
                 }));
-                
+
                 const ranked = rankResults(results, title, year);
                 if (ranked.length > 0) return ranked;
             }
@@ -65,7 +65,7 @@ export class CoflixScraper {
             const link = $(el).find('a').attr('href');
             const pTitle = $(el).find('.title a').text().trim();
             const pYear = $(el).find('.year').text().trim();
-            
+
             if (link && pTitle) {
                 results.push({
                     title: pTitle,
@@ -102,7 +102,7 @@ export class CoflixScraper {
                         lang: info.toLowerCase().includes("vostfr") ? "VOSTFR" : "VF",
                         quality: "HD"
                     });
-                } catch {}
+                } catch { }
             }
         });
 
@@ -123,7 +123,7 @@ export class CoflixScraper {
                     });
                     const $if = cheerio.load(bridgeHtml);
                     const subPlayers: PlayerInfo[] = [];
-                    
+
                     $if('li[onclick*="showVideo"]').each((_, ifEl) => {
                         const onClick = $if(ifEl).attr('onclick') || "";
                         const b64 = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
@@ -165,24 +165,24 @@ export class CoflixScraper {
      */
     async resolveEpisode(seriesUrl: string, season: string, episode: string): Promise<PlayerInfo[]> {
         console.log(`[Coflix] Resolving S${season}E${episode} for ${seriesUrl}`);
-        
+
         const html = await this.engine.get(seriesUrl);
         const $ = cheerio.load(html);
-        
+
         // Extract Internal IDs for API calls
         const postId = $('input#post_id').val() || $('article.post').attr('id')?.replace('post-', '');
-        
+
         if (postId) {
             try {
                 // Query hidden API for season data
-                const apiRes = await this.engine.post('/wp-admin/admin-ajax.php', 
+                const apiRes = await this.engine.post('/wp-admin/admin-ajax.php',
                     `action=get_season&post_id=${postId}&season=${season}`,
                     { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
                 );
-                
+
                 const $api = cheerio.load(apiRes);
                 let epUrl = "";
-                
+
                 $api('a').each((_, el) => {
                     const text = $(el).text().toLowerCase();
                     const href = $(el).attr('href');
@@ -190,7 +190,7 @@ export class CoflixScraper {
                         epUrl = href;
                     }
                 });
-                
+
                 if (epUrl) return this.extractPlayers(this.fixUrl(epUrl));
             } catch (e: any) {
                 console.error(`[Coflix] Internal API navigation failed: ${e.message}`);
@@ -207,7 +207,7 @@ export class CoflixScraper {
         });
 
         if (fallbackUrl) return this.extractPlayers(fallbackUrl);
-        
+
         return [];
     }
 }

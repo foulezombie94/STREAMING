@@ -1,5 +1,5 @@
 import { IncomingMessage, ServerResponse } from 'http';
-import { ScraperRegistry } from '../backend/utils/scraper-registry';
+import { ScraperRegistry } from '../backend/utils/scraper-registry.js';
 
 // Define Vercel-like types to avoid missing dependency errors
 interface VercelRequest extends IncomingMessage {

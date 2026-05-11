@@ -1,5 +1,5 @@
 import { PlayerInfo } from './types';
-import { CoflixScraper } from '../scrapers/coflix';
+import { CoflixScraper } from '../scrapers/coflix.js';
 
 export class ScraperRegistry {
     private coflix: CoflixScraper;
