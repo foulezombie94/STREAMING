@@ -23,7 +23,7 @@ export class ScraperEngine {
         
         this.client = axios.create({
             baseURL,
-            timeout: config.timeout || 12000,
+            timeout: config.timeout || 15000,
             httpAgent: new http.Agent({ keepAlive: true }),
             httpsAgent: new https.Agent({ keepAlive: true, rejectUnauthorized: false }),
             headers: {
@@ -31,6 +31,11 @@ export class ScraperEngine {
                 'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
                 'Cache-Control': 'max-age=0',
                 'Connection': 'keep-alive',
+                'DNT': '1',
+                'Sec-Ch-Ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+                'Sec-Ch-Ua-Mobile': '?0',
+                'Sec-Ch-Ua-Platform': '"Windows"',
+                'Sec-Gpc': '1',
                 'Upgrade-Insecure-Requests': '1',
                 'Sec-Fetch-Dest': 'document',
                 'Sec-Fetch-Mode': 'navigate',
@@ -40,22 +45,31 @@ export class ScraperEngine {
         });
     }
 
+    private async sleep(ms: number) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     private updateCookies(setCookieHeader?: string[]) {
         if (!setCookieHeader) return;
         setCookieHeader.forEach(cookie => {
             const cookieBase = cookie.split(';')[0];
             const cookieName = cookieBase.split('=')[0];
-            // Remove old version of the same cookie
             this.cookies = this.cookies.filter(c => !c.startsWith(cookieName + '='));
             this.cookies.push(cookieBase);
         });
     }
 
     /**
-     * Request with Exponential Backoff, Fixed UA and Cookie Management
+     * Request with Ultra-Aggressive Emulation
      */
     async request<T = any>(url: string, options: AxiosRequestConfig = {}): Promise<T> {
         let lastError: any;
+        
+        // Human-like delay before bridge requests
+        if (url.includes('lecteurvideo') || url.includes('bridge') || url.includes('get=')) {
+            console.log(`[ScraperEngine] Human delay for ${url}...`);
+            await this.sleep(1500 + Math.random() * 1000);
+        }
         
         for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
             try {
