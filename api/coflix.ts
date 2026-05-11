@@ -1,4 +1,14 @@
 import { IncomingMessage, ServerResponse } from 'http';
+import url from 'url';
+
+// Silence DEP0169 (url.parse) deprecation warning from dependencies like Axios
+const originalParse = url.parse;
+// @ts-ignore
+url.parse = function (urlString: string, ...args: any[]) {
+    // @ts-ignore
+    return originalParse.call(url, urlString, ...args);
+};
+
 import ScraperRegistry from '../backend/utils/scraper-registry.js';
 
 // Define Vercel-like types to avoid missing dependency errors
