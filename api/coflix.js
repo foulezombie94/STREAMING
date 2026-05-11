@@ -178,76 +178,58 @@ async function extractPlayers(pageUrl) {
 
 
         // Pattern 3: iFrame direct (Last resort if still few)
-        // Pattern 3: Deep Extraction from iFrames (Crucial)
+        // Pattern 3: High-Precision Deep Extraction (Reference Code Style)
         const iframes = $("iframe").toArray();
+        let specificIframe = $("main div div div article div:nth-child(2) div:nth-child(1) aside div div iframe");
+        if (specificIframe.length) {
+            iframes.push(specificIframe[0]);
+        }
+
         for (const el of iframes) {
             let src = $(el).attr('src');
-            if (!src) continue;
+            if (!src || !src.includes('lecteurvideo')) continue;
 
-            if (src.includes('lecteurvideo')) {
-                try {
-                    const cleanSrc = fixUrl(src).replace('&ads=true', '');
+            try {
+                const cleanSrc = fixUrl(src).replace('&ads=true', '');
+                
+                // Use a CORS bridge to bypass Vercel IP blocks for deep extraction
+                const bridgeUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(cleanSrc)}`;
+                const bridgeRes = await axios.get(bridgeUrl, { timeout: 8000 });
+                
+                if (bridgeRes.data && bridgeRes.data.contents) {
+                    const $if = cheerio.load(bridgeRes.data.contents);
                     
-                    // Warmup and Fetch
-                    let cookieHeader = "";
-                    try {
-                        const warm = await axios.get('https://coflix.date/', { headers: HEADERS, timeout: 2000 });
-                        if (warm.headers['set-cookie']) {
-                            cookieHeader = warm.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
-                        }
-                    } catch (e) {}
+                    let playerItems = $if('li[onclick*="showVideo"]');
+                    if (!playerItems.length) playerItems = $if("div li[onclick]");
 
-                    const iframeRes = await axios.get(cleanSrc, { 
-                        headers: {
-                            ...HEADERS,
-                            'Referer': 'https://coflix.date/',
-                            'Origin': 'https://coflix.date',
-                            'Cookie': cookieHeader
-                        },
-                        timeout: 4000 
-                    });
-                    
-                    const $if = cheerio.load(iframeRes.data);
-                    const foundInIframe = [];
-                    $if('li[onclick*="showVideo"]').each((i, ifEl) => {
-                        const onClick = $if(ifEl).attr('onclick');
+                    playerItems.each((i, ifEl) => {
+                        const onClick = $if(ifEl).attr('onclick') || "";
                         const base64Match = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
                         if (base64Match && base64Match[1]) {
                             try {
                                 const decoded = Buffer.from(base64Match[1], 'base64').toString('utf-8');
-                                const name = $if(ifEl).find('p').text().trim() || getHostName(decoded);
-                                foundInIframe.push({
-                                    name: name,
+                                const quality = $if(ifEl).find("span").text().trim();
+                                const info = $if(ifEl).find("p").text().trim();
+                                
+                                let language = "VF";
+                                if (info.toLowerCase().includes("vostfr")) language = "VOSTFR";
+                                else if (info.toLowerCase().includes("english")) language = "VO";
+
+                                players.push({
+                                    name: `${getHostName(decoded)} - ${info || 'Server'}`,
                                     url: fixUrl(decoded),
-                                    lang: "VF",
-                                    quality: $if(ifEl).find('span').text().trim() || ""
+                                    lang: language,
+                                    quality: quality || "HD"
                                 });
                             } catch (e) {}
                         }
                     });
-
-                    if (foundInIframe.length > 0) {
-                        players.push(...foundInIframe);
-                    } else {
-                        // If deep extraction found nothing but it's a valid iframe, add the iframe itself as fallback
-                        players.push({ name: "Serveur Principal", url: cleanSrc, lang: "VF", quality: "" });
-                    }
-                } catch (e) {
-                    console.error(`[Coflix] Deep extraction failed, using fallback for: ${src}`);
-                    players.push({ name: "Serveur de Secours", url: fixUrl(src), lang: "VF", quality: "" });
                 }
-            } else if (!src.includes('google') && !src.includes('facebook') && !src.includes('doubleclick') && !src.includes('twitter')) {
-                players.push({ name: getHostName(src), url: fixUrl(src), lang: "VF", quality: "" });
+            } catch (e) {
+                console.error(`[Coflix] High-Precision extraction failed: ${e.message}`);
             }
         }
 
-        // Emergency Pattern: If still 0, look for ANY link that looks like a video link
-        if (players.length === 0) {
-            $('a[href*="vidoza"], a[href*="upstream"], a[href*="vidoza"]').each((i, el) => {
-                const href = $(el).attr('href');
-                players.push({ name: getHostName(href), url: fixUrl(href), lang: "VF", quality: "" });
-            });
-        }
 
 
 
