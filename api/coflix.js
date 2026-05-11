@@ -162,9 +162,9 @@ async function extractPlayers(pageUrl) {
             }
         });
 
-        // Pattern 2: Dooplay/Source Boxes (Additive)
-        $('.dooplay_player_option, .source-box, li[data-type], .server').each((i, el) => {
-            const url = $(el).attr('data-url') || $(el).attr('data-link') || $(el).attr('data-href');
+        // Pattern 2: Server Lists/Boxes (Additive & Aggressive)
+        $('.dooplay_player_option, .source-box, li[data-type], .server, .list-server-items li, #server-list li, .player-option').each((i, el) => {
+            const url = $(el).attr('data-url') || $(el).attr('data-link') || $(el).attr('data-href') || $(el).attr('data-video');
             if (url) {
                 const cleanUrl = fixUrl(url);
                 players.push({
@@ -175,6 +175,7 @@ async function extractPlayers(pageUrl) {
                 });
             }
         });
+
 
         // Pattern 3: iFrame direct (Last resort if still few)
         if (players.length < 2) {

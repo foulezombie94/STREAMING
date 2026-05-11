@@ -123,23 +123,32 @@ async function extractPlayers(pageUrl) {
             }
         });
 
-        // Pattern 2: Fallback Selectors
-        if (players.length === 0) {
-            $if('.dooplay_player_option, .source-box, li[data-type]').each((i, el) => {
-                const url = $if(el).attr('data-url') || $if(el).attr('data-link');
-                if (url) {
-                    const name = $if(el).find('.title, .name, span').text().trim() || "Server " + (i+1);
-                    players.push({
-                        name: getHostName(url),
-                        url: fixUrl(url),
-                        lang: "VF",
-                        quality: "HD"
-                    });
-                }
-            });
+        // Pattern 2: Server Lists/Boxes (Additive)
+        $('.dooplay_player_option, .source-box, li[data-type], .server, .list-server-items li, #server-list li').each((i, el) => {
+            const url = $(el).attr('data-url') || $(el).attr('data-link') || $(el).attr('data-href');
+            if (url) {
+                const cleanUrl = fixUrl(url);
+                players.push({
+                    name: getHostName(cleanUrl),
+                    url: cleanUrl,
+                    lang: "VF",
+                    quality: ""
+                });
+            }
+        });
+
+        // De-duplicate by URL
+        const uniquePlayers = [];
+        const seenUrls = new Set();
+        for (const p of players) {
+            if (!seenUrls.has(p.url)) {
+                seenUrls.add(p.url);
+                uniquePlayers.push(p);
+            }
         }
 
-        return players;
+        return uniquePlayers;
+
     } catch (e) {
         console.error(`[Coflix] Extraction error for ${pageUrl}: ${e.message}`);
         return [];
