@@ -12,19 +12,28 @@ const customLookup = (hostname, options, callback) => {
         callback = options;
         options = {};
     }
-    dns.lookup(hostname, options, (err, address, family) => {
-        if (err || address === '127.0.0.1' || address === '::1') {
-            dns.resolve4(hostname, (err4, addresses) => {
-                if (!err4 && addresses && addresses.length > 0) {
-                    return callback(null, addresses[0], 4);
-                }
-                return callback(err || new Error(`ENOTFOUND: ${hostname} is blocked locally`), null, family);
-            });
-        } else {
-            callback(err, address, family);
+
+    // If it's a local address, use standard lookup
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+        return dns.lookup(hostname, options, callback);
+    }
+
+    // For everything else, FORCE public DNS (ignore hosts file)
+    dns.resolve4(hostname, (err, addresses) => {
+        if (!err && addresses && addresses.length > 0) {
+            return callback(null, addresses[0], 4);
         }
+        // Fallback to standard lookup only if resolve4 fails, 
+        // but double check it's not returning 127.0.0.1
+        dns.lookup(hostname, options, (err2, address, family) => {
+            if (!err2 && address !== '127.0.0.1' && address !== '::1') {
+                return callback(null, address, family);
+            }
+            callback(err || err2 || new Error(`ENOTFOUND: ${hostname} is blocked or unreachable`), null, family);
+        });
     });
 };
+
 
 const httpsAgent = new https.Agent({ lookup: customLookup, keepAlive: true });
 const httpAgent = new http.Agent({ lookup: customLookup, keepAlive: true });
