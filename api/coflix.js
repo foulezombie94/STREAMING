@@ -1,7 +1,41 @@
+import * as https from 'https';
+import * as http from 'http';
+import * as dns from 'dns';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
 
+// Bypass local DNS blocks (like hosts file redirecting to 127.0.0.1)
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+
+const customLookup = (hostname, options, callback) => {
+    if (typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+    dns.lookup(hostname, options, (err, address, family) => {
+        if (err || address === '127.0.0.1' || address === '::1') {
+            dns.resolve4(hostname, (err4, addresses) => {
+                if (!err4 && addresses && addresses.length > 0) {
+                    return callback(null, addresses[0], 4);
+                }
+                return callback(err || new Error(`ENOTFOUND: ${hostname} is blocked locally`), null, family);
+            });
+        } else {
+            callback(err, address, family);
+        }
+    });
+};
+
+const httpsAgent = new https.Agent({ lookup: customLookup, keepAlive: true });
+const httpAgent = new http.Agent({ lookup: customLookup, keepAlive: true });
+
+// Apply globally to axios for this function
+axios.defaults.httpsAgent = httpsAgent;
+axios.defaults.httpAgent = httpAgent;
+axios.defaults.proxy = false;
+
 const COFLIX_BASE_URL = "https://coflix.date";
+
 const HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -25,16 +59,19 @@ async function initSession() {
     try {
         const res = await axios.get(COFLIX_BASE_URL + "/", { 
             headers: HEADERS,
-            timeout: 5000 
+            timeout: 5000,
+            proxy: false
         });
         const setCookie = res.headers['set-cookie'];
         if (setCookie) {
             globalCookies = setCookie.map(c => c.split(';')[0]).join('; ');
+            console.log(`[Coflix] Session initialized. Cookies: ${globalCookies ? 'Yes' : 'No'}`);
         }
     } catch (e) {
-        console.warn("Init session failed:", e.message);
+        console.error(`[Coflix] Session initialization failed for ${COFLIX_BASE_URL}: ${e.message}`);
     }
 }
+
 
 function normalizeTitle(title) {
     if (!title) return "";
@@ -180,7 +217,10 @@ async function searchCoflix(title, type) {
             });
         }
 
-        if (!Array.isArray(data)) return [];
+        if (!Array.isArray(data)) {
+            console.error(`[Coflix] Search error: Response for "${title}" is not an array. Body: ${typeof data === 'string' ? data.substring(0, 100) : 'object'}`);
+            return [];
+        }
         
         return data.filter(item => {
             const pType = (item.post_type || "").toLowerCase();
@@ -188,10 +228,11 @@ async function searchCoflix(title, type) {
             return pType === "series" || pType === "tvshows" || pType === "tvshow" || pType === "tv";
         });
     } catch (e) {
-        console.error("Coflix search error:", e.message);
+        console.error(`[Coflix] Search error for "${title}": ${e.message}`);
         return [];
     }
 }
+
 
 export default async function handler(req, res) {
     try {

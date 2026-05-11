@@ -5,10 +5,15 @@
       "destination": "/api/proxy"
     },
     {
+      "source": "/api/diag",
+      "destination": "/api/diag"
+    },
+    {
       "source": "/api/coflix/:path*",
       "destination": "/api/coflix?path=:path*"
     }
   ],
+
   "headers": [
     {
       "source": "/api/(.*)",
