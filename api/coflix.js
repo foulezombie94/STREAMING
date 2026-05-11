@@ -178,20 +178,53 @@ async function extractPlayers(pageUrl) {
 
 
         // Pattern 3: iFrame direct (Last resort if still few)
-        if (players.length < 2) {
-            $("iframe").each((i, el) => {
-                const src = $(el).attr("src");
-                if (src && !src.includes("google") && !src.includes("facebook") && !src.includes("doubleclick") && !src.includes("twitter")) {
-                    const cleanUrl = fixUrl(src);
-                    players.push({
-                        name: getHostName(cleanUrl),
-                        url: cleanUrl,
-                        lang: "VF",
-                        quality: ""
+        // Pattern 3: Deep Extraction from iFrames (Crucial)
+        const iframes = $("iframe").toArray();
+        for (const el of iframes) {
+            let src = $(el).attr('src');
+            if (src && src.includes('lecteurvideo')) {
+                try {
+                    const cleanSrc = fixUrl(src);
+                    // Fetch internal iframe content to find real servers
+                    const iframeRes = await axios.get(cleanSrc, { 
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                            'Referer': 'https://coflix.date/',
+                            'Origin': 'https://coflix.date'
+                        },
+                        timeout: 5000 
                     });
+                    
+                    const $if = cheerio.load(iframeRes.data);
+                    $if('li[onclick*="showVideo"]').each((i, ifEl) => {
+                        const onClick = $if(ifEl).attr('onclick');
+                        const base64Match = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
+                        if (base64Match && base64Match[1]) {
+                            try {
+                                const decoded = Buffer.from(base64Match[1], 'base64').toString('utf-8');
+                                const name = $if(ifEl).find('p').text().trim() || getHostName(decoded);
+                                players.push({
+                                    name: name,
+                                    url: fixUrl(decoded),
+                                    lang: "VF",
+                                    quality: $if(ifEl).find('span').text().trim() || ""
+                                });
+                            } catch (e) {}
+                        }
+                    });
+                } catch (e) {
+                    console.error(`[Coflix] Deep extraction failed for ${src}: ${e.message}`);
                 }
-            });
+            } else if (src && !src.includes('google') && !src.includes('facebook') && !src.includes('doubleclick') && !src.includes('twitter')) {
+                players.push({
+                    name: getHostName(src),
+                    url: fixUrl(src),
+                    lang: "VF",
+                    quality: ""
+                });
+            }
         }
+
 
         // De-duplicate by URL
         const uniquePlayers = [];
