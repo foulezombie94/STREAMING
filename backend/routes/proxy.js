@@ -67,7 +67,9 @@ router.get('/', async (req, res) => {
         }
 
         const useBrowserUA = targetUrl.includes('embed') || targetUrl.includes('php');
-        const referer = targetUrl.includes('lecteurvideo') || targetUrl.includes('coflix') ? 'https://coflix.date/' : (urlObj.origin + '/');
+        const isCoflixRelated = targetUrl.includes('lecteurvideo') || targetUrl.includes('coflix');
+        const referer = isCoflixRelated ? 'https://coflix.date/' : (urlObj.origin + '/');
+        const origin = isCoflixRelated ? 'https://coflix.date' : urlObj.origin;
 
         const response = await axios({
             method: 'get',
@@ -78,12 +80,18 @@ router.get('/', async (req, res) => {
             headers: {
                 'User-Agent': useBrowserUA ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' : 'VLC/3.0.23 LibVLC/3.0.23',
                 'Referer': referer,
-                'Origin': urlObj.origin
+                'Origin': origin,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Sec-Fetch-Dest': 'iframe',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'cross-site'
             },
             timeout: 15000,
             maxRedirects: 5,
             proxy: false
         });
+
 
         // Strip security headers that block embedding
         const headers = { ...response.headers };
