@@ -7,6 +7,14 @@ import axios from 'axios';
 // Bypass local DNS blocks (like hosts file redirecting to 127.0.0.1)
 dns.setServers(['1.1.1.1', '8.8.8.8']);
 
+// Trace deprecation warnings to find the culprit
+process.on('warning', (warning) => {
+    if (warning.name === 'DeprecationWarning') {
+        console.error(`[Warning Trace] ${warning.message}\nStack: ${warning.stack}`);
+    }
+});
+
+
 const customLookup = (hostname, options, callback) => {
     if (typeof options === 'function') {
         callback = options;
