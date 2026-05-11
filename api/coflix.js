@@ -135,55 +135,53 @@ function getHostName(url) {
 async function extractPlayers(pageUrl) {
     if (!pageUrl) return [];
     try {
-        const res = await axios.get(pageUrl, { headers: HEADERS });
+        console.log(`[Coflix] Extracting players from: ${pageUrl}`);
+        const res = await axios.get(pageUrl, { headers: HEADERS, timeout: 8000, proxy: false });
         const html = res.data;
-        let $ = cheerio.load(html);
+        console.log(`[Coflix] Page fetch status: ${res.status}, HTML size: ${html.length}`);
         
-        let iframeSrc = $("iframe").attr("src");
-        let container = html;
-
-        if (iframeSrc) {
-            iframeSrc = fixUrl(iframeSrc);
-            try {
-                const iframeRes = await axios.get(iframeSrc, { headers: HEADERS, timeout: 5000 });
-                container = iframeRes.data;
-            } catch (err) {}
-        }
-
-        const $if = cheerio.load(container);
-        const players = [];
+        let $ = cheerio.load(html);
+        let players = [];
         
         // Pattern 1: showVideo (Base64)
-        $if('li[onclick*="showVideo"]').each((i, el) => {
-            const onClick = $if(el).attr("onclick");
+        $('li[onclick*="showVideo"]').each((i, el) => {
+            const onClick = $(el).attr("onclick");
             const base64Match = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
-            
             if (base64Match && base64Match[1]) {
                 try {
                     const decodedUrl = Buffer.from(base64Match[1], 'base64').toString('utf8');
-                    const quality = $if(el).find("span").text().trim() || "HD";
-                    const langInfo = $if(el).find("p").text().toLowerCase();
-                    
-                    let lang = "VF";
-                    if (langInfo.includes("vostfr")) lang = "VOSTFR";
-                    else if (langInfo.includes("english") || langInfo.includes("vo")) lang = "VO";
-
+                    const quality = $(el).find("span").text().trim() || "HD";
+                    const langInfo = $(el).find("p").text().toLowerCase();
+                    let lang = langInfo.includes("vostfr") ? "VOSTFR" : (langInfo.includes("vo") ? "VO" : "VF");
                     players.push({
                         name: getHostName(decodedUrl),
                         url: decodedUrl,
-                        lang: lang,
-                        quality: quality
+                        lang,
+                        quality
                     });
                 } catch (e) {}
             }
         });
 
-        // Pattern 2: Dooplay Player Options / Source Boxes (Fallbacks)
+        // Pattern 2: iFrame direct
         if (players.length === 0) {
-            $if('.dooplay_player_option, .source-box, li[data-type]').each((i, el) => {
-                const url = $if(el).attr('data-url') || $if(el).attr('data-link');
+            const iframe = $("iframe").attr("src");
+            if (iframe && !iframe.includes("google") && !iframe.includes("facebook") && !iframe.includes("doubleclick")) {
+                const cleanUrl = fixUrl(iframe);
+                players.push({
+                    name: getHostName(cleanUrl),
+                    url: cleanUrl,
+                    lang: "VF",
+                    quality: "HD"
+                });
+            }
+        }
+
+        // Pattern 3: Dooplay/Source Boxes
+        if (players.length === 0) {
+            $('.dooplay_player_option, .source-box, li[data-type]').each((i, el) => {
+                const url = $(el).attr('data-url') || $(el).attr('data-link');
                 if (url) {
-                    const name = $if(el).find('.title, .name, span').text().trim() || "Server " + (i+1);
                     players.push({
                         name: getHostName(url),
                         url: fixUrl(url),
@@ -194,11 +192,14 @@ async function extractPlayers(pageUrl) {
             });
         }
 
+        console.log(`[Coflix] Extraction complete. Found ${players.length} players.`);
         return players;
     } catch (e) {
+        console.error(`[Coflix] Extraction failed for ${pageUrl}: ${e.message}`);
         return [];
     }
 }
+
 
 async function searchCoflix(title, type) {
     try {
