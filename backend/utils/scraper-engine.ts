@@ -15,9 +15,11 @@ export class ScraperEngine {
     private client: AxiosInstance;
     private maxRetries: number;
     private cookies: string[] = [];
+    private userAgent: string;
 
     constructor(baseURL: string, config: { timeout?: number; maxRetries?: number } = {}) {
         this.maxRetries = config.maxRetries || 3;
+        this.userAgent = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
         
         this.client = axios.create({
             baseURL,
@@ -38,10 +40,6 @@ export class ScraperEngine {
         });
     }
 
-    private getRandomUA(): string {
-        return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
-    }
-
     private updateCookies(setCookieHeader?: string[]) {
         if (!setCookieHeader) return;
         setCookieHeader.forEach(cookie => {
@@ -54,7 +52,7 @@ export class ScraperEngine {
     }
 
     /**
-     * Request with Exponential Backoff, UA Rotation and Cookie Management
+     * Request with Exponential Backoff, Fixed UA and Cookie Management
      */
     async request<T = any>(url: string, options: AxiosRequestConfig = {}): Promise<T> {
         let lastError: any;
@@ -62,7 +60,7 @@ export class ScraperEngine {
         for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
             try {
                 const headers: any = {
-                    'User-Agent': this.getRandomUA(),
+                    'User-Agent': this.userAgent,
                     ...options.headers
                 };
 
@@ -70,12 +68,14 @@ export class ScraperEngine {
                     headers['Cookie'] = this.cookies.join('; ');
                 }
 
-                // Adjust Sec-Fetch-Site based on URL
+                // Force Origin if it's a cross-site request
                 if (options.headers?.Referer) {
                     try {
-                        const refHost = new URL(options.headers.Referer).hostname;
+                        const refUrl = new URL(options.headers.Referer);
+                        headers['Origin'] = `${refUrl.protocol}//${refUrl.hostname}`;
+                        
                         const targetHost = new URL(url.startsWith('http') ? url : (this.client.defaults.baseURL || '') + url).hostname;
-                        headers['Sec-Fetch-Site'] = refHost === targetHost ? 'same-origin' : 'cross-site';
+                        headers['Sec-Fetch-Site'] = refUrl.hostname === targetHost ? 'same-origin' : 'cross-site';
                     } catch {
                         headers['Sec-Fetch-Site'] = 'cross-site';
                     }
@@ -94,7 +94,6 @@ export class ScraperEngine {
             } catch (error: any) {
                 lastError = error;
                 
-                // If it's a 403, it might be due to missing cookies or blocked UA
                 // Don't retry on 404
                 if (error.response && error.response.status === 404) {
                     throw error;
