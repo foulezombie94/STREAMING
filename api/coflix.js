@@ -39,13 +39,16 @@ const customLookup = (hostname, options, callback) => {
 
 
 
-const httpsAgent = new https.Agent({ lookup: customLookup, keepAlive: true });
-const httpAgent = new http.Agent({ lookup: customLookup, keepAlive: true });
+const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL;
 
-// Apply globally to axios for this function
-axios.defaults.httpsAgent = httpsAgent;
-axios.defaults.httpAgent = httpAgent;
+const httpsAgent = isVercel ? undefined : new https.Agent({ lookup: customLookup, keepAlive: true });
+const httpAgent = isVercel ? undefined : new http.Agent({ lookup: customLookup, keepAlive: true });
+
+// Apply to axios
+if (httpsAgent) axios.defaults.httpsAgent = httpsAgent;
+if (httpAgent) axios.defaults.httpAgent = httpAgent;
 axios.defaults.proxy = false;
+
 
 const COFLIX_BASE_URL = "https://coflix.date";
 

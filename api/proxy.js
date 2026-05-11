@@ -38,8 +38,11 @@ const customLookup = (hostname, options, callback) => {
 
 
 
-const httpsAgent = new https.Agent({ lookup: customLookup, keepAlive: true });
-const httpAgent = new http.Agent({ lookup: customLookup, keepAlive: true });
+const isVercel = process.env.VERCEL === '1' || !!process.env.VERCEL;
+
+const httpsAgent = isVercel ? undefined : new https.Agent({ lookup: customLookup, keepAlive: true });
+const httpAgent = isVercel ? undefined : new http.Agent({ lookup: customLookup, keepAlive: true });
+
 
 const ALLOWED_DOMAINS = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium', 'tv', 'live', 'play', 'vod', 'video', 'cdn', 'media', 'net', 'pro', 'top', 'host', 'box', 'voe', 'uqload', 'vidoza', 'dood', 'upstream', 'fembed', 'vidsrc', 'embed', 'frembed', 'coflix'];
 
