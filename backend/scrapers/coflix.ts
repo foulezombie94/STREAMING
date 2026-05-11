@@ -34,49 +34,51 @@ export class CoflixScraper {
      * Search for a movie or series
      */
     async search(title: string, type: 'movie' | 'series', year?: string): Promise<SearchResult[]> {
+        const normalizedTitle = title.toLowerCase().trim();
         console.log(`[Coflix] Searching for ${title} (${type})`);
 
-        // 1. Try Suggest API first
         try {
-            const suggestData = await this.engine.get(`/suggest.php?query=${encodeURIComponent(title)}`, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-
-            if (Array.isArray(suggestData)) {
-                const results: SearchResult[] = suggestData.map(item => ({
-                    title: item.post_title || item.title,
-                    url: item.url,
-                    type: (item.url.includes('/series/') || item.post_type === 'series') ? 'series' : 'movie'
+            // Priority 1: Suggestion API (Fast)
+            const results: any = await this.engine.get(`/suggest.php?query=${encodeURIComponent(normalizedTitle)}`);
+            if (results && Array.isArray(results) && results.length > 0) {
+                const mapped = results.map(r => ({
+                    title: r.post_title || r.title,
+                    url: r.url,
+                    type: (r.url.includes('/series/') || r.post_type === 'series') ? 'series' : 'movie'
                 }));
-
-                const ranked = rankResults(results, title, year);
-                if (ranked.length > 0) return ranked;
+                const ranked = rankResults(mapped, title, year);
+                if (ranked.length > 0) return ranked.filter(r => r.type === type);
             }
-        } catch (e: any) {
-            console.error(`[Coflix] Suggest API failed: ${e.message}`);
+        } catch (e) {
+            console.warn(`[Coflix] Suggest API failed, falling back to classic search`);
         }
 
-        // 2. Fallback to HTML search
-        const html = await this.engine.get(`/?s=${encodeURIComponent(title)}`);
-        const $ = cheerio.load(html);
-        const results: SearchResult[] = [];
+        // Priority 2: Classic Search Fallback
+        try {
+            const searchHtml = await this.engine.get(`/?s=${encodeURIComponent(normalizedTitle)}`);
+            const $ = cheerio.load(searchHtml);
+            const results: SearchResult[] = [];
 
-        $('.result-item').each((_, el) => {
-            const link = $(el).find('a').attr('href');
-            const pTitle = $(el).find('.title a').text().trim();
-            const pYear = $(el).find('.year').text().trim();
+            $('.result-item').each((_, el) => {
+                const link = $(el).find('a').attr('href');
+                const pTitle = $(el).find('.title a').text().trim();
+                const pYear = $(el).find('.year').text().trim();
 
-            if (link && pTitle) {
-                results.push({
-                    title: pTitle,
-                    url: link,
-                    type: link.includes('/series/') ? 'series' : 'movie',
-                    releaseYear: pYear
-                });
-            }
-        });
+                if (link && pTitle) {
+                    results.push({
+                        title: pTitle,
+                        url: link,
+                        type: link.includes('/series/') ? 'series' : 'movie',
+                        releaseYear: pYear
+                    });
+                }
+            });
 
-        return rankResults(results, title, year);
+            return rankResults(results, title, year).filter(r => r.type === type);
+        } catch (e: any) {
+            console.error(`[Coflix] Search failed: ${e.message}`);
+            return [];
+        }
     }
 
     /**
@@ -152,32 +154,51 @@ export class CoflixScraper {
             }
         }
 
-        // 3. Iframe Bridge (Deep extraction)
+        // 3. Iframe Bridge (Deep extraction - Parallelized)
         const allIframes = $("iframe").toArray();
-        for (const el of allIframes) {
+        const bridgeTasks = allIframes.map(async (el) => {
             const src = $(el).attr('src');
-            if (!src || src.includes('google') || src.includes('doubleclick') || src.includes('ads') || src.includes('youtube.com') || src.includes('youtu.be')) continue;
+            if (!src || src.includes('google') || src.includes('doubleclick') || src.includes('ads') || src.includes('youtube.com') || src.includes('youtu.be')) return [];
 
             if (src.includes('lecteurvideo') || src.includes('bridge')) {
                 try {
                     const bridgeHtml = await this.engine.get(this.fixUrl(src), {
                         headers: { 'Referer': url }
                     });
-                    const $if = cheerio.load(bridgeHtml);
-                    $if('li[onclick*="showVideo"], div[onclick*="showVideo"]').each((_, ifEl) => parseElement(ifEl, $if));
-                } catch (e: any) {
-                    console.error(`[Coflix] Bridge iframe failed: ${e.message}`);
+                    const $bridge = cheerio.load(bridgeHtml);
+                    const bridgePlayers: PlayerInfo[] = [];
+
+                    $bridge('li[onclick*="showVideo"], div[onclick*="showVideo"]').each((_, bridgeEl) => {
+                        const onClick = $bridge(bridgeEl).attr("onclick") || "";
+                        const b64 = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
+                        if (b64 && b64[1]) {
+                            const decoded = Buffer.from(b64[1], 'base64').toString('utf-8');
+                            if (!decoded.includes('xtremestream.xyz')) {
+                                bridgePlayers.push({
+                                    name: this.getHostName(decoded),
+                                    url: this.fixUrl(decoded),
+                                    lang: "VF",
+                                    quality: "SD"
+                                });
+                            }
+                        }
+                    });
+                    return bridgePlayers;
+                } catch (e) {
+                    return [];
                 }
             } else {
-                // Direct external player (VOE, Dood, etc.)
-                players.push({
+                return [{
                     name: this.getHostName(src),
                     url: this.fixUrl(src),
                     lang: "VF",
                     quality: "HD"
-                });
+                }];
             }
-        }
+        });
+
+        const bridgeResults = (await Promise.all(bridgeTasks)).flat();
+        players.push(...bridgeResults);
 
         // De-duplicate by URL
         return Array.from(new Map(players.map(p => [p.url, p])).values());
