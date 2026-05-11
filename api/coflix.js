@@ -177,7 +177,6 @@ async function extractPlayers(pageUrl) {
         });
 
 
-        // Pattern 3: iFrame direct (Last resort if still few)
         // Pattern 3: High-Precision Deep Extraction (Reference Code Style)
         const iframes = $("iframe").toArray();
         let specificIframe = $("main div div div article div:nth-child(2) div:nth-child(1) aside div div iframe");
@@ -187,48 +186,53 @@ async function extractPlayers(pageUrl) {
 
         for (const el of iframes) {
             let src = $(el).attr('src');
-            if (!src || !src.includes('lecteurvideo')) continue;
+            if (!src) continue;
+            
+            // Log for diagnostics
+            if (!src.includes('doubleclick') && !src.includes('google')) {
+                console.log(`[Coflix] Found iframe source: ${src}`);
+            }
 
-            try {
-                const cleanSrc = fixUrl(src).replace('&ads=true', '');
-                
-                // Use a CORS bridge to bypass Vercel IP blocks for deep extraction
-                const bridgeUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(cleanSrc)}`;
-                const bridgeRes = await axios.get(bridgeUrl, { timeout: 8000 });
-                
-                if (bridgeRes.data && bridgeRes.data.contents) {
-                    const $if = cheerio.load(bridgeRes.data.contents);
+            if (src.includes('lecteurvideo')) {
+                try {
+                    const cleanSrc = fixUrl(src).replace('&ads=true', '');
+                    const bridgeUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(cleanSrc)}`;
+                    const bridgeRes = await axios.get(bridgeUrl, { timeout: 8000 });
                     
-                    let playerItems = $if('li[onclick*="showVideo"]');
-                    if (!playerItems.length) playerItems = $if("div li[onclick]");
+                    if (bridgeRes.data && bridgeRes.data.contents) {
+                        const $if = cheerio.load(bridgeRes.data.contents);
+                        let playerItems = $if('li[onclick*="showVideo"]');
+                        if (!playerItems.length) playerItems = $if("div li[onclick]");
 
-                    playerItems.each((i, ifEl) => {
-                        const onClick = $if(ifEl).attr('onclick') || "";
-                        const base64Match = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
-                        if (base64Match && base64Match[1]) {
-                            try {
-                                const decoded = Buffer.from(base64Match[1], 'base64').toString('utf-8');
-                                const quality = $if(ifEl).find("span").text().trim();
-                                const info = $if(ifEl).find("p").text().trim();
-                                
-                                let language = "VF";
-                                if (info.toLowerCase().includes("vostfr")) language = "VOSTFR";
-                                else if (info.toLowerCase().includes("english")) language = "VO";
-
-                                players.push({
-                                    name: `${getHostName(decoded)} - ${info || 'Server'}`,
-                                    url: fixUrl(decoded),
-                                    lang: language,
-                                    quality: quality || "HD"
-                                });
-                            } catch (e) {}
-                        }
-                    });
-                }
-            } catch (e) {
-                console.error(`[Coflix] High-Precision extraction failed: ${e.message}`);
+                        playerItems.each((i, ifEl) => {
+                            const onClick = $if(ifEl).attr('onclick') || "";
+                            const base64Match = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
+                            if (base64Match && base64Match[1]) {
+                                try {
+                                    const decoded = Buffer.from(base64Match[1], 'base64').toString('utf-8');
+                                    const info = $if(ifEl).find("p").text().trim();
+                                    players.push({
+                                        name: `${getHostName(decoded)} - ${info || 'Server'}`,
+                                        url: fixUrl(decoded),
+                                        lang: info.toLowerCase().includes("vostfr") ? "VOSTFR" : "VF",
+                                        quality: $if(ifEl).find("span").text().trim() || "HD"
+                                    });
+                                } catch (e) {}
+                            }
+                        });
+                    }
+                } catch (e) {}
+            } else if (!src.includes('google') && !src.includes('facebook') && !src.includes('doubleclick') && !src.includes('twitter')) {
+                // If it's a direct video iframe (Voe, Upstream, etc.)
+                players.push({
+                    name: getHostName(src),
+                    url: fixUrl(src),
+                    lang: "VF",
+                    quality: "HD"
+                });
             }
         }
+
 
 
 
