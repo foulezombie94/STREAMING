@@ -12,26 +12,30 @@ const customLookup = (hostname, options, callback) => {
         options = {};
     }
 
-    // If it's a local address, use standard lookup
+    // Localhost always uses standard lookup
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
         return dns.lookup(hostname, options, callback);
     }
 
-    // For everything else, FORCE public DNS (ignore hosts file)
+    // 1. Try resolving via public DNS (bypasses hosts file)
     dns.resolve4(hostname, (err, addresses) => {
         if (!err && addresses && addresses.length > 0) {
             return callback(null, addresses[0], 4);
         }
-        // Fallback to standard lookup only if resolve4 fails, 
-        // but double check it's not returning 127.0.0.1
+        
+        // 2. Fallback to standard lookup but check for loopback hijacking
         dns.lookup(hostname, options, (err2, address, family) => {
-            if (!err2 && address !== '127.0.0.1' && address !== '::1') {
-                return callback(null, address, family);
+            if (err2) {
+                return callback(err2);
             }
-            callback(err || err2 || new Error(`ENOTFOUND: ${hostname} is blocked or unreachable`), null, family);
+            if (!address || address === '127.0.0.1' || address === '::1') {
+                return callback(new Error(`DNS_BLOCK: ${hostname} resolved to loopback or nothing`));
+            }
+            callback(null, address, family || 4);
         });
     });
 };
+
 
 
 const httpsAgent = new https.Agent({ lookup: customLookup, keepAlive: true });
