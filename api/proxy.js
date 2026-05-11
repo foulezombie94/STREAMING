@@ -71,9 +71,25 @@ export default async function handler(req, res) {
         const referer = isCoflixRelated ? 'https://coflix.date/' : (urlObj.origin + '/');
         const origin = isCoflixRelated ? 'https://coflix.date' : urlObj.origin;
 
+        let cookieHeader = '';
+        if (isCoflixRelated) {
+            try {
+                // Pre-warm: get cookies from main domain
+                const warmRes = await axios.get('https://coflix.date/', { 
+                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' },
+                    timeout: 3000
+                });
+                if (warmRes.headers['set-cookie']) {
+                    cookieHeader = warmRes.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
+                }
+            } catch (e) {
+                console.warn(`[Proxy Warmup Failed] ${e.message}`);
+            }
+        }
+
         const response = await axios({
             method: 'get',
-            url: targetUrl,
+            url: targetUrl.replace('&ads=true', ''), // Remove ads param
             responseType: 'stream',
             httpsAgent: targetUrl.startsWith('https') ? httpsAgent : undefined,
             httpAgent: targetUrl.startsWith('http') ? httpAgent : undefined,
@@ -81,16 +97,15 @@ export default async function handler(req, res) {
                 'User-Agent': useBrowserUA ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' : 'VLC/3.0.23 LibVLC/3.0.23',
                 'Referer': referer,
                 'Origin': origin,
+                'Cookie': cookieHeader,
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Sec-Fetch-Dest': 'iframe',
-                'Sec-Fetch-Mode': 'navigate',
-                'Sec-Fetch-Site': 'cross-site'
+                'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
             },
             timeout: 15000,
             maxRedirects: 5,
             proxy: false
         });
+
 
 
 
