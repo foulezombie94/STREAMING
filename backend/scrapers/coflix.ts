@@ -81,82 +81,101 @@ export class CoflixScraper {
 
     /**
      * Extract players from a page (Movie or Episode)
+     * Handles both the main page, iframes, and the telecharger bridge
      */
     async extractPlayers(url: string): Promise<PlayerInfo[]> {
         console.log(`[Coflix] Extracting from ${url}`);
-        const html = await this.engine.get(url);
+        let html = "";
+        try {
+            html = await this.engine.get(url);
+        } catch (e: any) {
+            console.error(`[Coflix] Failed to fetch ${url}: ${e.message}`);
+            return [];
+        }
+
         const $ = cheerio.load(html);
         const players: PlayerInfo[] = [];
 
-        // Method 1: Base64 Decoding (showVideo)
-        $('li[onclick*="showVideo"]').each((_, el) => {
-            const onClick = $(el).attr("onclick") || "";
-            const base64Match = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
-            if (base64Match && base64Match[1]) {
+        // Helper to parse a player element (li or div)
+        const parseElement = (el: any, container: any) => {
+            const onClick = container(el).attr("onclick") || "";
+            const b64 = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
+            
+            if (b64 && b64[1]) {
                 try {
-                    const decoded = Buffer.from(base64Match[1], 'base64').toString('utf-8');
-                    const info = $(el).find("p").text().trim();
+                    const decoded = Buffer.from(b64[1], 'base64').toString('utf-8');
+                    const title = container(el).find("p, .title, span:first-child").first().text().trim();
+                    const sub = container(el).find("span, .sub, p:last-child").last().text().trim();
+                    
                     players.push({
-                        name: this.getHostName(decoded),
+                        name: this.getHostName(decoded) + (title ? ` (${title})` : ""),
                         url: this.fixUrl(decoded),
-                        lang: info.toLowerCase().includes("vostfr") ? "VOSTFR" : "VF",
-                        quality: "HD"
+                        lang: (title + sub).toLowerCase().includes("vostfr") ? "VOSTFR" : "VF",
+                        quality: (title + sub).toLowerCase().includes("hd") ? "HD" : "SD"
                     });
-                } catch { }
+                } catch {}
             }
-        });
+        };
 
-        // Method 2: Deep Iframe Extraction
-        // Targeted selector based on architecture guide
-        const targetIframe = $("main div div div article div:nth-child(2) div:nth-child(1) aside div div iframe");
-        const allIframes = targetIframe.length ? targetIframe.toArray() : $("iframe").toArray();
+        // 1. Direct li items with showVideo
+        $('li[onclick*="showVideo"], div[onclick*="showVideo"]').each((_, el) => parseElement(el, $));
 
-        const iframePromises = allIframes.map(async (el) => {
+        // 2. Check for the "Telecharger" bridge link (High priority list)
+        const teleLink = $('a[href*="telecharger.lecteurvideo.com"]').attr('href');
+        if (teleLink) {
+            console.log(`[Coflix] Found downloader bridge: ${teleLink}`);
+            try {
+                const teleHtml = await this.engine.get(this.fixUrl(teleLink), {
+                    headers: { 'Referer': url }
+                });
+                const $tele = cheerio.load(teleHtml);
+                $tele('li[onclick*="showVideo"], div[onclick*="showVideo"]').each((_, el) => parseElement(el, $tele));
+                
+                // Also look for direct download/view buttons on tele page
+                $tele('a[href*="get_player"], a[href*="view"]').each((_, el) => {
+                    const href = $tele(el).attr('href');
+                    if (href) {
+                        players.push({
+                            name: "Direct Source",
+                            url: this.fixUrl(href),
+                            lang: "VF",
+                            quality: "HD"
+                        });
+                    }
+                });
+            } catch (e: any) {
+                console.error(`[Coflix] Telecharger bridge failed: ${e.message}`);
+            }
+        }
+
+        // 3. Iframe Bridge (Deep extraction)
+        const allIframes = $("iframe").toArray();
+        for (const el of allIframes) {
             const src = $(el).attr('src');
-            if (!src || src.includes('google') || src.includes('doubleclick')) return [];
+            if (!src || src.includes('google') || src.includes('doubleclick') || src.includes('ads')) continue;
 
-            // If it's the internal bridge player
-            if (src.includes('lecteurvideo')) {
+            if (src.includes('lecteurvideo') || src.includes('bridge')) {
                 try {
                     const bridgeHtml = await this.engine.get(this.fixUrl(src), {
                         headers: { 'Referer': url }
                     });
                     const $if = cheerio.load(bridgeHtml);
-                    const subPlayers: PlayerInfo[] = [];
-
-                    $if('li[onclick*="showVideo"]').each((_, ifEl) => {
-                        const onClick = $if(ifEl).attr('onclick') || "";
-                        const b64 = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
-                        if (b64 && b64[1]) {
-                            const decoded = Buffer.from(b64[1], 'base64').toString('utf-8');
-                            const info = $if(ifEl).find("p").text().trim();
-                            subPlayers.push({
-                                name: this.getHostName(decoded),
-                                url: this.fixUrl(decoded),
-                                lang: info.toLowerCase().includes("vostfr") ? "VOSTFR" : "VF",
-                                quality: $if(ifEl).find("span").text().trim() || "HD"
-                            });
-                        }
-                    });
-                    return subPlayers;
+                    $if('li[onclick*="showVideo"], div[onclick*="showVideo"]').each((_, ifEl) => parseElement(ifEl, $if));
                 } catch (e: any) {
-                    console.error(`[Coflix] Bridge extraction failed: ${e.message}`);
+                    console.error(`[Coflix] Bridge iframe failed: ${e.message}`);
                 }
+            } else {
+                // Direct external player (VOE, Dood, etc.)
+                players.push({
+                    name: this.getHostName(src),
+                    url: this.fixUrl(src),
+                    lang: "VF",
+                    quality: "HD"
+                });
             }
+        }
 
-            // Direct external player
-            return [{
-                name: this.getHostName(src),
-                url: this.fixUrl(src),
-                lang: "VF",
-                quality: "HD"
-            }];
-        });
-
-        const results = await Promise.all(iframePromises);
-        results.forEach(res => players.push(...res));
-
-        // De-duplicate
+        // De-duplicate by URL
         return Array.from(new Map(players.map(p => [p.url, p])).values());
     }
 
