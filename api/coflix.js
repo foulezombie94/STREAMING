@@ -184,13 +184,24 @@ async function extractPlayers(pageUrl) {
             let src = $(el).attr('src');
             if (src && src.includes('lecteurvideo')) {
                 try {
-                    const cleanSrc = fixUrl(src);
-                    // Fetch internal iframe content to find real servers
+                    const cleanSrc = fixUrl(src).replace('&ads=true', '');
+                    
+                    // 1. Get cookies first (Warmup)
+                    let cookieHeader = "";
+                    try {
+                        const warm = await axios.get('https://coflix.date/', { headers: HEADERS, timeout: 3000 });
+                        if (warm.headers['set-cookie']) {
+                            cookieHeader = warm.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
+                        }
+                    } catch (e) {}
+
+                    // 2. Fetch iframe content with full browser headers
                     const iframeRes = await axios.get(cleanSrc, { 
                         headers: {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                            ...HEADERS,
                             'Referer': 'https://coflix.date/',
-                            'Origin': 'https://coflix.date'
+                            'Origin': 'https://coflix.date',
+                            'Cookie': cookieHeader
                         },
                         timeout: 5000 
                     });
@@ -224,6 +235,7 @@ async function extractPlayers(pageUrl) {
                 });
             }
         }
+
 
 
         // De-duplicate by URL
