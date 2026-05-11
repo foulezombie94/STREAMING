@@ -1,5 +1,32 @@
-import dns from 'dns';
+import * as https from 'https';
+import * as http from 'http';
+import * as dns from 'dns';
 import axios from 'axios';
+
+// Bypass local DNS blocks
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+
+const customLookup = (hostname, options, callback) => {
+    if (typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+    dns.lookup(hostname, options, (err, address, family) => {
+        if (err || address === '127.0.0.1' || address === '::1') {
+            dns.resolve4(hostname, (err4, addresses) => {
+                if (!err4 && addresses && addresses.length > 0) {
+                    return callback(null, addresses[0], 4);
+                }
+                return callback(err || new Error(`ENOTFOUND: ${hostname} is blocked locally`), null, family);
+            });
+        } else {
+            callback(err, address, family);
+        }
+    });
+};
+
+const httpsAgent = new https.Agent({ lookup: customLookup, keepAlive: true });
+const httpAgent = new http.Agent({ lookup: customLookup, keepAlive: true });
 
 export default async function handler(req, res) {
     const report = {
@@ -10,7 +37,7 @@ export default async function handler(req, res) {
         tests: {}
     };
 
-    // Test 1: DNS Resolution for Coflix
+    // Test 1: DNS Resolution
     try {
         const hostname = 'coflix.date';
         const addresses = await new Promise((resolve, reject) => {
@@ -21,16 +48,25 @@ export default async function handler(req, res) {
         report.tests.dns_resolve = { status: 'error', error: e.message };
     }
 
-    // Test 2: Direct Axios request to Coflix
+    // Test 2: Connectivity
     try {
         const start = Date.now();
-        const testRes = await axios.get('https://coflix.date/', { timeout: 5000, proxy: false });
+        const testRes = await axios.get('https://coflix.date/', { 
+            timeout: 5000, 
+            proxy: false,
+            httpsAgent,
+            httpAgent
+        });
         report.tests.coflix_connectivity = { 
             status: 'ok', 
             time: Date.now() - start,
             statusCode: testRes.status,
             cookies: testRes.headers['set-cookie'] ? 'received' : 'none'
         };
+    } catch (e) {
+        report.tests.coflix_connectivity = { status: 'error', error: e.message };
+    }
+
     // Test 3: Search test
     try {
         const query = req.query.test || 'Star Wars';
@@ -41,13 +77,15 @@ export default async function handler(req, res) {
                 "X-Requested-With": "XMLHttpRequest"
             },
             timeout: 5000,
-            proxy: false
+            proxy: false,
+            httpsAgent,
+            httpAgent
         });
         report.tests.search_test = { 
             status: 'ok', 
             query,
             resultCount: Array.isArray(searchRes.data) ? searchRes.data.length : 'not_an_array',
-            firstResult: Array.isArray(searchRes.data) && searchRes.data[0] ? searchRes.data[0].title : null
+            type: typeof searchRes.data
         };
     } catch (e) {
         report.tests.search_test = { status: 'error', error: e.message };
@@ -55,4 +93,3 @@ export default async function handler(req, res) {
 
     res.status(200).json(report);
 }
-

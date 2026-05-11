@@ -178,34 +178,44 @@ async function extractPlayers(pageUrl) {
 
 async function searchCoflix(title, type) {
     try {
-        if (!globalCookies) await initSession();
+        if (!globalCookies) {
+            console.log("[Coflix] No cookies found, initializing session...");
+            await initSession();
+        }
         
         const query = normalizeTitle(title);
         const suggestUrl = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(query)}`;
-        console.log(`Searching Coflix Suggest API: ${suggestUrl}`);
+        console.log(`[Coflix] Searching Suggest API: ${suggestUrl}`);
         
         const res = await axios.get(suggestUrl, { 
-            headers: { ...HEADERS, "Cookie": globalCookies, "X-Requested-With": "XMLHttpRequest" }, 
-            timeout: 8000 
+            headers: { 
+                ...HEADERS, 
+                "Cookie": globalCookies, 
+                "X-Requested-With": "XMLHttpRequest" 
+            }, 
+            timeout: 8000,
+            proxy: false
         });
-        let data = res.data;
         
-        // If Suggest API fails or is empty, try the main search page HTML
+        let data = res.data;
+        console.log(`[Coflix] Suggest API status: ${res.status}, Type: ${typeof data}`);
+
         if (!Array.isArray(data) || data.length === 0) {
-            console.log("Suggest API empty, trying HTML search page...");
+            console.log(`[Coflix] Suggest API empty for "${query}", falling back to HTML search...`);
             const searchUrl = `${COFLIX_BASE_URL}/?s=${encodeURIComponent(query)}`;
             const searchRes = await axios.get(searchUrl, { 
                 headers: { ...HEADERS, "Cookie": globalCookies },
-                timeout: 10000
+                timeout: 10000,
+                proxy: false
             });
+            
             const html = searchRes.data;
             const $ = cheerio.load(html);
-            
             data = [];
             $('.result-item').each((i, el) => {
                 const link = $(el).find('a').attr('href');
                 const pTitle = $(el).find('.title a').text().trim();
-                const pType = link.includes('/series/') ? 'series' : 'movies';
+                const pType = (link || "").includes('/series/') ? 'series' : 'movies';
                 if (link && pTitle) {
                     data.push({
                         url: link,
@@ -215,23 +225,28 @@ async function searchCoflix(title, type) {
                     });
                 }
             });
+            console.log(`[Coflix] HTML search found ${data.length} results.`);
         }
 
         if (!Array.isArray(data)) {
-            console.error(`[Coflix] Search error: Response for "${title}" is not an array. Body: ${typeof data === 'string' ? data.substring(0, 100) : 'object'}`);
+            console.error(`[Coflix] Final search result is not an array for "${title}"`);
             return [];
         }
         
-        return data.filter(item => {
+        const filtered = data.filter(item => {
             const pType = (item.post_type || "").toLowerCase();
             if (type === "movie") return pType === "movies" || pType === "movie";
             return pType === "series" || pType === "tvshows" || pType === "tvshow" || pType === "tv";
         });
+
+        console.log(`[Coflix] Final filtered results: ${filtered.length}`);
+        return filtered;
     } catch (e) {
         console.error(`[Coflix] Search error for "${title}": ${e.message}`);
         return [];
     }
 }
+
 
 
 export default async function handler(req, res) {
