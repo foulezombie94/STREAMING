@@ -152,7 +152,7 @@ export class CoflixScraper {
         const allIframes = $("iframe").toArray();
         for (const el of allIframes) {
             const src = $(el).attr('src');
-            if (!src || src.includes('google') || src.includes('doubleclick') || src.includes('ads')) continue;
+            if (!src || src.includes('google') || src.includes('doubleclick') || src.includes('ads') || src.includes('youtube.com') || src.includes('youtu.be')) continue;
 
             if (src.includes('lecteurvideo') || src.includes('bridge')) {
                 try {
