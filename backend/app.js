@@ -14,21 +14,25 @@ const customLookup = (hostname, options, callback) => {
         options = {};
     }
 
-    // Try system DNS first
+    if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(hostname)) {
+        return callback(null, hostname, 4);
+    }
+
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return dns.lookup(hostname, options, callback);
+    }
+
     dns.lookup(hostname, options, (err, address, family) => {
-        // If system DNS fails or returns localhost (common for ad-blocking/hosts file), try public DNS
-        if (err || address === '127.0.0.1' || address === '::1') {
-            dns.resolve4(hostname, (err4, addresses) => {
-                if (!err4 && addresses && addresses.length > 0) {
-                    return callback(null, addresses[0], 4);
-                }
-                // CRITICAL FIX: Do not return 127.0.0.1 if it's an external domain.
-                // Return a DNS error instead so the application can handle it.
-                return callback(err || new Error(`ENOTFOUND: ${hostname} is blocked locally`), null, family);
-            });
-        } else {
-            callback(err, address, family);
+        if (!err && address && address !== '127.0.0.1' && address !== '::1') {
+            return callback(null, address, family || 4);
         }
+
+        dns.resolve4(hostname, (err2, addresses) => {
+            if (!err2 && addresses && addresses.length > 0 && addresses[0]) {
+                return callback(null, addresses[0], 4);
+            }
+            return callback(err || err2 || new Error(`ENOTFOUND: ${hostname}`), null, family);
+        });
     });
 };
 

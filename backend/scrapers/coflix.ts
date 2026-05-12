@@ -25,6 +25,11 @@ export class CoflixScraper {
     }
 
     private setCache(key: string, data: any) {
+        // Prevent memory leaks by limiting cache size
+        if (this.cache.size > 100) {
+            const firstKey = this.cache.keys().next().value;
+            if (firstKey) this.cache.delete(firstKey);
+        }
         this.cache.set(key, { data, timestamp: Date.now() });
     }
 
@@ -160,9 +165,8 @@ export class CoflixScraper {
             const src = $(el).attr('src');
             if (!src) return [];
             
-            // Blacklist ad networks but allow lecteurvideo
-            if (src.includes('google') || src.includes('doubleclick') || src.includes('youtube.com') || src.includes('youtu.be')) return [];
-            if (src.includes('ads') && !src.includes('lecteurvideo')) return [];
+            // Allow all iframes to ensure no source is missed
+            if (src.includes('youtube.com') || src.includes('youtu.be')) return [];
 
             if (src.includes('lecteurvideo') || src.includes('bridge') || src.includes('embed.php')) {
                 try {

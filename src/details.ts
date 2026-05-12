@@ -452,17 +452,17 @@ function renderSourceButtons() {
         const btn = document.createElement('button');
         btn.className = 'server-btn' + (index === 0 ? ' active' : '');
         
-        // Extract domain to fetch favicon
-        const domainMatch = source.url.match(/https?:\/\/(?:www\.)?([^\/]+)/);
-        const domain = domainMatch ? domainMatch[1] : 'google.com';
+        const domain = new URL(source.url).hostname;
         const iconUrl = `https://www.google.com/s2/favicons?sz=64&domain=${domain}`;
 
         btn.innerHTML = `
-            <div class="server-icon-wrap">
-                <img src="${iconUrl}" alt="icon">
+            <div class="server-icon">
+                <img src="${iconUrl}" 
+                     alt=""
+                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'fallback-icon\'>🎬</div>'">
             </div>
             <div class="server-info">
-                <div class="server-title">${source.name.toUpperCase()} / PAS DE PUBLICITÉ</div>
+                <div class="server-title">${source.name.toUpperCase()}</div>
                 <div class="server-subtitle">${source.lang === 'VF' ? 'French' : source.lang} - Serveur Rapide</div>
             </div>
         `;
@@ -476,9 +476,17 @@ function renderSourceButtons() {
             if (selector) selector.classList.add('hidden');
 
             if (videoIframe) {
-                const proxiedUrl = `/api/proxy?url=${encodeURIComponent(source.url)}`;
-                videoIframe.setAttribute('referrerpolicy', 'no-referrer');
-                videoIframe.src = proxiedUrl;
+                // Élargissement de la liste directe pour éviter les boucles Cloudflare
+                const directDomains = ['vidoza', 'uqload', 'upstream', 'dood', 'streamtape', 'voe', 'mixdrop', 'lulustream', 'vidmoly', 'mbed', 'upn', 'xtreme', 'coflix'];
+                const useDirect = directDomains.some(d => source.url.toLowerCase().includes(d));
+                
+                if (useDirect) {
+                    videoIframe.src = source.url;
+                } else {
+                    const proxiedUrl = `/api/proxy?url=${encodeURIComponent(source.url)}`;
+                    videoIframe.setAttribute('referrerpolicy', 'no-referrer');
+                    videoIframe.src = proxiedUrl;
+                }
             }
         };
         serverButtonsContainer.appendChild(btn);

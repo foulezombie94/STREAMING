@@ -17,26 +17,30 @@ const customLookup = (hostname, options, callback) => {
         options = {};
     }
 
-    // Localhost always uses standard lookup
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+    // 1. Check if it's an IP already
+    if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(hostname)) {
+        return callback(null, hostname, 4);
+    }
+
+    // 2. Localhost bypass
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
         return dns.lookup(hostname, options, callback);
     }
 
-    // 1. Try resolving via public DNS (bypasses hosts file)
-    dns.resolve4(hostname, (err, addresses) => {
-        if (!err && addresses && addresses.length > 0) {
-            return callback(null, addresses[0], 4);
+    // 3. Try standard DNS first (it's the most reliable)
+    dns.lookup(hostname, options, (err, address, family) => {
+        if (!err && address && address !== '127.0.0.1' && address !== '::1') {
+            return callback(null, address, family || 4);
         }
-        
-        // 2. Fallback to standard lookup but check for loopback hijacking
-        dns.lookup(hostname, options, (err2, address, family) => {
-            if (err2) {
-                return callback(err2);
+
+        // 4. If standard fails or is blocked (127.0.0.1), try public DNS
+        dns.resolve4(hostname, (err2, addresses) => {
+            if (!err2 && addresses && addresses.length > 0 && addresses[0]) {
+                return callback(null, addresses[0], 4);
             }
-            if (!address || address === '127.0.0.1' || address === '::1') {
-                return callback(new Error(`DNS_BLOCK: ${hostname} resolved to loopback or nothing`));
-            }
-            callback(null, address, family || 4);
+
+            // 5. If everything failed, return the original error or a clear NOT FOUND
+            return callback(err || err2 || new Error(`ENOTFOUND: Could not resolve ${hostname}`));
         });
     });
 };
@@ -49,7 +53,13 @@ const customLookup = (hostname, options, callback) => {
 const httpsAgent = new https.Agent({ lookup: customLookup, keepAlive: true });
 const httpAgent = new http.Agent({ lookup: customLookup, keepAlive: true });
 
-const ALLOWED_DOMAINS = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium', 'tv', 'live', 'play', 'vod', 'video', 'cdn', 'media', 'net', 'pro', 'top', 'host', 'box', 'voe', 'uqload', 'vidoza', 'dood', 'upstream', 'fembed', 'vidsrc', 'embed', 'frembed', 'coflix', 'lecteurvideo'];
+const ALLOWED_DOMAINS = [
+    'gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium', 'tv', 'live', 'play', 'vod', 'video', 'cdn', 
+    'media', 'net', 'pro', 'top', 'host', 'box', 'voe', 'uqload', 'vidoza', 'dood', 'upstream', 'fembed', 
+    'vidsrc', 'embed', 'frembed', 'coflix', 'lecteurvideo', 'upn.one', 'xtremestream', 'emmmmbed', 'lulustream', 
+    'vidmoly', 'mixdrop', 'evoload', 'sendvid', 'sibnet', 'ok.ru', 'streamtape', 'vidoza', 'moly', 'vid', 'load', 'play',
+    'stream', 'cloud', 'file', 'storage', 'link', 'click', 'site', 'xyz', 'one', 'to', 're', 'ws', 'li', 'me', 'sh', 'io'
+];
 
 router.get('/', async (req, res) => {
     const targetUrl = req.query.url;
@@ -94,12 +104,17 @@ router.get('/', async (req, res) => {
             httpsAgent,
             httpAgent,
             headers: {
-                'User-Agent': useBrowserUA ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' : 'VLC/3.0.23 LibVLC/3.0.23',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
                 'Referer': referer,
                 'Origin': origin,
                 'Cookie': cookieHeader,
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+                'Sec-Fetch-Dest': 'iframe',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'cross-site'
             },
             timeout: 15000,
             maxRedirects: 5,
@@ -124,7 +139,33 @@ router.get('/', async (req, res) => {
         res.set('Access-Control-Allow-Origin', '*');
         res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
         
-        response.data.pipe(res);
+        const contentType = response.headers['content-type'] || '';
+        
+        if (contentType.includes('text/html')) {
+            let body = '';
+            response.data.on('data', chunk => body += chunk);
+            response.data.on('end', () => {
+                // Inject <base> tag to fix relative URLs (like /dl, /assets, etc.)
+                const baseTag = `<base href="${urlObj.origin}${urlObj.pathname}">`;
+                let processedBody = body;
+                
+                if (body.includes('<head>')) {
+                    processedBody = body.replace('<head>', `<head>${baseTag}`);
+                } else if (body.includes('<html>')) {
+                    processedBody = body.replace('<html>', `<html><head>${baseTag}</head>`);
+                } else {
+                    processedBody = baseTag + body;
+                }
+
+                // Rewrite any absolute paths that point to root
+                processedBody = processedBody.replace(/src="\//g, `src="${urlObj.origin}/`);
+                processedBody = processedBody.replace(/href="\//g, `href="${urlObj.origin}/`);
+
+                res.send(processedBody);
+            });
+        } else {
+            response.data.pipe(res);
+        }
     } catch (error) {
         console.error(`[Proxy Error] ${targetUrl} -> ${error.message}`);
         res.status(500).send(`Proxy error: ${error.message}`);

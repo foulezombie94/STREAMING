@@ -2,11 +2,12 @@ const cluster = require('cluster');
 const os = require('os');
 require('dotenv').config();
 
-const NUM_WORKERS = parseInt(process.env.NUM_WORKERS) || Math.min(os.cpus().length, 6);
+// Optimize for low memory usage (limit to 2 workers by default for local dev)
+const NUM_WORKERS = parseInt(process.env.NUM_WORKERS) || 2;
 
 if (cluster.isPrimary || cluster.isMaster) {
   console.log(`🚀 Movieverse Master ${process.pid} started`);
-  console.log(`📊 Spawning ${NUM_WORKERS} workers...`);
+  console.log(`📊 Spawning ${NUM_WORKERS} workers (Memory Optimized)...`);
 
   for (let i = 0; i < NUM_WORKERS; i++) {
     cluster.fork();

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start-backend": "node --max-old-space-size=256 backend/server.js"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",

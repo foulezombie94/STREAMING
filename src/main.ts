@@ -545,7 +545,15 @@ async function fetchSectionData(conf: any) {
         const url = `${BASE_URL}${conf.endpoint}?api_key=${TMDB_API_KEY}&language=fr-FR${conf.params || ''}`;
         const res = await fetch(url);
         const data = await res.json();
-        const allItems = data.results || [];
+        let allItems = data.results || [];
+        
+        // Filtrage spécifique pour les carrousels Animation/Anime (ID 15 caractères max)
+        if (conf.id === 'genre-animation' || conf.id === 'tv-animation') {
+            allItems = allItems.filter((item: any) => {
+                const title = item.title || item.name || '';
+                return title.length <= 15;
+            });
+        }
 
         if (allItems.length === 0) {
             container.closest('section')?.remove();
