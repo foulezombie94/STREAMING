@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 const cheerio = require("cheerio");
+const { Buffer } = require("buffer");
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY || "e1a2bb6a3ed288feb5d767908732e751";
 const COFLIX_BASE_URL = "https://coflix.date";
@@ -50,9 +51,31 @@ async function getTmdbTitle(tmdbId, type) {
     }
 }
 
-function normalizeTitle(title) {
-    if (!title) return "";
-    return title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+function normalizeCoflixQuery(query) {
+    if (!query) return query;
+    const replacements = {
+        "\u00e0": "a", "\u00e1": "a", "\u00e2": "a", "\u00e3": "a", "\u00e4": "a", "\u00e5": "a",
+        "\u00e8": "e", "\u00e9": "e", "\u00ea": "e", "\u00eb": "e",
+        "\u00ec": "i", "\u00ed": "i", "\u00ee": "i", "\u00ef": "i",
+        "\u00f2": "o", "\u00f3": "o", "\u00f4": "o", "\u00f5": "o", "\u00f6": "o",
+        "\u00f9": "u", "\u00fa": "u", "\u00fb": "u", "\u00fc": "u",
+        "\u00fd": "y", "\u00ff": "y", "\u00f1": "n", "\u00e7": "c", "\u0153": "oe", "\u00e6": "ae"
+    };
+
+    let normalized = query.toLowerCase();
+    for (const [special, normal] of Object.entries(replacements)) {
+        normalized = normalized.split(special).join(normal);
+    }
+    return normalized.replace(/[^\w\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function calculateTitleSimilarity(title1, title2) {
+    if (!title1 || !title2) return 0;
+    const t1 = title1.toLowerCase().trim();
+    const t2 = title2.toLowerCase().trim();
+    if (t1 === t2) return 1.0;
+    if (t1.includes(t2) || t2.includes(t1)) return 0.8;
+    return 0.5; // Simplified for basic matching
 }
 
 function fixUrl(url) {
@@ -88,7 +111,7 @@ function getHostName(url) {
 async function searchCoflix(title, type) {
     try {
         if (!globalCookies) await initSession();
-        const query = normalizeTitle(title);
+        const query = normalizeCoflixQuery(title);
         const url = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(query)}`;
         
         const res = await axios.get(url, { 
@@ -99,13 +122,19 @@ async function searchCoflix(title, type) {
         
         if (!Array.isArray(data)) return [];
         
-        const filtered = data.filter(item => {
+        let coflixTypes = [];
+        if (type === "movie") {
+            coflixTypes = ["movies", "movie", "post"];
+        } else {
+            coflixTypes = ["series", "animes", "doramas", "tvshows", "tvshow", "tv", "post"];
+        }
+
+        let filtered = data.filter(item => {
             const pType = (item.post_type || "").toLowerCase();
-            if (type === "movie") {
-                return pType === "movies" || pType === "movie" || pType === "post" || !pType;
-            }
-            return pType === "series" || pType === "tvshows" || pType === "tvshow" || pType === "tv" || pType === "post" || !pType;
+            return coflixTypes.includes(pType) || !pType;
         });
+
+        filtered.sort((a, b) => calculateTitleSimilarity(title, b.title) - calculateTitleSimilarity(title, a.title));
 
         return filtered.length > 0 ? filtered : data.slice(0, 1);
     } catch (e) {
@@ -113,76 +142,77 @@ async function searchCoflix(title, type) {
     }
 }
 
-async function extractPlayers(pageUrl) {
-    if (!pageUrl) return [];
+async function extractPlayersFromIframe(iframeSrc) {
+    const players = [];
     try {
-        const res = await axios.get(pageUrl, { headers: { ...HEADERS, "Cookie": globalCookies }, timeout: 8000 });
-        const html = res.data;
-        let $ = cheerio.load(html);
-        
-        let iframeSrc = $("iframe").attr("src");
-        let container = html;
+        const iframePageResponse = await axios.get(iframeSrc, { headers: { ...HEADERS, "Cookie": globalCookies }, timeout: 8000 });
+        const iframePage$ = cheerio.load(iframePageResponse.data);
 
-        if (iframeSrc) {
-            iframeSrc = fixUrl(iframeSrc);
-            try {
-                const iframeRes = await axios.get(iframeSrc, { headers: { ...HEADERS, "Cookie": globalCookies }, timeout: 5000 });
-                container = iframeRes.data;
-            } catch (err) {}
+        let playerItems = iframePage$('li[onclick*="showVideo"]');
+        if (!playerItems.length) {
+            playerItems = iframePage$("div li[onclick]");
         }
 
-        const $if = cheerio.load(container);
-        const players = [];
-        
-        $if('li[onclick*="showVideo"]').each((i, el) => {
-            const onClick = $if(el).attr("onclick");
-            const base64Match = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
-            
-            if (base64Match && base64Match[1]) {
-                try {
-                    const decodedUrl = Buffer.from(base64Match[1], 'base64').toString('utf8');
-                    const langInfo = $if(el).find("p").text().toLowerCase();
-                    
-                    let lang = "VF";
-                    if (langInfo.includes("vostfr")) lang = "VOSTFR";
-                    else if (langInfo.includes("english") || langInfo.includes("vo")) lang = "VO";
+        playerItems.each((i, element) => {
+            try {
+                const $element = iframePage$(element);
+                const onClickAttr = $element.attr("onclick") || "";
+                const base64Match = onClickAttr.match(/showVideo\(['"]([^'\"]+)['"]/);
 
+                if (base64Match && base64Match[1]) {
+                    const base64Url = base64Match[1];
+                    let decodedUrl = null;
+                    try {
+                        decodedUrl = Buffer.from(base64Url, "base64").toString("utf-8");
+                    } catch (err) {}
+
+                    if (decodedUrl && !decodedUrl.includes("lecteur1.xtremestream.xyz")) {
+                        const quality = $element.find("span").text().trim() || "HD";
+                        let language = "VF";
+                        const info = $element.find("p").text().trim().toLowerCase();
+                        if (info.includes("french") || info.includes("vf")) language = "VF";
+                        else if (info.includes("english") || info.includes("vo")) language = "VO";
+                        else if (info.includes("vostfr")) language = "VOSTFR";
+
+                        players.push({
+                            name: getHostName(decodedUrl),
+                            url: decodedUrl,
+                            lang: language,
+                            quality: quality
+                        });
+                    }
+                }
+            } catch (err) {}
+        });
+
+        // Additive check for standard data-url tags if base64 fails
+        if (players.length === 0) {
+            iframePage$('.dooplay_player_option, .source-box, li[data-type], .server, .list-server-items li, #server-list li').each((i, el) => {
+                const url = iframePage$(el).attr('data-url') || iframePage$(el).attr('data-link') || iframePage$(el).attr('data-href');
+                if (url) {
+                    const cleanUrl = fixUrl(url);
                     players.push({
-                        name: getHostName(decodedUrl),
-                        url: decodedUrl,
-                        lang,
+                        name: getHostName(cleanUrl),
+                        url: cleanUrl,
+                        lang: "VF",
                         quality: "HD"
                     });
-                } catch (e) {}
-            }
-        });
-
-        $('.dooplay_player_option, .source-box, li[data-type], .server, .list-server-items li, #server-list li').each((i, el) => {
-            const url = $(el).attr('data-url') || $(el).attr('data-link') || $(el).attr('data-href');
-            if (url) {
-                const cleanUrl = fixUrl(url);
-                players.push({
-                    name: getHostName(cleanUrl),
-                    url: cleanUrl,
-                    lang: "VF",
-                    quality: "HD"
-                });
-            }
-        });
-
-        const uniquePlayers = [];
-        const seenUrls = new Set();
-        for (const p of players) {
-            if (!seenUrls.has(p.url)) {
-                seenUrls.add(p.url);
-                uniquePlayers.push(p);
-            }
+                }
+            });
         }
-
-        return uniquePlayers;
     } catch (e) {
-        return [];
+        console.error(`[Coflix] Iframe fetch error: ${e.message}`);
     }
+
+    const uniquePlayers = [];
+    const seenUrls = new Set();
+    for (const p of players) {
+        if (!seenUrls.has(p.url)) {
+            seenUrls.add(p.url);
+            uniquePlayers.push(p);
+        }
+    }
+    return uniquePlayers;
 }
 
 router.get("/movie/:tmdbId", async (req, res) => {
@@ -197,7 +227,19 @@ router.get("/movie/:tmdbId", async (req, res) => {
         const results = await searchCoflix(title, "movie");
         let players = [];
         if (results.length > 0) {
-            players = await extractPlayers(results[0].url);
+            const pageUrl = results[0].url;
+            const response = await axios.get(pageUrl, { headers: { ...HEADERS, "Cookie": globalCookies }, timeout: 8000 });
+            const $ = cheerio.load(response.data);
+            
+            let iframe = $("main div div div article div:nth-child(2) div:nth-child(1) aside div div iframe");
+            if (!iframe.length) iframe = $("article iframe");
+            if (!iframe.length) iframe = $("iframe");
+
+            let iframeSrc = iframe.attr("src");
+            if (iframeSrc) {
+                iframeSrc = fixUrl(iframeSrc);
+                players = await extractPlayersFromIframe(iframeSrc);
+            }
         }
 
         res.json({
@@ -225,21 +267,49 @@ router.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
         const results = await searchCoflix(title, "tv");
         let players = [];
         if (results.length > 0) {
-            const seriesId = results[0].ID;
-            const seriesSlug = (results[0].url || "").split('/').filter(Boolean).pop() || normalizeTitle(results[0].title || results[0].post_title).replace(/\s+/g, '-').toLowerCase();
+            const pageUrl = results[0].url;
+            const response = await axios.get(pageUrl, { headers: { ...HEADERS, "Cookie": globalCookies }, timeout: 8000 });
+            const $ = cheerio.load(response.data);
 
-            try {
-                const apiPath = `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${seriesId}/${season}`;
-                const apiRes = await axios.get(apiPath, { headers: { ...HEADERS, "Cookie": globalCookies }, timeout: 4000 });
-                if (apiRes.data && Array.isArray(apiRes.data.episodes)) {
-                    const targetEp = apiRes.data.episodes.find(ep => parseInt(ep.number) === parseInt(episode));
-                    if (targetEp && targetEp.links) {
-                        players = await extractPlayers(targetEp.links);
-                    }
+            const seasonItems = $("article section div aside div ul li, ul li, .seasons li, .season-list li, [data-season]");
+            let targetPostId = null;
+
+            seasonItems.each((i, el) => {
+                const $input = $(el).find("input");
+                const sNumber = parseInt($input.attr("data-season") || $(el).attr("data-season"));
+                if (sNumber === parseInt(season)) {
+                    targetPostId = $input.attr("post-id") || $(el).attr("post-id");
                 }
-            } catch (err) {}
+            });
+
+            if (targetPostId) {
+                try {
+                    const apiPath = `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${targetPostId}/${season}`;
+                    const apiRes = await axios.get(apiPath, { headers: { ...HEADERS, "Cookie": globalCookies }, timeout: 4000 });
+                    if (apiRes.data && Array.isArray(apiRes.data.episodes)) {
+                        const targetEp = apiRes.data.episodes.find(ep => parseInt(ep.number) === parseInt(episode));
+                        if (targetEp && targetEp.links) {
+                            let epUrl = targetEp.links.startsWith("http") ? targetEp.links : `${COFLIX_BASE_URL}${targetEp.links}`;
+                            
+                            const epResponse = await axios.get(epUrl, { headers: { ...HEADERS, "Cookie": globalCookies }, timeout: 8000 });
+                            const ep$ = cheerio.load(epResponse.data);
+                            
+                            let epIframe = ep$("main div div div article div iframe");
+                            if (!epIframe.length) epIframe = ep$("article iframe");
+                            if (!epIframe.length) epIframe = ep$("iframe");
+
+                            let epIframeSrc = epIframe.attr("src");
+                            if (epIframeSrc) {
+                                epIframeSrc = fixUrl(epIframeSrc);
+                                players = await extractPlayersFromIframe(epIframeSrc);
+                            }
+                        }
+                    }
+                } catch (err) {}
+            }
 
             if (players.length === 0) {
+                const seriesSlug = (pageUrl || "").split('/').filter(Boolean).pop() || normalizeCoflixQuery(results[0].title).replace(/\s+/g, '-').toLowerCase();
                 const slugPatterns = [
                     `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}/`,
                     `${COFLIX_BASE_URL}/episode/${seriesSlug}-${season}x${episode}/`,
@@ -248,8 +318,20 @@ router.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
                 ];
 
                 for (const path of slugPatterns) {
-                    players = await extractPlayers(path);
-                    if (players.length > 0) break;
+                    try {
+                        const epResponse = await axios.get(path, { headers: { ...HEADERS, "Cookie": globalCookies }, timeout: 5000 });
+                        const ep$ = cheerio.load(epResponse.data);
+                        let epIframe = ep$("main div div div article div iframe");
+                        if (!epIframe.length) epIframe = ep$("article iframe");
+                        if (!epIframe.length) epIframe = ep$("iframe");
+
+                        let epIframeSrc = epIframe.attr("src");
+                        if (epIframeSrc) {
+                            epIframeSrc = fixUrl(epIframeSrc);
+                            players = await extractPlayersFromIframe(epIframeSrc);
+                            if (players.length > 0) break;
+                        }
+                    } catch(e) {}
                 }
             }
         }
