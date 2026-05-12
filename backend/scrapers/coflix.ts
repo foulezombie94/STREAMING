@@ -129,29 +129,13 @@ export class CoflixScraper {
         // 2. Check for the "Telecharger" bridge link (High priority list)
         const teleLink = $('a[href*="telecharger.lecteurvideo.com"]').attr('href');
         if (teleLink) {
-            console.log(`[Coflix] Found downloader bridge: ${teleLink}`);
-            try {
-                const teleHtml = await this.engine.get(this.fixUrl(teleLink), {
-                    headers: { 'Referer': url }
-                });
-                const $tele = cheerio.load(teleHtml);
-                $tele('li[onclick*="showVideo"], div[onclick*="showVideo"]').each((_, el) => parseElement(el, $tele));
-                
-                // Also look for direct download/view buttons on tele page
-                $tele('a[href*="get_player"], a[href*="view"]').each((_, el) => {
-                    const href = $tele(el).attr('href');
-                    if (href) {
-                        players.push({
-                            name: "Direct Source",
-                            url: this.fixUrl(href),
-                            lang: "VF",
-                            quality: "HD"
-                        });
-                    }
-                });
-            } catch (e: any) {
-                console.error(`[Coflix] Telecharger bridge failed: ${e.message}`);
-            }
+            console.log(`[Coflix] Found downloader bridge, returning directly to frontend: ${teleLink}`);
+            players.push({
+                name: "Lecteur Multichoix",
+                url: this.fixUrl(teleLink),
+                lang: "VF",
+                quality: "HD"
+            });
         }
 
         // 3. Iframe Bridge (Deep extraction - Parallelized)
@@ -161,32 +145,13 @@ export class CoflixScraper {
             if (!src || src.includes('google') || src.includes('doubleclick') || src.includes('ads') || src.includes('youtube.com') || src.includes('youtu.be')) return [];
 
             if (src.includes('lecteurvideo') || src.includes('bridge')) {
-                try {
-                    const bridgeHtml = await this.engine.get(this.fixUrl(src), {
-                        headers: { 'Referer': url }
-                    });
-                    const $bridge = cheerio.load(bridgeHtml);
-                    const bridgePlayers: PlayerInfo[] = [];
-
-                    $bridge('li[onclick*="showVideo"], div[onclick*="showVideo"]').each((_, bridgeEl) => {
-                        const onClick = $bridge(bridgeEl).attr("onclick") || "";
-                        const b64 = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
-                        if (b64 && b64[1]) {
-                            const decoded = Buffer.from(b64[1], 'base64').toString('utf-8');
-                            if (!decoded.includes('xtremestream.xyz')) {
-                                bridgePlayers.push({
-                                    name: this.getHostName(decoded),
-                                    url: this.fixUrl(decoded),
-                                    lang: "VF",
-                                    quality: "SD"
-                                });
-                            }
-                        }
-                    });
-                    return bridgePlayers;
-                } catch (e) {
-                    return [];
-                }
+                // Return bridge URL directly instead of scraping it
+                return [{
+                    name: "Lecteur Multichoix",
+                    url: this.fixUrl(src),
+                    lang: "VF",
+                    quality: "HD"
+                }];
             } else {
                 return [{
                     name: this.getHostName(src),
