@@ -117,7 +117,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // Tier 1: WP-JSON API
             try {
                 const apiPath = `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${seriesId}/${season}`;
-                const apiRes = await axios.get(apiPath, { headers: HEADERS, timeout: 4000 });
+                const apiRes = await axios.get(apiPath, { headers: { ...HEADERS, "Cookie": cookies }, timeout: 4000 });
                 if (apiRes.data && Array.isArray(apiRes.data.episodes)) {
                     const targetEp = apiRes.data.episodes.find((ep: any) => parseInt(ep.number) === parseInt(episode));
                     if (targetEp && targetEp.links) {
@@ -129,7 +129,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // Tier 2: Direct Series Page Scraping
             if (pageUrl === target.url) {
                 try {
-                    const seriesPage = await axios.get(target.url, { headers: HEADERS, timeout: 5000 });
+                    const seriesPage = await axios.get(target.url, { headers: { ...HEADERS, "Cookie": cookies }, timeout: 5000 });
                     const $main = cheerio.load(seriesPage.data);
                     const episodeLink = $main(`.episode:contains("T${season}-E${episode}") a`).attr('href')
                                    || $main(`.episode:contains("${season}x${episode}") a`).attr('href')
@@ -153,7 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 
                 for (const p of patterns) {
                     try {
-                        const check = await axios.head(p, { headers: HEADERS, timeout: 3000 });
+                        const check = await axios.head(p, { headers: { ...HEADERS, "Cookie": cookies }, timeout: 3000 });
                         if (check.status === 200) {
                             pageUrl = p;
                             break;
@@ -165,7 +165,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // 4. Extract Players
         console.log(`[Coflix Prod] Final Page URL: ${pageUrl}`);
-        const pageRes = await axios.get(pageUrl, { headers: HEADERS, timeout: 8000 });
+        const pageRes = await axios.get(pageUrl, { headers: { ...HEADERS, "Cookie": cookies }, timeout: 8000 });
         const $ = cheerio.load(pageRes.data);
         const players: any[] = [];
 
@@ -210,6 +210,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Step 1: Initial extraction
         extractFromContext($);
 
+        // Update cookies from page response if any
+        if (pageRes.headers['set-cookie']) {
+            const newCookies = pageRes.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
+            cookies = cookies ? `${cookies}; ${newCookies}` : newCookies;
+        }
+
         // Step 2: Iframe extraction
         const iframes = $('iframe').toArray();
         for (const iframe of iframes) {
@@ -220,7 +226,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 try {
                     const fixUrl = (u: string) => u.startsWith('//') ? 'https:' + u : (u.startsWith('/') ? COFLIX_BASE_URL + u : u);
                     const iframeRes = await axios.get(fixUrl(src), { 
-                        headers: { ...HEADERS, "Referer": COFLIX_BASE_URL + "/" }, 
+                        headers: { 
+                            ...HEADERS, 
+                            "Referer": COFLIX_BASE_URL + "/", 
+                            "Cookie": cookies 
+                        }, 
                         timeout: 5000 
                     });
                     const $if = cheerio.load(iframeRes.data);
