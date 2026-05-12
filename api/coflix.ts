@@ -41,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const season = parts[2];
         const episode = parts[3];
 
-        console.log(`[Coflix Prod] ${type} - ${titleStr} (${tmdbId}) S${season}E${episode}`);
+        console.log(`[Coflix Prod] ${type} - ${titleStr} (${tmdbId}) [Year: ${yearStr || '?'}] S${season}E${episode}`);
 
         // 1. Session Init (Get Cookies)
         let cookies = "";
