@@ -62,13 +62,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const results = Array.isArray(searchRes.data) ? searchRes.data : [];
         if (results.length === 0) return res.json({ success: true, sources: [] });
 
-        // Filter results
-        const filtered = results.filter((r: any) => {
+        // Filter and Rank
+        const mapped = results.map((r: any) => {
             const pType = (r.post_type || "").toLowerCase();
-            return type === 'movie' ? (pType !== 'series' && pType !== 'tv') : (pType === 'series' || pType === 'tv');
+            return {
+                ...r,
+                type: (pType === 'series' || pType === 'tv') ? 'series' : 'movie'
+            };
+        }).filter((r: any) => r.type === type);
+
+        // Similarity ranking (Basic version for self-contained script)
+        const normalize = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+        const qNorm = normalize(titleStr);
+        
+        const ranked = mapped.sort((a: any, b: any) => {
+            const aNorm = normalize(a.post_title || a.title || "");
+            const bNorm = normalize(b.post_title || b.title || "");
+            const aScore = aNorm === qNorm ? 1 : (aNorm.includes(qNorm) ? 0.8 : 0.5);
+            const bScore = bNorm === qNorm ? 1 : (bNorm.includes(qNorm) ? 0.8 : 0.5);
+            return bScore - aScore;
         });
 
-        const target = filtered[0] || results[0];
+        const target = ranked[0];
+        if (!target) return res.json({ success: true, sources: [] });
+        
         let pageUrl = target.url;
 
         // 3. If Series, resolve episode URL
