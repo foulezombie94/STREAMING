@@ -49,10 +49,22 @@ export class CoflixScraper {
         }
     }
 
+    private async ensureSession() {
+        if (this.cache.has('session_init')) return;
+        try {
+            console.log(`[Coflix] Initializing session...`);
+            await this.engine.get('/');
+            this.cache.set('session_init', { data: true, timestamp: Date.now() });
+        } catch (e) {
+            console.warn(`[Coflix] Session init failed: ${e.message}`);
+        }
+    }
+
     /**
      * Search for a movie or series
      */
     async search(title: string, type: 'movie' | 'series', year?: string): Promise<SearchResult[]> {
+        await this.ensureSession();
         const normalizedTitle = normalizeTitle(title);
         const cacheKey = `search:${normalizedTitle}:${type}`;
         const cached = this.getCache(cacheKey);
