@@ -1,6 +1,11 @@
 const cluster = require('cluster');
 const os = require('os');
 require('dotenv').config();
+process.removeAllListeners('warning'); // Silence all legacy warnings for a cleaner console
+process.on('warning', (warning) => {
+  if (warning.name === 'DeprecationWarning' && warning.code === 'DEP0169') return;
+  console.warn(warning.name + ': ' + warning.message);
+});
 
 // Optimize for low memory usage (limit to 2 workers by default for local dev)
 const NUM_WORKERS = parseInt(process.env.NUM_WORKERS) || 2;

@@ -2,6 +2,13 @@ import { IncomingMessage, ServerResponse } from 'http';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
+// Suppress DEP0169 warnings from dependencies
+process.removeAllListeners('warning');
+process.on('warning', (warning: any) => {
+  if (warning.name === 'DeprecationWarning' && warning.code === 'DEP0169') return;
+  console.warn(warning.name + ': ' + warning.message);
+});
+
 const COFLIX_BASE_URL = "https://coflix.date";
 const HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",

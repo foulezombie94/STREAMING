@@ -3,6 +3,13 @@ import * as http from 'http';
 import * as dns from 'dns';
 import axios from 'axios';
 
+// Suppress DEP0169 warnings from dependencies
+process.removeAllListeners('warning');
+process.on('warning', (warning) => {
+  if (warning.name === 'DeprecationWarning' && warning.code === 'DEP0169') return;
+  console.warn(warning.name + ': ' + warning.message);
+});
+
 // Bypass local DNS blocks
 dns.setServers(['1.1.1.1', '8.8.8.8']);
 
