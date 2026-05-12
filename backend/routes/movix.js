@@ -242,14 +242,25 @@ router.get("/movie/:tmdbId", async (req, res) => {
             const response = await axios.get(pageUrl, { headers: { ...HEADERS, "Cookie": globalCookies }, timeout: 8000 });
             const $ = cheerio.load(response.data);
             
-            let iframe = $("main div div div article div:nth-child(2) div:nth-child(1) aside div div iframe");
-            if (!iframe.length) iframe = $("article iframe");
-            if (!iframe.length) iframe = $("iframe");
+            let teleLink = $('a[href*="telecharger.lecteurvideo.com"]').attr("href");
+            
+            if (teleLink) {
+                players = [{
+                    name: "Lecteur Multichoix",
+                    url: fixUrl(teleLink),
+                    lang: "VF",
+                    quality: "HD"
+                }];
+            } else {
+                let iframe = $("main div div div article div:nth-child(2) div:nth-child(1) aside div div iframe");
+                if (!iframe.length) iframe = $("article iframe");
+                if (!iframe.length) iframe = $("iframe");
 
-            let iframeSrc = iframe.attr("src");
-            if (iframeSrc) {
-                iframeSrc = fixUrl(iframeSrc);
-                players = await extractPlayersFromIframe(iframeSrc);
+                let iframeSrc = iframe.attr("src");
+                if (iframeSrc) {
+                    iframeSrc = fixUrl(iframeSrc);
+                    players = await extractPlayersFromIframe(iframeSrc);
+                }
             }
         }
 
@@ -305,14 +316,24 @@ router.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
                             const epResponse = await axios.get(epUrl, { headers: { ...HEADERS, "Cookie": globalCookies }, timeout: 8000 });
                             const ep$ = cheerio.load(epResponse.data);
                             
-                            let epIframe = ep$("main div div div article div iframe");
-                            if (!epIframe.length) epIframe = ep$("article iframe");
-                            if (!epIframe.length) epIframe = ep$("iframe");
+                            let teleLink = ep$('a[href*="telecharger.lecteurvideo.com"]').attr("href");
+                            if (teleLink) {
+                                players = [{
+                                    name: "Lecteur Multichoix",
+                                    url: fixUrl(teleLink),
+                                    lang: "VF",
+                                    quality: "HD"
+                                }];
+                            } else {
+                                let epIframe = ep$("main div div div article div iframe");
+                                if (!epIframe.length) epIframe = ep$("article iframe");
+                                if (!epIframe.length) epIframe = ep$("iframe");
 
-                            let epIframeSrc = epIframe.attr("src");
-                            if (epIframeSrc) {
-                                epIframeSrc = fixUrl(epIframeSrc);
-                                players = await extractPlayersFromIframe(epIframeSrc);
+                                let epIframeSrc = epIframe.attr("src");
+                                if (epIframeSrc) {
+                                    epIframeSrc = fixUrl(epIframeSrc);
+                                    players = await extractPlayersFromIframe(epIframeSrc);
+                                }
                             }
                         }
                     }
@@ -332,6 +353,18 @@ router.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
                     try {
                         const epResponse = await axios.get(path, { headers: { ...HEADERS, "Cookie": globalCookies }, timeout: 5000 });
                         const ep$ = cheerio.load(epResponse.data);
+                        
+                        let teleLink = ep$('a[href*="telecharger.lecteurvideo.com"]').attr("href");
+                        if (teleLink) {
+                            players = [{
+                                name: "Lecteur Multichoix",
+                                url: fixUrl(teleLink),
+                                lang: "VF",
+                                quality: "HD"
+                            }];
+                            break;
+                        }
+
                         let epIframe = ep$("main div div div article div iframe");
                         if (!epIframe.length) epIframe = ep$("article iframe");
                         if (!epIframe.length) epIframe = ep$("iframe");
