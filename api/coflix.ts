@@ -59,7 +59,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } catch (e) {}
 
         // 2. Search
-        const normalized = titleStr.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+        const normalizeCoflixQuery = (q: string) => {
+            const replacements: Record<string, string> = {
+                "à": "a", "á": "a", "â": "a", "ã": "a", "ä": "a", "å": "a",
+                "è": "e", "é": "e", "ê": "e", "ë": "e",
+                "ì": "i", "í": "i", "î": "i", "ï": "i",
+                "ò": "o", "ó": "o", "ô": "o", "õ": "o", "ö": "o",
+                "ù": "u", "ú": "u", "û": "u", "ü": "u",
+                "ý": "y", "ÿ": "y", "ñ": "n", "ç": "c", "œ": "oe", "æ": "ae"
+            };
+            let n = q.toLowerCase();
+            for (const [s, r] of Object.entries(replacements)) n = n.split(s).join(r);
+            return n.replace(/[^\w\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+        };
+
+        const normalized = normalizeCoflixQuery(titleStr);
         const searchUrl = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(normalized)}`;
         const searchRes = await axios.get(searchUrl, { 
             headers: { ...HEADERS, "Cookie": cookies }, 
@@ -98,64 +112,135 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // 3. If Series, resolve episode URL
         if (type === 'series' && season && episode) {
             const seriesId = target.ID;
-            const apiPath = `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${seriesId}/${season}`;
+            const seriesSlug = target.url.split('/').filter(Boolean).pop();
+
+            // Tier 1: WP-JSON API
             try {
+                const apiPath = `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${seriesId}/${season}`;
                 const apiRes = await axios.get(apiPath, { headers: HEADERS, timeout: 4000 });
                 if (apiRes.data && Array.isArray(apiRes.data.episodes)) {
                     const targetEp = apiRes.data.episodes.find((ep: any) => parseInt(ep.number) === parseInt(episode));
                     if (targetEp && targetEp.links) {
-                        pageUrl = targetEp.links;
+                        pageUrl = targetEp.links.startsWith('http') ? targetEp.links : (COFLIX_BASE_URL + targetEp.links);
                     }
                 }
             } catch (err) {}
             
-            // Fallback for episode pageUrl if still pointing to series
+            // Tier 2: Direct Series Page Scraping
             if (pageUrl === target.url) {
-                const slug = pageUrl.split('/').filter(Boolean).pop();
-                pageUrl = `${COFLIX_BASE_URL}/episode/${slug}-${season}x${episode}/`;
+                try {
+                    const seriesPage = await axios.get(target.url, { headers: HEADERS, timeout: 5000 });
+                    const $main = cheerio.load(seriesPage.data);
+                    const episodeLink = $main(`.episode:contains("T${season}-E${episode}") a`).attr('href')
+                                   || $main(`.episode:contains("${season}x${episode}") a`).attr('href')
+                                   || $main(`[data-season="${season}"]`).find(`[data-episode="${episode}"] a`).attr('href') 
+                                   || $main(`li[data-episode="${episode}"] a`).attr('href')
+                                   || $main(`a:contains("Épisode ${episode}")`).attr('href');
+                    
+                    if (episodeLink) {
+                        pageUrl = episodeLink.startsWith('http') ? episodeLink : (COFLIX_BASE_URL + episodeLink);
+                    }
+                } catch (e) {}
+            }
+
+            // Tier 3: Deterministic URL Patterns
+            if (pageUrl === target.url) {
+                const patterns = [
+                    `${COFLIX_BASE_URL}/episode/${seriesSlug}-${season}x${episode}/`,
+                    `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}/`,
+                    `${COFLIX_BASE_URL}/${seriesSlug}-saison-${season}-episode-${episode}/`
+                ];
+                
+                for (const p of patterns) {
+                    try {
+                        const check = await axios.head(p, { headers: HEADERS, timeout: 3000 });
+                        if (check.status === 200) {
+                            pageUrl = p;
+                            break;
+                        }
+                    } catch (e) {}
+                }
             }
         }
 
         // 4. Extract Players
-        console.log(`[Coflix Prod] Extracting from: ${pageUrl}`);
+        console.log(`[Coflix Prod] Final Page URL: ${pageUrl}`);
         const pageRes = await axios.get(pageUrl, { headers: HEADERS, timeout: 8000 });
         const $ = cheerio.load(pageRes.data);
         const players: any[] = [];
 
-        // Handle Base64 players (showVideo)
-        $('li[onclick*="showVideo"]').each((_, el) => {
-            const onclick = $(el).attr('onclick') || "";
-            const match = onclick.match(/showVideo\(['"]([^'"]+)['"]/);
-            if (match && match[1]) {
+        const extractFromContext = (source$: cheerio.CheerioAPI) => {
+            source$('li[onclick*="showVideo"], div[onclick*="showVideo"], a[onclick*="showVideo"]').each((_, el) => {
+                const onclick = source$(el).attr('onclick') || "";
+                const match = onclick.match(/showVideo\(['"]([^'"]+)['"]/);
+                if (match && match[1]) {
+                    try {
+                        const url = Buffer.from(match[1], 'base64').toString('utf8');
+                        if (url.includes('xtremestream')) return;
+                        
+                        const fullUrl = url.startsWith('//') ? 'https:' + url : url;
+                        const name = new URL(fullUrl).hostname.replace('www.', '').split('.')[0].toUpperCase();
+                        const sub = source$(el).find('p, span').text().toLowerCase();
+                        
+                        players.push({
+                            name,
+                            url: fullUrl,
+                            lang: sub.includes("vostfr") ? "VOSTFR" : (sub.includes("vo") ? "VO" : "VF")
+                        });
+                    } catch (e) {}
+                }
+            });
+
+            // Handle direct data-url
+            source$('[data-url], [data-link], .server').each((_, el) => {
+                const url = source$(el).attr('data-url') || source$(el).attr('data-link');
+                if (url && url.includes('http')) {
+                    try {
+                        const fullUrl = url.startsWith('//') ? 'https:' + url : url;
+                        players.push({
+                            name: new URL(fullUrl).hostname.replace('www.', '').split('.')[0].toUpperCase(),
+                            url: fullUrl,
+                            lang: "VF"
+                        });
+                    } catch (e) {}
+                }
+            });
+        };
+
+        // Step 1: Initial extraction
+        extractFromContext($);
+
+        // Step 2: Iframe extraction
+        const iframes = $('iframe').toArray();
+        for (const iframe of iframes) {
+            const src = $(iframe).attr('src');
+            if (!src || src.includes('youtube') || src.includes('youtu.be')) continue;
+
+            if (src.includes('lecteurvideo') || src.includes('bridge') || src.includes('embed.php')) {
                 try {
-                    const url = Buffer.from(match[1], 'base64').toString('utf8');
-                    if (url.includes('xtremestream')) return;
-                    
-                    const name = new URL(url.startsWith('//') ? 'https:'+url : url).hostname.replace('www.', '').split('.')[0].toUpperCase();
-                    const sub = $(el).find('p').text().toLowerCase();
-                    
-                    players.push({
-                        name,
-                        url: url.startsWith('//') ? 'https:'+url : url,
-                        lang: sub.includes("vostfr") ? "VOSTFR" : (sub.includes("vo") ? "VO" : "VF")
+                    const fixUrl = (u: string) => u.startsWith('//') ? 'https:' + u : (u.startsWith('/') ? COFLIX_BASE_URL + u : u);
+                    const iframeRes = await axios.get(fixUrl(src), { 
+                        headers: { ...HEADERS, "Referer": COFLIX_BASE_URL + "/" }, 
+                        timeout: 5000 
                     });
-                } catch (e) {}
+                    const $if = cheerio.load(iframeRes.data);
+                    extractFromContext($if);
+                } catch (e: any) {
+                    console.warn(`[Coflix Prod] Iframe extraction failed: ${e.message}`);
+                }
             }
+        }
+
+        // Deduplicate
+        const seen = new Set();
+        const finalPlayers = players.filter(p => {
+            if (seen.has(p.url)) return false;
+            seen.add(p.url);
+            return true;
         });
 
-        // Handle direct data-url
-        $('[data-url], [data-link]').each((_, el) => {
-            const url = $(el).attr('data-url') || $(el).attr('data-link');
-            if (url && url.includes('http')) {
-                players.push({
-                    name: new URL(url).hostname.replace('www.', '').split('.')[0].toUpperCase(),
-                    url,
-                    lang: "VF"
-                });
-            }
-        });
-
-        return res.json({ success: true, sources: players.slice(0, 10) });
+        console.log(`[Coflix Prod] Found ${finalPlayers.length} players`);
+        return res.json({ success: true, sources: finalPlayers.slice(0, 10) });
 
     } catch (error: any) {
         console.error("[Coflix Prod Error]", error.message);
