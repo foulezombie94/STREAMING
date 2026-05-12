@@ -55,7 +55,7 @@ export class CoflixScraper {
             console.log(`[Coflix] Initializing session...`);
             await this.engine.get('/');
             this.cache.set('session_init', { data: true, timestamp: Date.now() });
-        } catch (e) {
+        } catch (e: any) {
             console.warn(`[Coflix] Session init failed: ${e.message}`);
         }
     }
@@ -90,7 +90,7 @@ export class CoflixScraper {
                     }
                 }
             }
-        } catch (e) {
+        } catch (e: any) {
             console.warn(`[Coflix] Suggest API failed, falling back to classic search`);
         }
 
@@ -163,7 +163,7 @@ export class CoflixScraper {
                             lang: sub.toLowerCase().includes("vostfr") ? "VOSTFR" : (sub.toLowerCase().includes("english") ? "VO" : "VF"),
                             quality: (title + sub).toLowerCase().includes("hd") ? "HD" : ""
                         });
-                    } catch {}
+                    } catch (e: any) {}
                 }
             }
         };
@@ -209,7 +209,7 @@ export class CoflixScraper {
                                 let decodedUrl = null;
                                 try {
                                     decodedUrl = Buffer.from(base64Url, "base64").toString("utf-8");
-                                } catch (err) {}
+                                } catch (err: any) {}
 
                                 if (decodedUrl && !decodedUrl.includes("lecteur1.xtremestream.xyz")) {
                                     const quality = $element.find("span").text().trim() || "HD";
@@ -238,7 +238,7 @@ export class CoflixScraper {
                                     });
                                 }
                             }
-                        } catch {}
+                        } catch (e: any) {}
                     });
                     return extracted;
                 } catch(e: any) {
@@ -283,7 +283,7 @@ export class CoflixScraper {
                     console.log(`[Coflix] Found episode via WP-JSON API: ${apiRes.url}`);
                     return await this.extractPlayers(apiRes.url);
                 }
-            } catch (e) {}
+            } catch (e: any) {}
 
             // Priority 2: AJAX fallback (Legacy Coflix)
             try {
@@ -310,7 +310,7 @@ export class CoflixScraper {
                         }
                     }
                 }
-            } catch (e) {}
+            } catch (e: any) {}
 
             // Priority 3: HTML Fallback (Direct selectors)
             try {
@@ -325,7 +325,7 @@ export class CoflixScraper {
                     console.log(`[Coflix] Found episode via HTML parsing: ${episodeLink}`);
                     return await this.extractPlayers(this.fixUrl(episodeLink));
                 }
-            } catch (e) {}
+            } catch (e: any) {}
 
             // Priority 4: Pattern Match (Deterministic URL)
             const patterns = [
