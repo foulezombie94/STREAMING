@@ -403,12 +403,27 @@ async function fetchCoflixSources(type: string, id: string, season?: string, epi
     if (!serverButtonsContainer) return;
 
     serverButtonsContainer.innerHTML = '<span class="loading-sources">🔍 Recherche de sources live...</span>';
+    
+    // S'assurer que le sélecteur de serveurs est visible au début d'une recherche
+    const selector = document.getElementById('server-selector');
+    if (selector) selector.classList.remove('hidden');
 
     try {
         const title = currentMediaData?.title || currentMediaData?.name;
         if (!title) throw new Error("Title missing");
 
-        const titleUrl = `?title=${encodeURIComponent(title)}`;
+        // Extract year from UI if possible (metaEl contains "Rating • Year • Duration")
+        // IMPORTANT: For TV shows, we want the First Air Year, not the current season year.
+        let year = "";
+        if (type === 'tv' && (currentMediaData as any)?.first_air_date) {
+            year = (currentMediaData as any).first_air_date.split('-')[0];
+        } else {
+            const metaText = metaEl?.textContent || "";
+            const yearMatch = metaText.match(/(\d{4})/);
+            year = yearMatch ? yearMatch[1] : "";
+        }
+
+        const titleUrl = `?title=${encodeURIComponent(title)}${year ? `&year=${year}` : ""}`;
         const url = type === 'tv' 
             ? `/api/coflix/tv/${id}/${season}/${episode}${titleUrl}`
             : `/api/coflix/movie/${id}${titleUrl}`;
@@ -436,10 +451,30 @@ function renderSourceButtons() {
     coflixSources.forEach((source, index) => {
         const btn = document.createElement('button');
         btn.className = 'server-btn' + (index === 0 ? ' active' : '');
-        btn.textContent = `${source.lang} - ${source.name}`;
+        
+        // Extract domain to fetch favicon
+        const domainMatch = source.url.match(/https?:\/\/(?:www\.)?([^\/]+)/);
+        const domain = domainMatch ? domainMatch[1] : 'google.com';
+        const iconUrl = `https://www.google.com/s2/favicons?sz=64&domain=${domain}`;
+
+        btn.innerHTML = `
+            <div class="server-icon-wrap">
+                <img src="${iconUrl}" alt="icon">
+            </div>
+            <div class="server-info">
+                <div class="server-title">${source.name.toUpperCase()} / PAS DE PUBLICITÉ</div>
+                <div class="server-subtitle">${source.lang === 'VF' ? 'French' : source.lang} - Serveur Rapide</div>
+            </div>
+        `;
+
         btn.onclick = () => {
             document.querySelectorAll('.server-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            
+            // Masquer l'overlay des serveurs pour afficher la vidéo
+            const selector = document.getElementById('server-selector');
+            if (selector) selector.classList.add('hidden');
+
             if (videoIframe) {
                 const proxiedUrl = `/api/proxy?url=${encodeURIComponent(source.url)}`;
                 videoIframe.setAttribute('referrerpolicy', 'no-referrer');
@@ -449,11 +484,9 @@ function renderSourceButtons() {
         serverButtonsContainer.appendChild(btn);
     });
 
-    // Auto-play first source
-    if (coflixSources.length > 0 && videoIframe) {
-        const firstUrl = coflixSources[0].url;
-        videoIframe.setAttribute('referrerpolicy', 'no-referrer');
-        videoIframe.src = `/api/proxy?url=${encodeURIComponent(firstUrl)}`;
+    // We don't auto-play anymore so the user sees the server selection menu
+    if (videoIframe) {
+        videoIframe.src = '';
     }
 }
 
@@ -591,6 +624,11 @@ if (closePlayerBtn && playerSection && videoIframe) {
     closePlayerBtn.addEventListener('click', () => {
         playerSection.style.display = 'none';
         videoIframe.src = ''; // Stop video playing in background
+        
+        // Restore the server selector
+        const selector = document.getElementById('server-selector');
+        if (selector) selector.classList.remove('hidden');
+
         // Scroll back to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });

@@ -18,7 +18,7 @@ if (cluster.isPrimary || cluster.isMaster) {
   });
 } else {
   const app = require('./app');
-  const PORT = process.env.PORT || 25565;
+  const PORT = process.env.PORT || 25566;
 
   app.listen(PORT, () => {
     console.log(`✅ Worker ${process.pid} listening on port ${PORT}`);

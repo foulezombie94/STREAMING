@@ -1,17 +1,31 @@
 import * as cheerio from 'cheerio';
 import { ScraperEngine } from '../utils/scraper-engine.js';
-import { rankResults } from '../utils/similarity.js';
+import { rankResults, normalizeTitle } from '../utils/similarity.js';
 import type { PlayerInfo, SearchResult } from '../utils/types.js';
 
 export class CoflixScraper {
     private engine: ScraperEngine;
     private baseURL = "https://coflix.date";
+    private cache: Map<string, { data: any, timestamp: number }> = new Map();
+    private CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
     constructor() {
         this.engine = new ScraperEngine(this.baseURL, {
             timeout: 12000,
             maxRetries: 2
         });
+    }
+
+    private getCache(key: string) {
+        const cached = this.cache.get(key);
+        if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+            return cached.data;
+        }
+        return null;
+    }
+
+    private setCache(key: string, data: any) {
+        this.cache.set(key, { data, timestamp: Date.now() });
     }
 
     private fixUrl(url: string): string {
@@ -34,8 +48,12 @@ export class CoflixScraper {
      * Search for a movie or series
      */
     async search(title: string, type: 'movie' | 'series', year?: string): Promise<SearchResult[]> {
-        const normalizedTitle = title.toLowerCase().trim();
-        console.log(`[Coflix] Searching for ${title} (${type})`);
+        const normalizedTitle = normalizeTitle(title);
+        const cacheKey = `search:${normalizedTitle}:${type}`;
+        const cached = this.getCache(cacheKey);
+        if (cached) return cached;
+
+        console.log(`[Coflix] Searching for ${title} (${type}) -> Query: ${normalizedTitle}`);
 
         try {
             // Priority 1: Suggestion API (Fast)
@@ -47,7 +65,13 @@ export class CoflixScraper {
                     type: ((r.url.includes('/series/') || r.post_type === 'series') ? 'series' : 'movie') as 'movie' | 'series'
                 }));
                 const ranked = rankResults(mapped, title, year);
-                if (ranked.length > 0) return ranked.filter(r => r.type === type);
+                if (ranked.length > 0) {
+                    const final = ranked.filter(r => r.type === type);
+                    if (final.length > 0) {
+                        this.setCache(cacheKey, final);
+                        return final;
+                    }
+                }
             }
         } catch (e) {
             console.warn(`[Coflix] Suggest API failed, falling back to classic search`);
@@ -74,7 +98,9 @@ export class CoflixScraper {
                 }
             });
 
-            return rankResults(results, title, year).filter(r => r.type === type);
+            const ranked = rankResults(results, title, year).filter(r => r.type === type);
+            this.setCache(cacheKey, ranked);
+            return ranked;
         } catch (e: any) {
             console.error(`[Coflix] Search failed: ${e.message}`);
             return [];
@@ -83,9 +109,12 @@ export class CoflixScraper {
 
     /**
      * Extract players from a page (Movie or Episode)
-     * Handles both the main page, iframes, and the telecharger bridge
      */
     async extractPlayers(url: string): Promise<PlayerInfo[]> {
+        const cacheKey = `players:${url}`;
+        const cached = this.getCache(cacheKey);
+        if (cached) return cached;
+
         console.log(`[Coflix] Extracting from ${url}`);
         let html = "";
         try {
@@ -98,137 +127,206 @@ export class CoflixScraper {
         const $ = cheerio.load(html);
         const players: PlayerInfo[] = [];
 
-        // Helper to parse a player element (li or div)
-        const parseElement = (el: any, container: any) => {
-            const onClick = container(el).attr("onclick") || "";
-            const b64 = onClick.match(/showVideo\(['"]([^'"]+)['"]/);
-            
-            if (b64 && b64[1]) {
-                try {
-                    const decoded = Buffer.from(b64[1], 'base64').toString('utf-8');
-                    
-                    // Filter: Block xtremestream.xyz as requested
-                    if (decoded.includes('xtremestream.xyz')) return;
+        // Helper to parse elements
+        const parseElement = (el: any, source$: cheerio.CheerioAPI) => {
+            const onclick = source$(el).attr('onclick');
+            if (onclick && onclick.includes('showVideo')) {
+                const match = onclick.match(/showVideo\('([^']+)'/);
+                if (match) {
+                    try {
+                        const decoded = Buffer.from(match[1], 'base64').toString();
+                        if (decoded.includes("lecteur1.xtremestream.xyz")) return;
 
-                    const title = container(el).find("p, .title, span:first-child").first().text().trim();
-                    const sub = container(el).find("span, .sub, p:last-child").last().text().trim();
-                    
-                    players.push({
-                        name: this.getHostName(decoded) + (title ? ` (${title})` : ""),
-                        url: this.fixUrl(decoded),
-                        lang: (title + sub).toLowerCase().includes("vostfr") ? "VOSTFR" : "VF",
-                        quality: (title + sub).toLowerCase().includes("hd") ? "HD" : "SD"
-                    });
-                } catch {}
+                        const title = source$(el).find('span').text().trim() || "Server";
+                        const sub = source$(el).find('p').text().trim();
+                        
+                        players.push({
+                            name: this.getHostName(decoded),
+                            url: decoded,
+                            lang: sub.toLowerCase().includes("vostfr") ? "VOSTFR" : (sub.toLowerCase().includes("english") ? "VO" : "VF"),
+                            quality: (title + sub).toLowerCase().includes("hd") ? "HD" : ""
+                        });
+                    } catch {}
+                }
             }
         };
 
         // 1. Direct li items with showVideo
         $('li[onclick*="showVideo"], div[onclick*="showVideo"]').each((_, el) => parseElement(el, $));
 
-        // 2. Iframe Bridge (Deep extraction - Parallelized)
+        // 2. Iframe Bridge (Deep extraction)
         const allIframes = $("iframe").toArray();
         const bridgeTasks = allIframes.map(async (el) => {
             const src = $(el).attr('src');
-            if (!src || src.includes('google') || src.includes('doubleclick') || src.includes('ads') || src.includes('youtube.com') || src.includes('youtu.be')) return [];
+            if (!src) return [];
+            
+            // Blacklist ad networks but allow lecteurvideo
+            if (src.includes('google') || src.includes('doubleclick') || src.includes('youtube.com') || src.includes('youtu.be')) return [];
+            if (src.includes('ads') && !src.includes('lecteurvideo')) return [];
 
-            if (src.includes('lecteurvideo') || src.includes('bridge')) {
-                // Return bridge URL directly instead of scraping it
-                return [{
-                    name: "Lecteur Multichoix",
-                    url: this.fixUrl(src),
-                    lang: "VF",
-                    quality: "HD"
-                }];
-            } else {
-                return [{
-                    name: this.getHostName(src),
-                    url: this.fixUrl(src),
-                    lang: "VF",
-                    quality: "HD"
-                }];
+            if (src.includes('lecteurvideo') || src.includes('bridge') || src.includes('embed.php')) {
+                try {
+                    const iframePageHtml = await this.engine.get(this.fixUrl(src), { 
+                        headers: { 
+                            "Referer": "https://coflix.date/",
+                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
+                        }, 
+                        timeout: 10000 
+                    });
+                    const iframePage$ = cheerio.load(iframePageHtml);
+                    
+                    let playerItems = iframePage$('li[onclick*="showVideo"], a[onclick*="showVideo"], div[onclick*="showVideo"]');
+                    
+                    if (!playerItems.length) {
+                        playerItems = iframePage$('li:has(a[href*="veev.to"]), li:has(a[href*="uqload"]), li:has(a[href*="voe"])');
+                    }
+
+                    const extracted: PlayerInfo[] = [];
+                    playerItems.each((_, element) => {
+                        try {
+                            const $element = iframePage$(element);
+                            const onClickAttr = $element.attr("onclick") || $element.find('a').attr("onclick") || "";
+                            const base64Match = onClickAttr.match(/showVideo\(['"]([^'\"]+)['"]/);
+
+                            if (base64Match && base64Match[1]) {
+                                const base64Url = base64Match[1];
+                                let decodedUrl = null;
+                                try {
+                                    decodedUrl = Buffer.from(base64Url, "base64").toString("utf-8");
+                                } catch (err) {}
+
+                                if (decodedUrl && !decodedUrl.includes("lecteur1.xtremestream.xyz")) {
+                                    const quality = $element.find("span").text().trim() || "HD";
+                                    let language = "VF";
+                                    const info = $element.find("p, span").text().trim().toLowerCase();
+                                    if (info.includes("french") || info.includes("vf")) language = "VF";
+                                    else if (info.includes("english") || info.includes("vo")) language = "VO";
+                                    else if (info.includes("vostfr")) language = "VOSTFR";
+
+                                    extracted.push({
+                                        name: this.getHostName(decodedUrl),
+                                        url: decodedUrl,
+                                        lang: language,
+                                        quality: quality
+                                    });
+                                }
+                            } else {
+                                const href = $element.attr('href') || $element.find('a').attr('href');
+                                if (href && (href.includes('http') || href.includes('//'))) {
+                                    const fullUrl = this.fixUrl(href);
+                                    extracted.push({
+                                        name: this.getHostName(fullUrl),
+                                        url: fullUrl,
+                                        lang: "VF",
+                                        quality: "HD"
+                                    });
+                                }
+                            }
+                        } catch {}
+                    });
+                    return extracted;
+                } catch(e: any) {
+                    console.error(`[Coflix] Iframe fetch error:`, e.message);
+                    return [];
+                }
             }
+            return [];
         });
 
-        const bridgeResults = (await Promise.all(bridgeTasks)).flat();
-        players.push(...bridgeResults);
+        const bridgeResults = await Promise.all(bridgeTasks);
+        bridgeResults.forEach(res => players.push(...res));
 
-        // De-duplicate by URL
-        return Array.from(new Map(players.map(p => [p.url, p])).values());
+        // Deduplicate
+        const seenUrls = new Set();
+        const finalPlayers = players.filter(p => {
+            if (seenUrls.has(p.url)) return false;
+            seenUrls.add(p.url);
+            return true;
+        });
+
+        this.setCache(cacheKey, finalPlayers);
+        return finalPlayers;
     }
 
     /**
-     * Resolve series episode using internal API and specific fallback patterns
+     * Resolve episode page for series
      */
     async resolveEpisode(seriesUrl: string, season: string, episode: string): Promise<PlayerInfo[]> {
         console.log(`[Coflix] Resolving S${season}E${episode} for ${seriesUrl}`);
+        const seriesSlug = seriesUrl.split('/').filter(Boolean).pop();
         
         try {
-            const html = await this.engine.get(seriesUrl);
-            const $ = cheerio.load(html);
-            
-            // Extract Post ID and Slug for the new API logic
-            const postId = $('input#post_id').val() || $('article.post').attr('id')?.replace('post-', '');
-            const slugMatch = seriesUrl.match(/\/series\/([^/]+)/);
-            const slug = slugMatch ? slugMatch[1] : "";
+            const seriesPageHtml = await this.engine.get(seriesUrl);
+            const $main = cheerio.load(seriesPageHtml);
 
-            // 1. Try WP-JSON API (New priority method)
-            if (postId) {
-                try {
-                    const apiUrl = `/wp-json/apiflix/v1/series/${postId}/${season}`;
-                    console.log(`[Coflix] Querying WP-JSON API: ${apiUrl}`);
-                    const episodes = await this.engine.get(apiUrl);
-                    
-                    if (Array.isArray(episodes)) {
-                        const targetEp = episodes.find(e => 
-                            e.episode_number === episode || 
-                            e.title?.toLowerCase().includes(`épisode ${episode}`) ||
-                            e.slug?.endsWith(`x${episode}`)
-                        );
-                        
-                        if (targetEp && targetEp.links) {
-                            return await this.extractPlayers(this.fixUrl(targetEp.links));
+            // Priority 1: WP-JSON API (Modern Coflix)
+            const apiUrl = `/wp-json/apiflix/v1/series/${seriesSlug}/seasons/${season}/episodes/${episode}`;
+            try {
+                const apiRes: any = await this.engine.get(apiUrl);
+                if (apiRes && apiRes.url) {
+                    console.log(`[Coflix] Found episode via WP-JSON API: ${apiRes.url}`);
+                    return await this.extractPlayers(apiRes.url);
+                }
+            } catch (e) {}
+
+            // Priority 2: AJAX fallback (Legacy Coflix)
+            try {
+                const postIdMatch = seriesPageHtml.match(/var\s+post_id\s*=\s*['"](\d+)['"]/i) 
+                                 || seriesPageHtml.match(/postid-(\d+)/)
+                                 || seriesPageHtml.match(/p=(\d+)/);
+                
+                const nonceMatch = seriesPageHtml.match(/"nonce"\s*:\s*["']([^"']+)["']/);
+
+                if (postIdMatch) {
+                    const postId = postIdMatch[1];
+                    const nonce = nonceMatch ? nonceMatch[1] : "";
+                    console.log(`[Coflix] Attempting AJAX for post_id: ${postId} (nonce: ${nonce})`);
+                    const ajaxRes = await this.engine.post('/wp-admin/admin-ajax.php', 
+                        `action=get_episode_player&post_id=${postId}&season=${season}&episode=${episode}&nonce=${nonce}`,
+                        { headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' } }
+                    );
+                    if (ajaxRes && typeof ajaxRes === 'string' && ajaxRes.includes('iframe')) {
+                        const $ = cheerio.load(ajaxRes);
+                        const iframeUrl = $('iframe').attr('src');
+                        if (iframeUrl) {
+                            console.log(`[Coflix] Found episode via AJAX: ${iframeUrl}`);
+                            return await this.extractPlayers(this.fixUrl(iframeUrl));
                         }
                     }
-                } catch (e: any) {
-                    console.error(`[Coflix] WP-JSON API failed: ${e.message}`);
                 }
-            }
+            } catch (e) {}
 
-            // 2. Try the legacy AJAX API as second priority
-            if (postId) {
-                try {
-                    const ajaxRes = await this.engine.post('/wp-admin/admin-ajax.php',
-                        `action=get_season&post_id=${postId}&season=${season}`,
-                        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-                    );
-                    const $ajax = cheerio.load(ajaxRes);
-                    let epUrl = "";
-                    $ajax('a').each((_, el) => {
-                        const text = $ajax(el).text().toLowerCase();
-                        const href = $ajax(el).attr('href');
-                        if (href && (text === episode || text.includes(`episode ${episode}`))) {
-                            epUrl = href;
-                        }
-                    });
-                    if (epUrl) return await this.extractPlayers(this.fixUrl(epUrl));
-                } catch (e: any) {
-                    console.error(`[Coflix] AJAX API failed: ${e.message}`);
+            // Priority 3: HTML Fallback (Direct selectors)
+            try {
+                // Try multiple selector patterns for "The Boys" style pages
+                let episodeLink = $main(`.episode:contains("T${season}-E${episode}") a`).attr('href')
+                               || $main(`.episode:contains("${season}x${episode}") a`).attr('href')
+                               || $main(`[data-season="${season}"]`).find(`[data-episode="${episode}"] a`).attr('href') 
+                               || $main(`li[data-episode="${episode}"] a`).attr('href')
+                               || $main(`a:contains("Épisode ${episode}")`).attr('href');
+                
+                if (episodeLink) {
+                    console.log(`[Coflix] Found episode via HTML parsing: ${episodeLink}`);
+                    return await this.extractPlayers(this.fixUrl(episodeLink));
                 }
-            }
+            } catch (e) {}
 
-            // 3. Fallback URL Pattern (Statical construction)
-            if (slug) {
-                const fallbackUrl = `${this.baseURL}/episode/${slug}-${season}x${episode}/`;
-                console.log(`[Coflix] Trying fallback URL pattern: ${fallbackUrl}`);
-                const players = await this.extractPlayers(fallbackUrl);
+            // Priority 4: Pattern Match (Deterministic URL)
+            const patterns = [
+                `https://coflix.date/episode/${seriesSlug}-${season}x${episode}/`,
+                `https://coflix.date/serie/${seriesSlug}-saison-${season}-episode-${episode}/`,
+                `${seriesUrl.replace(/\/$/, '')}-saison-${season}-episode-${episode}/`
+            ];
+
+            for (const pattern of patterns) {
+                console.log(`[Coflix] Trying deterministic pattern: ${pattern}`);
+                const players = await this.extractPlayers(pattern);
                 if (players.length > 0) return players;
             }
 
-        } catch (error: any) {
-            console.error(`[Coflix] Episode resolution failed: ${error.message}`);
+        } catch (e: any) {
+            console.error(`[Coflix] Episode resolution failed for S${season}E${episode}: ${e.message}`);
         }
-
         return [];
     }
 }

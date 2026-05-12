@@ -64,12 +64,6 @@
         <!-- Embedded Player Section -->
         <section class="player-section animate-fade-in" id="player-section" style="display: none;">
             <div class="player-container">
-                <div class="server-selector" id="server-selector">
-                    <span class="server-label">🖥️ Serveur :</span>
-                    <div class="server-buttons">
-                        <span class="loading-sources">Attente du lancement...</span>
-                    </div>
-                </div>
                 <div class="player-controls" id="player-controls" style="display: none;">
                     <div class="select-wrapper">
                         <select id="season-select" class="player-select">
@@ -83,6 +77,12 @@
                     </div>
                 </div>
                 <div class="iframe-wrapper">
+                    <div class="server-selector" id="server-selector">
+                        <span class="server-label">▶ Serveurs :</span>
+                        <div class="server-buttons">
+                            <span class="loading-sources">Attente du lancement...</span>
+                        </div>
+                    </div>
                     <iframe id="video-iframe" src="" frameborder="0" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; fullscreen"></iframe>
                 </div>
                 <button class="close-player-btn" id="close-player-btn">

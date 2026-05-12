@@ -106,7 +106,7 @@ async function extractPlayers(pageUrl) {
             if (base64Match && base64Match[1]) {
                 try {
                     const decodedUrl = Buffer.from(base64Match[1], 'base64').toString('utf8');
-                    const quality = $if(el).find("span").text().trim() || "HD";
+                    const quality = $if(el).find("span").text().trim() || "";
                     const langInfo = $if(el).find("p").text().toLowerCase();
                     
                     let lang = "VF";
@@ -173,7 +173,6 @@ async function searchCoflix(title, type) {
             return [];
         }
         
-        // Lenient filtering: prioritize matching type, but accept others if they match the query
         const filtered = data.filter(item => {
             const pType = (item.post_type || "").toLowerCase();
             if (type === "movie") {
@@ -182,10 +181,15 @@ async function searchCoflix(title, type) {
             return pType === "series" || pType === "tvshows" || pType === "tvshow" || pType === "tv" || pType === "post" || !pType;
         });
 
-        // If filtering was too strict and removed everything, take the first result as a last resort
-        const finalResults = filtered.length > 0 ? filtered : data.slice(0, 1);
+        // Prioritize results that match the title exactly
+        const exactMatch = data.find(item => {
+            const itemTitle = (item.post_title || item.title || "").toLowerCase();
+            return itemTitle === query.toLowerCase() || itemTitle === title.toLowerCase();
+        });
 
-        console.log(`[Coflix] Found ${finalResults.length} results for "${title}"`);
+        const finalResults = exactMatch ? [exactMatch] : (filtered.length > 0 ? filtered : data.slice(0, 1));
+
+        console.log(`[Coflix] Found ${data.length} results. Selected: ${finalResults[0]?.post_title || finalResults[0]?.title}`);
         return finalResults;
 
     } catch (e) {
@@ -235,15 +239,33 @@ router.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
             }
         } catch (err) {}
 
-        // Try HTML patterns
+        // Try HTML patterns & Direct Parsing
+        try {
+            const seriesPage = await axios.get(results[0].url, { headers: HEADERS, timeout: 5000 });
+            const $main = cheerio.load(seriesPage.data);
+            
+            // Pattern: The Boys style (absolute links)
+            let episodeLink = $main(`.episode:contains("T${season}-E${episode}") a`).attr('href')
+                           || $main(`.episode:contains("${season}x${episode}") a`).attr('href')
+                           || $main(`[data-season="${season}"]`).find(`[data-episode="${episode}"] a`).attr('href') 
+                           || $main(`li[data-episode="${episode}"] a`).attr('href')
+                           || $main(`a:contains("Épisode ${episode}")`).attr('href');
+            
+            if (episodeLink) {
+                const players = await extractPlayers(fixUrl(episodeLink));
+                if (players.length > 0) return res.json({ success: true, sources: players });
+            }
+        } catch (e) {}
+
         const slugPatterns = [
-            `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}/`,
             `${COFLIX_BASE_URL}/episode/${seriesSlug}-${season}x${episode}/`,
+            `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}/`,
             `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}-streaming/`,
             `${COFLIX_BASE_URL}/${seriesSlug}-saison-${season}-episode-${episode}/`
         ];
 
         for (const path of slugPatterns) {
+            console.log(`[Coflix] Trying pattern: ${path}`);
             const players = await extractPlayers(path);
             if (players.length > 0) return res.json({ success: true, sources: players });
         }

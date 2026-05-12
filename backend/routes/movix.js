@@ -145,15 +145,7 @@ async function searchCoflix(title, type) {
 async function extractPlayersFromIframe(iframeSrc) {
     const players = [];
 
-    // Directly return the bridge/multi-player iframes to avoid 403 Cloudflare blocks
-    if (iframeSrc.includes("lecteurvideo") || iframeSrc.includes("bridge")) {
-        return [{
-            name: "Lecteur Multichoix",
-            url: iframeSrc,
-            lang: "VF", // Default to VF, users can change inside
-            quality: "HD"
-        }];
-    }
+    // Removed direct return of lecteurvideo bridge to ensure deep extraction
 
     try {
         const iframePageResponse = await axios.get(iframeSrc, { headers: { ...HEADERS, "Cookie": globalCookies }, timeout: 8000 });

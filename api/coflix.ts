@@ -33,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         res.setHeader('Access-Control-Allow-Origin', '*');
 
-        const { path, title } = req.query;
+        const { path, title, year } = req.query;
 
         if (!path || !title) {
             return res.status(400).json({ success: false, error: "Missing path or title" });
@@ -42,14 +42,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const registry = new ScraperRegistry();
         const pathStr = Array.isArray(path) ? path[0] : path;
         const titleStr = Array.isArray(title) ? title[0] : title;
+        const yearStr = Array.isArray(year) ? year[0] : year;
 
         const parts = pathStr.split('/').filter(Boolean);
-        const type = parts[0] as 'movie' | 'series';
+        const type = (parts[0] === 'tv' ? 'series' : parts[0]) as 'movie' | 'series';
         const tmdbId = parts[1];
 
-        console.log(`[API] Processing ${type} request for: ${titleStr} (${pathStr})`);
+        console.log(`[API] Processing ${type} request for: ${titleStr} (${pathStr}) Year: ${yearStr}`);
 
-        const sources = await registry.getSources(type, titleStr, pathStr);
+        const sources = await registry.getSources(type, titleStr, pathStr, yearStr);
 
         return res.json({ 
             success: true, 
