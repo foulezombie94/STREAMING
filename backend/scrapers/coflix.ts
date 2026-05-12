@@ -126,19 +126,7 @@ export class CoflixScraper {
         // 1. Direct li items with showVideo
         $('li[onclick*="showVideo"], div[onclick*="showVideo"]').each((_, el) => parseElement(el, $));
 
-        // 2. Check for the "Telecharger" bridge link (High priority list)
-        const teleLink = $('a[href*="telecharger.lecteurvideo.com"]').attr('href');
-        if (teleLink) {
-            console.log(`[Coflix] Found downloader bridge, returning directly to frontend: ${teleLink}`);
-            players.push({
-                name: "Lecteur Multichoix",
-                url: this.fixUrl(teleLink),
-                lang: "VF",
-                quality: "HD"
-            });
-        }
-
-        // 3. Iframe Bridge (Deep extraction - Parallelized)
+        // 2. Iframe Bridge (Deep extraction - Parallelized)
         const allIframes = $("iframe").toArray();
         const bridgeTasks = allIframes.map(async (el) => {
             const src = $(el).attr('src');
