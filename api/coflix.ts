@@ -5,22 +5,10 @@ import { Redis } from '@upstash/redis';
 import * as dns from 'dns';
 import * as https from 'https';
 import * as http from 'http';
-import initCycleTLS from 'cycletls';
 import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
-
-let cycleTLS: any = null;
-const getCycleTLS = async () => {
-    if (!cycleTLS) {
-        try {
-            cycleTLS = await initCycleTLS();
-            console.log(`[Coflix Prod] CycleTLS initialized successfully`);
-        } catch (e: any) {
-            console.error(`[Coflix Prod] Failed to initialize CycleTLS: ${e.message}`);
-        }
-    }
-    return cycleTLS;
-};
+// Session configuration
+let sessionCookies: string = "";
 
 // DNS Bypass (Bypass ISP and Vercel DNS blocks)
 dns.setServers(['1.1.1.1', '8.8.8.8']);
@@ -94,51 +82,37 @@ interface VercelResponse extends ServerResponse {
     json: (body: any) => VercelResponse;
 }
 
-const fetchWithTLS = async (url: string, options: any = {}, method: 'GET' | 'POST' = 'GET') => {
-    const tls = await getCycleTLS();
-    if (tls) {
-        try {
-            const res = await tls(url, {
-                headers: { ...HEADERS, ...options.headers },
-                body: options.data,
-                ja3: "771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,0-23-65281-10-11-35-16-5-13-18-51-45-43,29-23-24,0",
-                userAgent: HEADERS["User-Agent"],
-                disableRedirect: false
-            }, method);
-            
-            let data = res.body;
-            try {
-                if (typeof data === 'string' && (data.trim().startsWith('{') || data.trim().startsWith('['))) {
-                    data = JSON.parse(data);
-                }
-            } catch (e) {}
+const fetchWithSession = async (url: string, options: any = {}, method: 'GET' | 'POST' = 'GET') => {
+    try {
+        const response = await axios({
+            url,
+            method,
+            data: options.data,
+            headers: { 
+                ...HEADERS, 
+                ...options.headers,
+                "Cookie": options.headers?.Cookie || sessionCookies 
+            },
+            timeout: 10000,
+            validateStatus: () => true, // Don't throw on 403, handle it manually
+            maxRedirects: 5
+        });
 
-            return {
-                data,
-                status: res.status,
-                headers: res.headers
-            };
-        } catch (e: any) {
-            console.error(`[Coflix TLS] Error fetching ${url}: ${e.message}`);
+        // Parse JSON if needed (Axios usually does this, but for safety)
+        let data = response.data;
+        if (typeof data === 'string' && (data.trim().startsWith('{') || data.trim().startsWith('['))) {
+            try { data = JSON.parse(data); } catch (e) {}
         }
+
+        return {
+            data,
+            status: response.status,
+            headers: response.headers
+        };
+    } catch (e: any) {
+        console.error(`[Coflix Session] Error fetching ${url}: ${e.message}`);
+        throw e;
     }
-    
-    console.log(`[Coflix TLS] Fallback to Axios for ${url.substring(0, 50)}`);
-    const axiosRes = await axios({
-        url,
-        method,
-        data: options.data,
-        headers: { ...HEADERS, ...options.headers },
-        httpsAgent,
-        httpAgent,
-        timeout: 8000
-    });
-    
-    return {
-        data: axiosRes.data,
-        status: axiosRes.status,
-        headers: axiosRes.headers
-    };
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -188,7 +162,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const startInitTime = Date.now();
                 console.log(`[Coflix Prod] No cached session. Initializing new one via TLS...`);
                 // Hit home page to get new session
-                const initRes = await fetchWithTLS(COFLIX_BASE_URL + "/");
+                const initRes = await fetchWithSession(COFLIX_BASE_URL + "/");
                 const setCookie = initRes.headers['set-cookie'] as string[] | undefined;
                 if (setCookie) {
                     cookies = setCookie.map((c: string) => c.split(';')[0]).join('; ');
@@ -218,7 +192,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const normalized = normalizeCoflixQuery(titleStr);
         const searchUrl = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(normalized)}`;
-        const searchRes = await fetchWithTLS(searchUrl, { 
+        const searchRes = await fetchWithSession(searchUrl, { 
             headers: { "Cookie": cookies, "X-Requested-With": "XMLHttpRequest" }
         });
 
@@ -280,7 +254,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // Tier 1: WP-JSON API
             try {
                 const apiPath = `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${seriesId}/${season}`;
-                const apiRes = await fetchWithTLS(apiPath, { headers: { "Cookie": cookies } });
+                const apiRes = await fetchWithSession(apiPath, { headers: { "Cookie": cookies } });
                 if (apiRes.data && Array.isArray(apiRes.data.episodes)) {
                     const targetEp = apiRes.data.episodes.find((ep: any) => parseInt(ep.number) === parseInt(episode));
                     if (targetEp && targetEp.links) {
@@ -293,7 +267,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (pageUrl === target.url) {
                 try {
                     const startHtml = Date.now();
-                    const seriesPage = await fetchWithTLS(target.url, { headers: { "Cookie": cookies } });
+                    const seriesPage = await fetchWithSession(target.url, { headers: { "Cookie": cookies } });
                     const $main = cheerio.load(seriesPage.data);
                     const episodeLink = $main(`.episode:contains("T${season}-E${episode}") a`).attr('href')
                                    || $main(`.episode:contains("${season}x${episode}") a`).attr('href')
@@ -320,7 +294,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 
                 for (const p of patterns) {
                     try {
-                        const check = await fetchWithTLS(p, { headers: { "Cookie": cookies } });
+                        const check = await fetchWithSession(p, { headers: { "Cookie": cookies } });
                         if (check.status === 200) {
                             pageUrl = p;
                             break;
@@ -376,7 +350,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } catch (e: any) {
             console.error(`[Coflix Prod] Puppeteer failed: ${e.message}`);
             // Fallback to TLS
-            const pageRes = await fetchWithTLS(pageUrl, { headers: { "Cookie": cookies, "Referer": searchUrl } });
+            const pageRes = await fetchWithSession(pageUrl, { headers: { "Cookie": cookies, "Referer": searchUrl } });
             html = pageRes.data;
         } finally {
             if (browser) await browser.close();
@@ -459,7 +433,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         const fixUrl = (u: string) => u.startsWith('//') ? 'https:' + u : (u.startsWith('/') ? COFLIX_BASE_URL + u : u);
                         const targetIframe = fixUrl(src);
                         
-                        const iframeRes = await fetchWithTLS(targetIframe, { 
+                        const iframeRes = await fetchWithSession(targetIframe, { 
                             headers: { "Referer": pageUrl, "Cookie": cookies }
                         });
                         
