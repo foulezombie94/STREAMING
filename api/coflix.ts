@@ -6,6 +6,8 @@ import * as dns from 'dns';
 import * as https from 'https';
 import * as http from 'http';
 import initCycleTLS from 'cycletls';
+import chromium from 'chrome-aws-lambda';
+import puppeteer from 'puppeteer-core';
 
 let cycleTLS: any = null;
 const getCycleTLS = async () => {
@@ -328,15 +330,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
         }
 
-        // 4. Extract Players
+        // 4. Extract Players (Using Headless Browser for JS rendering)
         console.log(`[Coflix Prod] Final Page URL: ${pageUrl}`);
-        const pageRes = await fetchWithTLS(pageUrl, { 
-            headers: { 
-                "Cookie": cookies,
-                "Referer": searchUrl, 
+        let html = "";
+        let browser = null;
+        
+        try {
+            console.log(`[Coflix Prod] Launching headless browser...`);
+            browser = await puppeteer.launch({
+                args: chromium.args,
+                defaultViewport: chromium.defaultViewport,
+                executablePath: await chromium.executablePath,
+                headless: chromium.headless,
+                ignoreHTTPSErrors: true,
+            });
+            
+            const page = await browser.newPage();
+            await page.setUserAgent(HEADERS["User-Agent"]);
+            
+            // Set cookies if we have them
+            if (cookies) {
+                const cookieArray = cookies.split(';').map(c => {
+                    const [name, value] = c.trim().split('=');
+                    return { name, value, domain: 'coflix.dance' };
+                });
+                await page.setCookie(...cookieArray);
             }
-        });
-        const $ = cheerio.load(pageRes.data);
+            
+            await page.goto(pageUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+            
+            // Wait for potential players to load
+            await page.waitForSelector('li[onclick*="showVideo"], iframe', { timeout: 5000 }).catch(() => {});
+            
+            html = await page.content();
+            console.log(`[Coflix Prod] Page content captured successfully (${html.length} bytes)`);
+        } catch (e: any) {
+            console.error(`[Coflix Prod] Puppeteer failed: ${e.message}`);
+            // Fallback to TLS
+            const pageRes = await fetchWithTLS(pageUrl, { headers: { "Cookie": cookies, "Referer": searchUrl } });
+            html = pageRes.data;
+        } finally {
+            if (browser) await browser.close();
+        }
+
+        const $ = cheerio.load(html);
         console.log(`[Coflix Prod] Page Title: ${$('title').text().trim()}`);
         
         const players: any[] = [];
@@ -381,12 +418,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Step 1: Initial extraction
         extractFromContext($);
-
-        // Update cookies from page response if any
-        if (pageRes.headers['set-cookie']) {
-            const newCookies = (pageRes.headers['set-cookie'] as string[]).map((c: string) => c.split(';')[0]).join('; ');
-            cookies = cookies ? `${cookies}; ${newCookies}` : newCookies;
-        }
 
         // Step 2: Iframe extraction
         await sleep(1500); // Give it a moment to "load" conceptually
