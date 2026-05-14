@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/**/*.ts": {
+      "includeFiles": "node_modules/cycletls/dist/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/proxy",
@@ -13,7 +18,6 @@
       "destination": "/api/coflix?path=$1"
     }
   ],
-
   "headers": [
     {
       "source": "/api/(.*)",
