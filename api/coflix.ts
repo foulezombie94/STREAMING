@@ -474,10 +474,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await Promise.all(iframePromises);
 
         // Deduplicate
-        const seen = new Set();
+        const finalSeen = new Set();
         const finalPlayers = players.filter((p: any) => {
-            if (!p.url || seen.has(p.url)) return false;
-            seen.add(p.url);
+            if (!p.url || finalSeen.has(p.url)) return false;
+            finalSeen.add(p.url);
             return true;
         });
 
