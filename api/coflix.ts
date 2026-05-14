@@ -135,6 +135,20 @@ const fetchTLS = async (url: string, options: any = {}, method: 'GET' | 'POST' =
     if (tlsCache.has(cacheKey)) return tlsCache.get(cacheKey);
 
     try {
+        // HYBRID STRATEGY: Use ScraperAPI for search to bypass IP bans, use got-scraping for the rest
+        if (url.includes('suggest.php')) {
+            const apiKey = process.env.SCRAPER_API_KEY;
+            if (apiKey) {
+                console.log(`[Coflix Proxy] Tunneling search through ScraperAPI: ${url.substring(0, 50)}...`);
+                const scraperUrl = `https://api.scraperapi.com/?api_key=${apiKey}&url=${encodeURIComponent(url)}&country_code=fr`;
+                const response = await axios.get(scraperUrl, { timeout: 10000 });
+                
+                const output = { data: response.data, status: response.status, headers: response.headers };
+                safeSetCache(cacheKey, output);
+                return output;
+            }
+        }
+
         const response = await gotScraping({
             url,
             method: method as any,
@@ -170,7 +184,7 @@ const fetchTLS = async (url: string, options: any = {}, method: 'GET' | 'POST' =
 
         return output;
     } catch (e: any) {
-        console.warn(`[Got-Scraping Fallback] ${e.message}`);
+        console.warn(`[Coflix Fetch Fallback] ${e.message}`);
         return fetchAxios(url, options, method);
     }
 };
