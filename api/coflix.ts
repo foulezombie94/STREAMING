@@ -8,14 +8,55 @@ import * as http from 'http';
 import initCycleTLS from 'cycletls';
 
 let tlsInstance: any = null;
-const getTLS = async () => {
-    if (!tlsInstance) {
-        tlsInstance = await initCycleTLS();
-    }
-    return tlsInstance;
+let tlsPromise: Promise<any> | null = null;
+
+const getTLS = async (retries = 3): Promise<any> => {
+    if (tlsInstance) return tlsInstance;
+    if (tlsPromise) return tlsPromise;
+
+    tlsPromise = (async () => {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const tls = await initCycleTLS();
+                tlsInstance = tls;
+                return tls;
+            } catch (e) {
+                if (i === retries - 1) throw e;
+                await sleep(500);
+            }
+        }
+    })();
+
+    return tlsPromise.catch(e => {
+        tlsPromise = null;
+        throw e;
+    });
 };
 
 const tlsCache = new Map();
+const safeSetCache = (key: string, value: any, ttl = 60000) => {
+    tlsCache.set(key, value);
+    const t = setTimeout(() => {
+        tlsCache.delete(key);
+        clearTimeout(t);
+    }, ttl);
+};
+
+const getCacheKey = (url: string, method: string, cookies: string, data?: any) => {
+    return `${url}:${method}:${cookies.substring(0, 40)}:${JSON.stringify(data || {})}`;
+};
+
+const dedupeCookies = (cookieStr: string) => {
+    if (!cookieStr) return "";
+    const map = new Map();
+    cookieStr.split(';').forEach(c => {
+        const parts = c.trim().split('=');
+        if (parts.length >= 2) {
+            map.set(parts[0], parts.slice(1).join('='));
+        }
+    });
+    return Array.from(map.entries()).map(([k, v]) => `${k}=${v}`).join('; ');
+};
 
 // Session configuration - NO global mutable state to avoid race conditions
 const getSessionCookies = async () => {
@@ -113,20 +154,22 @@ const fetchAxios = async (url: string, options: any = {}, method: 'GET' | 'POST'
 };
 
 const fetchTLS = async (url: string, options: any = {}, method: 'GET' | 'POST' = 'GET') => {
-    // 1. Check Cache
-    if (tlsCache.has(url)) return tlsCache.get(url);
+    const cookies = dedupeCookies(options.headers?.Cookie || "");
+    const cacheKey = getCacheKey(url, method, cookies, options.data);
 
-    const tls = await getTLS();
+    // 1. Check Cache
+    if (tlsCache.has(cacheKey)) return tlsCache.get(cacheKey);
+
+    const tls = await getTLS().catch(() => null);
     if (!tls) return fetchAxios(url, options, method);
 
     try {
-        const cookies = options.headers?.Cookie || "";
         // Safety timeout to prevent CycleTLS from freezing Vercel
         const res: any = await Promise.race([
             tls(url, {
                 headers: { ...HEADERS, ...options.headers, "Cookie": cookies },
                 body: options.data,
-                ja3: "771,4865-4866-4867-49195-49199-49196-49200",
+                ja3: "771,4865-4866-4867-49195-49199-49196-49200-52393-52392,0-23-65281-10-11-35-16-5-13",
                 userAgent: HEADERS["User-Agent"],
                 disableRedirect: false,
                 timeout: 8000
@@ -141,9 +184,8 @@ const fetchTLS = async (url: string, options: any = {}, method: 'GET' | 'POST' =
         
         const output = { data, status: res.status, headers: res.headers };
         
-        // 2. Set Cache (1 min)
-        tlsCache.set(url, output);
-        setTimeout(() => tlsCache.delete(url), 60000);
+        // 2. Set Cache Robustly
+        safeSetCache(cacheKey, output);
 
         return output;
     } catch (e: any) {
@@ -201,10 +243,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const initRes = await fetchTLS(COFLIX_BASE_URL + "/");
                 const setCookie = initRes.headers['set-cookie'] as string[] | undefined;
                 if (setCookie) {
-                    cookies = setCookie.map((c: string) => c.split(';')[0]).join('; ');
+                    cookies = dedupeCookies(setCookie.map((c: string) => c.split(';')[0]).join('; '));
                     await redis.set("coflix:session_cookies", cookies, { ex: 3600 }); // Cache for 1 hour
                     console.log(`[Coflix Prod] New session cookies saved (took ${Date.now() - startInitTime}ms)`);
-                    await sleep(1000);
                 }
             }
         } catch (e: any) {
@@ -213,20 +254,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // 2. Search
         const normalizeCoflixQuery = (q: string) => {
-            const replacements: Record<string, string> = {
-                "à": "a", "á": "a", "â": "a", "ã": "a", "ä": "a", "å": "a",
-                "è": "e", "é": "e", "ê": "e", "ë": "e",
-                "ì": "i", "í": "i", "î": "i", "ï": "i",
-                "ò": "o", "ó": "o", "ô": "o", "õ": "o", "ö": "o",
-                "ù": "u", "ú": "u", "û": "u", "ü": "u",
-                "ý": "y", "ÿ": "y", "ñ": "n", "ç": "c", "œ": "oe", "æ": "ae"
-            };
-            let n = q.toLowerCase();
-            for (const [s, r] of Object.entries(replacements)) n = n.split(s).join(r);
-            return n.replace(/[^\w\s]/gi, ' ').replace(/\s+/g, ' ').trim();
+            return q.toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]/g, ' ')
+                .trim()
+                .replace(/\s+/g, ' ');
         };
 
         const normalized = normalizeCoflixQuery(titleStr);
+        const searchCacheKey = `mv:search:coflix:${normalized}`;
+        
+        // Tier 0: Search Cache
+        try {
+            const cachedSearch = await redis.get(searchCacheKey);
+            if (cachedSearch) {
+                console.log(`[Coflix Prod] Search Cache Hit for ${normalized}`);
+                return res.json({ success: true, sources: cachedSearch, cached: true });
+            }
+        } catch (e) {}
+
         const searchUrl = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(normalized)}`;
         const searchRes = await fetchAxios(searchUrl, { 
             headers: { "Cookie": cookies, "X-Requested-With": "XMLHttpRequest" }
@@ -360,13 +407,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     const match = onclick.match(/['"]([^'"]+)['"]/);
                     if (match && match[1]) {
                         try {
-                           // Try to decode ONLY if it looks like base64 (no common URL chars), otherwise use as is
-                           if (match[1].length > 10 && !match[1].includes('/') && !match[1].includes(':') && !match[1].includes('.')) {
-                               targetUrl = Buffer.from(match[1], 'base64').toString('utf8');
-                           } else {
-                               targetUrl = match[1];
+                           let decoded = match[1];
+                           // Try to decode ONLY if it looks like base64
+                           const isBase64 = /^[A-Za-z0-9+/=]+$/.test(decoded) && decoded.length > 10;
+                           if (isBase64) {
+                               decoded = Buffer.from(decoded, 'base64').toString('utf8');
                            }
-                        } catch(e) { targetUrl = match[1]; }
+                           
+                           // Validation: Ensure it looks like a URL/Target
+                           if (decoded.includes('http') || decoded.startsWith('//') || decoded.includes('.html')) {
+                               targetUrl = decoded;
+                           }
+                        } catch(e) { }
                     }
                 } 
                 // Case 2: data-url/data-link
@@ -403,16 +455,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Step 1: Initial extraction
         extractFromContext($);
 
-        // Step 2: Iframe extraction
-        await sleep(1500); // Give it a moment to "load" conceptually
-        const iframes = $('iframe').toArray();
-        for (const iframe of iframes) {
-            const src = $(iframe).attr('src');
-            if (!src || src.includes('youtube') || src.includes('youtu.be')) continue;
-
-            if (src.includes('lecteurvideo') || src.includes('bridge') || src.includes('embed.php')) {
+        // 5. Parallel Deep Extraction (Iframes)
+        const iframePromises: Promise<void>[] = [];
+        $('iframe').each((_, el) => {
+            const src = $(el).attr('src') || $(el).attr('data-src');
+            if (src && !src.includes('google') && !src.includes('facebook')) {
+                iframePromises.push((async () => {
                     try {
-                        const startIframe = Date.now();
                         const fixUrl = (u: string) => u.startsWith('//') ? 'https:' + u : (u.startsWith('/') ? COFLIX_BASE_URL + u : u);
                         const targetIframe = fixUrl(src);
                         
@@ -425,12 +474,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         extractFromContext($if);
                         const found = players.length - countBefore;
                         
-                    console.log(`[Coflix Prod] Iframe Bridge [${targetIframe.substring(0, 40)}...] extracted ${found} players in ${Date.now() - startIframe}ms`);
-                } catch (e: any) {
-                    console.warn(`[Coflix Prod] Iframe extraction failed for ${src.substring(0, 40)}... : ${e.message}`);
-                }
+                        if (found > 0) {
+                            console.log(`[Coflix Prod] Deep Extraction Success: Found ${found} players in ${new URL(targetIframe).hostname}`);
+                        }
+                    } catch (e: any) {
+                        console.warn(`[Coflix Prod] Deep extraction failed for ${src.substring(0, 30)}...`);
+                    }
+                })());
             }
-        }
+        });
+        
+        await Promise.all(iframePromises);
 
         // Deduplicate
         const seen = new Set();
