@@ -339,11 +339,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.log(`[Coflix Prod] Launching headless browser...`);
             browser = await puppeteer.launch({
                 args: chromium.args,
-                defaultViewport: chromium.defaultViewport,
+                defaultViewport: (chromium as any).defaultViewport || { width: 1280, height: 800 },
                 executablePath: await chromium.executablePath(),
-                headless: chromium.headless as any,
-                ignoreHTTPSErrors: true,
-            });
+                headless: (chromium as any).headless === true || (chromium as any).headless === "new",
+            } as any);
             
             const page = await browser.newPage();
             await page.setUserAgent(HEADERS["User-Agent"]);
