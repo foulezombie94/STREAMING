@@ -3,6 +3,7 @@ const router = express.Router();
 const axios = require("axios");
 const cheerio = require("cheerio");
 const { Buffer } = require("buffer");
+const cache = require('../utils/redis');
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY || "e1a2bb6a3ed288feb5d767908732e751";
 const COFLIX_BASE_URL = "https://coflix.date";
@@ -220,8 +221,16 @@ async function extractPlayersFromIframe(iframeSrc) {
 
 router.get("/movie/:tmdbId", async (req, res) => {
     const { tmdbId } = req.params;
+    const cacheKey = cache.generateKey('movix', 'movie', tmdbId);
     
     try {
+        // 1. Check Cache
+        const cachedData = await cache.get(cacheKey);
+        if (cachedData) {
+            console.log(`[Cache] Movix Hit for ${tmdbId}`);
+            return res.json({ success: true, tmdb_id: tmdbId, players: cachedData, cached: true });
+        }
+
         const title = await getTmdbTitle(tmdbId, "movie");
         if (!title) {
             return res.json({ success: true, tmdb_id: tmdbId, players: { vf: [], vostfr: [] } });
@@ -245,13 +254,20 @@ router.get("/movie/:tmdbId", async (req, res) => {
             }
         }
 
+        const finalPlayers = {
+            vf: players.filter(s => s.lang === "VF" || s.lang === "Français" || s.lang === "VO"),
+            vostfr: players.filter(s => s.lang === "VOSTFR")
+        };
+
+        // 2. Save to Cache
+        if (players.length > 0) {
+            await cache.set(cacheKey, finalPlayers, 86400);
+        }
+
         res.json({
             success: true,
             tmdb_id: tmdbId,
-            players: {
-                vf: players.filter(s => s.lang === "VF" || s.lang === "Français" || s.lang === "VO"),
-                vostfr: players.filter(s => s.lang === "VOSTFR" || s.lang === "VOSTFR")
-            }
+            players: finalPlayers
         });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
@@ -260,8 +276,16 @@ router.get("/movie/:tmdbId", async (req, res) => {
 
 router.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
     const { tmdbId, season, episode } = req.params;
-    
+    const cacheKey = cache.generateKey('movix', 'tv', `${tmdbId}_s${season}e${episode}`);
+
     try {
+        // 1. Check Cache
+        const cachedData = await cache.get(cacheKey);
+        if (cachedData) {
+            console.log(`[Cache] Movix Hit for TV ${tmdbId} S${season}E${episode}`);
+            return res.json({ success: true, tmdb_id: tmdbId, season, episode, players: cachedData, cached: true });
+        }
+
         const title = await getTmdbTitle(tmdbId, "tv");
         if (!title) {
             return res.json({ success: true, tmdb_id: tmdbId, season, episode, players: { vf: [], vostfr: [] } });
@@ -340,15 +364,22 @@ router.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
             }
         }
 
+        const finalPlayers = {
+            vf: players.filter(s => s.lang === "VF" || s.lang === "Français" || s.lang === "VO"),
+            vostfr: players.filter(s => s.lang === "VOSTFR")
+        };
+
+        // 2. Save to Cache
+        if (players.length > 0) {
+            await cache.set(cacheKey, finalPlayers, 86400);
+        }
+
         res.json({
             success: true,
             tmdb_id: tmdbId,
             season,
             episode,
-            players: {
-                vf: players.filter(s => s.lang === "VF" || s.lang === "Français" || s.lang === "VO"),
-                vostfr: players.filter(s => s.lang === "VOSTFR" || s.lang === "VOSTFR")
-            }
+            players: finalPlayers
         });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });

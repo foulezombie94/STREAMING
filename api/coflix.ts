@@ -1,6 +1,12 @@
 import { IncomingMessage, ServerResponse } from 'http';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { Redis } from '@upstash/redis';
+
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
 
 // Suppress DEP0169 warnings from dependencies
 process.removeAllListeners('warning');
@@ -49,6 +55,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const episode = parts[3];
 
         console.log(`[Coflix Prod] ${type} - ${titleStr} (${tmdbId}) [Year: ${yearStr || '?'}] S${season}E${episode}`);
+
+        // 0. Cache Check
+        const cacheKey = `mv:coflix:${type}:${tmdbId}_${season || '0'}_${episode || '0'}`;
+        try {
+            const cached = await redis.get(cacheKey);
+            if (cached) {
+                console.log(`[Cache Prod] Hit for ${titleStr}`);
+                return res.json({ success: true, sources: cached, cached: true });
+            }
+        } catch (e) {
+            console.error("[Cache Error]", e);
+        }
 
         // 1. Session Init (Get Cookies)
         let cookies = "";
@@ -250,6 +268,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
         console.log(`[Coflix Prod] Found ${finalPlayers.length} players`);
+        
+        // 5. Cache Save (24h)
+        if (finalPlayers.length > 0) {
+            try {
+                await redis.set(cacheKey, finalPlayers.slice(0, 10), { ex: 86400 });
+            } catch (e) {}
+        }
+
         return res.json({ success: true, sources: finalPlayers.slice(0, 10) });
 
     } catch (error: any) {

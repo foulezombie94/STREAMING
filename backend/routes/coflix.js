@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const cheerio = require('cheerio');
+const cache = require('../utils/redis');
 
 const COFLIX_BASE_URL = "https://coflix.date";
 const HEADERS = {
@@ -210,10 +211,27 @@ router.get("/movie/:tmdbId", async (req, res) => {
     const { title } = req.query;
     if (!title) return res.status(400).json({ success: false, error: "Title required" });
 
+    const cacheKey = cache.generateKey('coflix', 'movie', `${tmdbId}_${title}`);
+    
     try {
+        // 1. Check Cache
+        const cachedData = await cache.get(cacheKey);
+        if (cachedData) {
+            console.log(`[Cache] Hit for ${title} (${tmdbId})`);
+            return res.json({ success: true, tmdbId, sources: cachedData, cached: true });
+        }
+
+        // 2. If not in cache, scrape
         const results = await searchCoflix(title, "movie");
         if (results.length === 0) return res.json({ success: true, sources: [] });
+        
         const players = await extractPlayers(results[0].url);
+        
+        // 3. Save to Cache (24h)
+        if (players.length > 0) {
+            await cache.set(cacheKey, players, 86400);
+        }
+
         res.json({ success: true, tmdbId, sources: players });
     } catch (err) {
         res.json({ success: false, error: err.message });
@@ -225,10 +243,20 @@ router.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
     const { title } = req.query;
     if (!title) return res.status(400).json({ success: false, error: "Title required" });
 
+    const cacheKey = cache.generateKey('coflix', 'tv', `${tmdbId}_s${season}e${episode}_${title}`);
+
     try {
+        // 1. Check Cache
+        const cachedData = await cache.get(cacheKey);
+        if (cachedData) {
+            console.log(`[Cache] Hit for ${title} S${season}E${episode}`);
+            return res.json({ success: true, sources: cachedData, cached: true });
+        }
+
         const results = await searchCoflix(title, "tv");
         if (results.length === 0) return res.json({ success: true, sources: [] });
 
+        let players = [];
         const seriesId = results[0].ID;
         const seriesSlug = (results[0].url || "").split('/').filter(Boolean).pop() || normalizeTitle(results[0].title || results[0].post_title).replace(/\s+/g, '-').toLowerCase();
 
@@ -239,44 +267,49 @@ router.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
             if (apiRes.data && Array.isArray(apiRes.data.episodes)) {
                 const targetEp = apiRes.data.episodes.find(ep => parseInt(ep.number) === parseInt(episode));
                 if (targetEp && targetEp.links) {
-                    const players = await extractPlayers(targetEp.links);
-                    if (players.length > 0) return res.json({ success: true, sources: players });
+                    players = await extractPlayers(targetEp.links);
                 }
             }
         } catch (err) {}
 
         // Try HTML patterns & Direct Parsing
-        try {
-            const seriesPage = await axios.get(results[0].url, { headers: HEADERS, timeout: 5000 });
-            const $main = cheerio.load(seriesPage.data);
-            
-            // Pattern: The Boys style (absolute links)
-            let episodeLink = $main(`.episode:contains("T${season}-E${episode}") a`).attr('href')
-                           || $main(`.episode:contains("${season}x${episode}") a`).attr('href')
-                           || $main(`[data-season="${season}"]`).find(`[data-episode="${episode}"] a`).attr('href') 
-                           || $main(`li[data-episode="${episode}"] a`).attr('href')
-                           || $main(`a:contains("Épisode ${episode}")`).attr('href');
-            
-            if (episodeLink) {
-                const players = await extractPlayers(fixUrl(episodeLink));
-                if (players.length > 0) return res.json({ success: true, sources: players });
-            }
-        } catch (e) {}
-
-        const slugPatterns = [
-            `${COFLIX_BASE_URL}/episode/${seriesSlug}-${season}x${episode}/`,
-            `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}/`,
-            `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}-streaming/`,
-            `${COFLIX_BASE_URL}/${seriesSlug}-saison-${season}-episode-${episode}/`
-        ];
-
-        for (const path of slugPatterns) {
-            console.log(`[Coflix] Trying pattern: ${path}`);
-            const players = await extractPlayers(path);
-            if (players.length > 0) return res.json({ success: true, sources: players });
+        if (players.length === 0) {
+            try {
+                const seriesPage = await axios.get(results[0].url, { headers: HEADERS, timeout: 5000 });
+                const $main = cheerio.load(seriesPage.data);
+                
+                let episodeLink = $main(`.episode:contains("T${season}-E${episode}") a`).attr('href')
+                               || $main(`.episode:contains("${season}x${episode}") a`).attr('href')
+                               || $main(`[data-season="${season}"]`).find(`[data-episode="${episode}"] a`).attr('href') 
+                               || $main(`li[data-episode="${episode}"] a`).attr('href')
+                               || $main(`a:contains("Épisode ${episode}")`).attr('href');
+                
+                if (episodeLink) {
+                    players = await extractPlayers(fixUrl(episodeLink));
+                }
+            } catch (e) {}
         }
 
-        res.json({ success: true, sources: [] });
+        if (players.length === 0) {
+            const slugPatterns = [
+                `${COFLIX_BASE_URL}/episode/${seriesSlug}-${season}x${episode}/`,
+                `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}/`,
+                `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}-streaming/`,
+                `${COFLIX_BASE_URL}/${seriesSlug}-saison-${season}-episode-${episode}/`
+            ];
+
+            for (const path of slugPatterns) {
+                players = await extractPlayers(path);
+                if (players.length > 0) break;
+            }
+        }
+
+        // 3. Save to Cache
+        if (players.length > 0) {
+            await cache.set(cacheKey, players, 86400);
+        }
+
+        res.json({ success: true, sources: players });
     } catch (err) {
         res.json({ success: false, error: err.message });
     }
