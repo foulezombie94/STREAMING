@@ -17,11 +17,15 @@ process.on('warning', (warning: any) => {
 
 const COFLIX_BASE_URL = "https://coflix.dance";
 const HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
     "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
     "Referer": COFLIX_BASE_URL + "/",
-    "X-Requested-With": "XMLHttpRequest"
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1"
 };
 
 interface VercelRequest extends IncomingMessage {
@@ -54,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const season = parts[2];
         const episode = parts[3];
 
-        console.log(`[Coflix Prod] ${type} - ${titleStr} (${tmdbId}) [Year: ${yearStr || '?'}] S${season}E${episode}`);
+        console.log(`[Coflix Prod] ${type} - ${titleStr} (${tmdbId}) [Year: ${yearStr}] ${type === 'series' ? `S${season}E${episode}` : ''}`);
 
         // 0. Cache Check
         const cacheKey = `mv:coflix:${type}:${tmdbId}_${season || '0'}_${episode || '0'}`;
@@ -102,9 +106,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const normalized = normalizeCoflixQuery(titleStr);
         const searchUrl = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(normalized)}`;
         const searchRes = await axios.get(searchUrl, { 
-            headers: { ...HEADERS, "Cookie": cookies }, 
+            headers: { ...HEADERS, "Cookie": cookies, "X-Requested-With": "XMLHttpRequest" }, 
             timeout: 5000 
         });
+
+        // Capture cookies from search too
+        if (searchRes.headers['set-cookie']) {
+            const searchCookies = searchRes.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
+            cookies = cookies ? `${cookies}; ${searchCookies}` : searchCookies;
+        }
 
         const results = Array.isArray(searchRes.data) ? searchRes.data : [];
         console.log(`[Coflix Prod] Search returned ${results.length} results for "${titleStr}"`);
@@ -266,8 +276,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     const iframeRes = await axios.get(targetIframe, { 
                         headers: { 
                             ...HEADERS, 
-                            "Referer": COFLIX_BASE_URL + "/", 
-                            "Cookie": cookies 
+                            "Referer": pageUrl, 
+                            "Cookie": cookies,
+                            "Sec-Fetch-Dest": "iframe",
+                            "Sec-Fetch-Mode": "navigate",
+                            "Sec-Fetch-Site": "cross-site"
                         }, 
                         timeout: 5000 
                     });
