@@ -351,15 +351,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (cookies) {
                 const cookieArray = cookies.split(';').map(c => {
                     const [name, value] = c.trim().split('=');
-                    return { name, value, domain: 'coflix.dance' };
+                    return { name, value, url: "https://coflix.dance" };
                 });
                 await page.setCookie(...cookieArray);
             }
             
-            await page.goto(pageUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+            await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
             
-            // Wait for potential players to load
-            await page.waitForSelector('li[onclick*="showVideo"], iframe', { timeout: 5000 }).catch(() => {});
+            // Wait for JS execution and AJAX (anti-bot delay)
+            console.log(`[Coflix Prod] Waiting for dynamic scripts...`);
+            await page.evaluate(() => new Promise(r => setTimeout(r, 5000)));
             
             html = await page.content();
             console.log(`[Coflix Prod] Page content captured successfully (${html.length} bytes)`);
@@ -378,37 +379,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const players: any[] = [];
 
         const extractFromContext = (source$: cheerio.CheerioAPI) => {
-            source$('li[onclick*="showVideo"], div[onclick*="showVideo"], a[onclick*="showVideo"]').each((_, el) => {
+            // Broad selector to catch players even if structure changes
+            source$('[onclick], [data-url], [data-link], .server, .player-item, li, a, div').each((_, el) => {
                 const onclick = source$(el).attr('onclick') || "";
-                const match = onclick.match(/showVideo\(['"]([^'"]+)['"]/);
-                if (match && match[1]) {
+                const dataUrl = source$(el).attr('data-url') || "";
+                const dataLink = source$(el).attr('data-link') || "";
+                const dataSrc = source$(el).attr('data-src') || "";
+                const href = source$(el).attr('href') || "";
+                
+                let targetUrl = "";
+                
+                // Case 1: showVideo('BASE64') or similar
+                if (onclick.includes('Video') || onclick.includes('Player') || onclick.includes('show')) {
+                    const match = onclick.match(/['"]([^'"]+)['"]/);
+                    if (match && match[1]) {
+                        try {
+                           // Try to decode if it looks like base64 (no common URL chars), otherwise use as is
+                           if (match[1].length > 10 && !match[1].includes('/') && !match[1].includes(':')) {
+                               targetUrl = Buffer.from(match[1], 'base64').toString('utf8');
+                           } else {
+                               targetUrl = match[1];
+                           }
+                        } catch(e) { targetUrl = match[1]; }
+                    }
+                } 
+                // Case 2: data-url/data-link
+                else if (dataUrl || dataLink) {
+                    targetUrl = dataUrl || dataLink || "";
+                }
+                // Case 3: data-src
+                else if (dataSrc && (dataSrc.includes('http') || dataSrc.includes('//'))) {
+                    targetUrl = dataSrc;
+                }
+
+                if (targetUrl && (targetUrl.includes('http') || targetUrl.startsWith('//'))) {
                     try {
-                        const url = Buffer.from(match[1], 'base64').toString('utf8');
-                        if (url.includes('xtremestream')) return;
-                        
-                        const fullUrl = url.startsWith('//') ? 'https:' + url : url;
+                        const fullUrl = targetUrl.startsWith('//') ? 'https:' + targetUrl : targetUrl;
+                        if (fullUrl.includes('xtremestream')) return;
+
                         const name = new URL(fullUrl).hostname.replace('www.', '').split('.')[0].toUpperCase();
-                        const sub = source$(el).find('p, span').text().toLowerCase();
+                        const sub = source$(el).text().toLowerCase();
                         
                         players.push({
                             name,
                             url: fullUrl,
                             lang: sub.includes("vostfr") ? "VOSTFR" : (sub.includes("vo") ? "VO" : "VF")
-                        });
-                    } catch (e) {}
-                }
-            });
-
-            // Handle direct data-url
-            source$('[data-url], [data-link], .server').each((_, el) => {
-                const url = source$(el).attr('data-url') || source$(el).attr('data-link');
-                if (url && url.includes('http')) {
-                    try {
-                        const fullUrl = url.startsWith('//') ? 'https:' + url : url;
-                        players.push({
-                            name: new URL(fullUrl).hostname.replace('www.', '').split('.')[0].toUpperCase(),
-                            url: fullUrl,
-                            lang: "VF"
                         });
                     } catch (e) {}
                 }
