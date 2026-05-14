@@ -6,7 +6,7 @@ import * as dns from 'dns';
 import * as https from 'https';
 import * as http from 'http';
 import initCycleTLS from 'cycletls';
-import chromium from 'chrome-aws-lambda';
+import chromium from '@sparticuz/chromium';
 import puppeteer from 'puppeteer-core';
 
 let cycleTLS: any = null;
@@ -340,8 +340,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             browser = await puppeteer.launch({
                 args: chromium.args,
                 defaultViewport: chromium.defaultViewport,
-                executablePath: await chromium.executablePath,
-                headless: chromium.headless,
+                executablePath: await chromium.executablePath(),
+                headless: chromium.headless as any,
                 ignoreHTTPSErrors: true,
             });
             
