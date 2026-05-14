@@ -5,6 +5,20 @@ import { Redis } from '@upstash/redis';
 import * as dns from 'dns';
 import * as https from 'https';
 import * as http from 'http';
+import initCycleTLS from 'cycletls';
+
+let cycleTLS: any = null;
+const getCycleTLS = async () => {
+    if (!cycleTLS) {
+        try {
+            cycleTLS = await initCycleTLS();
+            console.log(`[Coflix Prod] CycleTLS initialized successfully`);
+        } catch (e: any) {
+            console.error(`[Coflix Prod] Failed to initialize CycleTLS: ${e.message}`);
+        }
+    }
+    return cycleTLS;
+};
 
 // DNS Bypass (Bypass ISP and Vercel DNS blocks)
 dns.setServers(['1.1.1.1', '8.8.8.8']);
@@ -358,21 +372,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     const fixUrl = (u: string) => u.startsWith('//') ? 'https:' + u : (u.startsWith('/') ? COFLIX_BASE_URL + u : u);
                     const targetIframe = fixUrl(src);
                     
-                    const iframeRes = await axios.get(targetIframe, { 
-                        headers: { 
-                            ...HEADERS, 
-                            "Referer": pageUrl, 
-                            "Cookie": cookies,
-                            "Sec-Fetch-Dest": "iframe",
-                            "Sec-Fetch-Mode": "navigate",
-                            "Sec-Fetch-Site": "cross-site"
-                        }, 
-                        timeout: 5000,
-                        httpsAgent,
-                        httpAgent
-                    });
+                    let iframeData = "";
+                    const tls = await getCycleTLS();
                     
-                    const $if = cheerio.load(iframeRes.data);
+                    if (tls) {
+                        console.log(`[Coflix Prod] Using CycleTLS for iframe: ${targetIframe.substring(0, 50)}`);
+                        const response = await tls(targetIframe, {
+                            headers: {
+                                ...HEADERS,
+                                "Referer": pageUrl,
+                                "Cookie": cookies,
+                            },
+                            disableRedirect: false,
+                            ja3: "771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,0-23-65281-10-11-35-16-5-13-18-51-45-43,29-23-24,0",
+                            userAgent: HEADERS["User-Agent"]
+                        }, 'GET');
+                        
+                        if (response.status === 200) {
+                            iframeData = response.body;
+                        } else {
+                            throw new Error(`CycleTLS failed with status ${response.status}`);
+                        }
+                    } else {
+                        // Fallback to axios
+                        const iframeRes = await axios.get(targetIframe, { 
+                            headers: { 
+                                ...HEADERS, 
+                                "Referer": pageUrl, 
+                                "Cookie": cookies,
+                                "Sec-Fetch-Dest": "iframe",
+                                "Sec-Fetch-Mode": "navigate",
+                                "Sec-Fetch-Site": "cross-site"
+                            }, 
+                            timeout: 5000,
+                            httpsAgent,
+                            httpAgent
+                        });
+                        iframeData = iframeRes.data;
+                    }
+                    
+                    const $if = cheerio.load(iframeData);
                     const countBefore = players.length;
                     extractFromContext($if);
                     const found = players.length - countBefore;

@@ -24,6 +24,7 @@
     "@upstash/redis": "^1.38.0",
     "axios": "^1.16.0",
     "cheerio": "^1.2.0",
+    "cycletls": "^2.0.5",
     "dotenv": "^17.4.2"
   }
 }
