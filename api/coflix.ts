@@ -367,10 +367,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log(`[Coflix Prod] Final Page URL: ${pageUrl}`);
         const pageRes = await fetchTLS(pageUrl, { headers: { "Cookie": cookies, "Referer": searchUrl } });
         const html = pageRes.data;
-        const $ = cheerio.load(html);
-        console.log(`[Coflix Prod] Page Title: ${$('title').text().trim()} (${Math.round(html.length/1024)}kb)`);
+        console.log(`[Coflix Prod] Page Title: ${cheerio.load(html)('title').text().trim()} (${Math.round(html.length/1024)}kb)`);
         
+        // Anti-bot delay before extraction
+        await sleep(2000);
+
         const players: any[] = [];
+        const $ = cheerio.load(html);
 
         const extractFromContext = (source$: cheerio.CheerioAPI) => {
             // Refined selector: Focus on elements likely to contain player data
