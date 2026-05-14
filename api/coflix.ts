@@ -411,6 +411,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 else if (dataSrc && (dataSrc.includes('http') || dataSrc.includes('//'))) {
                     targetUrl = dataSrc;
                 }
+                // Case 4: href fallback
+                else if (href && (href.includes('lecteur') || href.includes('video') || href.includes('embed'))) {
+                    targetUrl = href;
+                }
 
                 if (targetUrl && (targetUrl.includes('http') || targetUrl.startsWith('//'))) {
                     try {
