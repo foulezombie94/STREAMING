@@ -356,14 +356,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 await page.setCookie(...cookieArray);
             }
             
-            await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+            await page.goto(pageUrl, { waitUntil: 'networkidle2', timeout: 60000 });
             
             // Wait for JS execution and AJAX (anti-bot delay)
-            console.log(`[Coflix Prod] Waiting for dynamic scripts...`);
-            await page.evaluate(() => new Promise(r => setTimeout(r, 5000)));
+            console.log(`[Coflix Prod] Waiting for dynamic scripts (8s)...`);
+            await page.evaluate(() => new Promise(r => setTimeout(r, 8000)));
+            
+            // Debug check in DOM before closing
+            const domCount = await page.evaluate(() => 
+                document.querySelectorAll('[onclick*="Video"], [onclick*="Player"], iframe, .server, [data-url]').length
+            );
+            console.log(`[Coflix Prod] Player elements found in DOM: ${domCount}`);
+            
+            const bodyPreview = await page.evaluate(() => document.body.innerText.slice(0, 300).replace(/\n/g, ' '));
+            console.log(`[Coflix Prod] Body Preview: ${bodyPreview}`);
             
             html = await page.content();
-            console.log(`[Coflix Prod] Page content captured successfully (${html.length} bytes)`);
+            console.log(`[Coflix Prod] Page content captured (${Math.round(html.length/1024)}kb)`);
         } catch (e: any) {
             console.error(`[Coflix Prod] Puppeteer failed: ${e.message}`);
             // Fallback to TLS
@@ -379,8 +388,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const players: any[] = [];
 
         const extractFromContext = (source$: cheerio.CheerioAPI) => {
-            // Broad selector to catch players even if structure changes
-            source$('[onclick], [data-url], [data-link], .server, .player-item, li, a, div').each((_, el) => {
+            // Refined selector: Focus on elements likely to contain player data
+            source$('[onclick*="Video"], [onclick*="Player"], [onclick*="show"], [data-url], [data-link], .server, .player-item, iframe').each((_, el) => {
                 const onclick = source$(el).attr('onclick') || "";
                 const dataUrl = source$(el).attr('data-url') || "";
                 const dataLink = source$(el).attr('data-link') || "";
@@ -389,13 +398,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 
                 let targetUrl = "";
                 
-                // Case 1: showVideo('BASE64') or similar
+                // Case 1: JS-based injection
                 if (onclick.includes('Video') || onclick.includes('Player') || onclick.includes('show')) {
                     const match = onclick.match(/['"]([^'"]+)['"]/);
                     if (match && match[1]) {
                         try {
-                           // Try to decode if it looks like base64 (no common URL chars), otherwise use as is
-                           if (match[1].length > 10 && !match[1].includes('/') && !match[1].includes(':')) {
+                           // Try to decode ONLY if it looks like base64 (no common URL chars), otherwise use as is
+                           if (match[1].length > 10 && !match[1].includes('/') && !match[1].includes(':') && !match[1].includes('.')) {
                                targetUrl = Buffer.from(match[1], 'base64').toString('utf8');
                            } else {
                                targetUrl = match[1];
