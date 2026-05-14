@@ -7,13 +7,15 @@ import * as https from 'https';
 import * as http from 'http';
 import initCycleTLS from 'cycletls';
 
-let cycleTLS: any = null;
-const getCycleTLS = async () => {
-    if (!cycleTLS) {
-        cycleTLS = await initCycleTLS();
+let tlsInstance: any = null;
+const getTLS = async () => {
+    if (!tlsInstance) {
+        tlsInstance = await initCycleTLS();
     }
-    return cycleTLS;
+    return tlsInstance;
 };
+
+const tlsCache = new Map();
 
 // Session configuration - NO global mutable state to avoid race conditions
 const getSessionCookies = async () => {
@@ -111,7 +113,10 @@ const fetchAxios = async (url: string, options: any = {}, method: 'GET' | 'POST'
 };
 
 const fetchTLS = async (url: string, options: any = {}, method: 'GET' | 'POST' = 'GET') => {
-    const tls = await getCycleTLS();
+    // 1. Check Cache
+    if (tlsCache.has(url)) return tlsCache.get(url);
+
+    const tls = await getTLS();
     if (!tls) return fetchAxios(url, options, method);
 
     try {
@@ -121,21 +126,28 @@ const fetchTLS = async (url: string, options: any = {}, method: 'GET' | 'POST' =
             tls(url, {
                 headers: { ...HEADERS, ...options.headers, "Cookie": cookies },
                 body: options.data,
-                ja3: "771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,0-23-65281-10-11-35-16-5-13-18-51-45-43,29-23-24,0",
+                ja3: "771,4865-4866-4867-49195-49199-49196-49200",
                 userAgent: HEADERS["User-Agent"],
                 disableRedirect: false,
                 timeout: 8000
             }, method),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("CycleTLS timeout")), 10000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error("TLS timeout")), 10000))
         ]);
 
         let data = res.body;
         if (typeof data === 'string' && (data.trim().startsWith('{') || data.trim().startsWith('['))) {
             try { data = JSON.parse(data); } catch (e) {}
         }
-        return { data, status: res.status, headers: res.headers };
+        
+        const output = { data, status: res.status, headers: res.headers };
+        
+        // 2. Set Cache (1 min)
+        tlsCache.set(url, output);
+        setTimeout(() => tlsCache.delete(url), 60000);
+
+        return output;
     } catch (e: any) {
-        console.warn(`[Coflix TLS] Fallback to Axios: ${e.message}`);
+        console.warn(`[Coflix TLS Fallback] ${e.message}`);
         return fetchAxios(url, options, method);
     }
 };
