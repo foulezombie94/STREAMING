@@ -168,6 +168,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
         // Capture cookies from search too
+        const searchSetCookie = searchRes.headers['set-cookie'];
+        if (searchSetCookie) {
+            const newCookies = searchSetCookie.map(c => c.split(';')[0]).join('; ');
+            if (newCookies !== cookies) {
+                cookies = newCookies;
+                await redis.set("coflix:session_cookies", cookies, { ex: 3600 });
+            }
+        }
         if (searchRes.headers['set-cookie']) {
             const searchCookies = searchRes.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
             cookies = cookies ? `${cookies}; ${searchCookies}` : searchCookies;
@@ -286,6 +294,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             httpAgent
         });
         const $ = cheerio.load(pageRes.data);
+        console.log(`[Coflix Prod] Page Title: ${$('title').text().trim()}`);
+        
         const players: any[] = [];
 
         const extractFromContext = (source$: cheerio.CheerioAPI) => {
