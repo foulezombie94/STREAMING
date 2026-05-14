@@ -114,7 +114,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (setCookie) {
                     cookies = setCookie.map(c => c.split(';')[0]).join('; ');
                     await redis.set("coflix:session_cookies", cookies, { ex: 3600 }); // Cache for 1 hour
-                    console.log(`[Coflix Prod] New session cookies saved to Redis`);
+                    console.log(`[Coflix Prod] New session cookies saved to Redis (init took ${Date.now() - startInit}ms)`);
                     await sleep(1000);
                 }
             }
