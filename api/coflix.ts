@@ -384,7 +384,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Update cookies from page response if any
         if (pageRes.headers['set-cookie']) {
-            const newCookies = pageRes.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
+            const newCookies = (pageRes.headers['set-cookie'] as string[]).map((c: string) => c.split(';')[0]).join('; ');
             cookies = cookies ? `${cookies}; ${newCookies}` : newCookies;
         }
 
@@ -410,10 +410,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         extractFromContext($if);
                         const found = players.length - countBefore;
                         
-                        console.log(`[Coflix Prod] Iframe Bridge [${targetIframe.substring(0, 40)}...] extracted ${found} players in ${Date.now() - startIframe}ms`);
-                    } catch (e: any) {
-                        console.warn(`[Coflix Prod] Iframe extraction failed for ${src.substring(0, 40)}... : ${e.message}`);
-                    }
+                    console.log(`[Coflix Prod] Iframe Bridge [${targetIframe.substring(0, 40)}...] extracted ${found} players in ${Date.now() - startIframe}ms`);
+                } catch (e: any) {
+                    console.warn(`[Coflix Prod] Iframe extraction failed for ${src.substring(0, 40)}... : ${e.message}`);
                 }
             }
         }
