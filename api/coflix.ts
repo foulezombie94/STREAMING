@@ -5,32 +5,13 @@ import { Redis } from '@upstash/redis';
 import * as dns from 'dns';
 import * as https from 'https';
 import * as http from 'http';
-import initCycleTLS from 'cycletls';
+import { gotScraping } from 'got-scraping';
 
-let tlsInstance: any = null;
-let tlsPromise: Promise<any> | null = null;
-
-const getTLS = async (retries = 3): Promise<any> => {
-    if (tlsInstance) return tlsInstance;
-    if (tlsPromise) return tlsPromise;
-
-    tlsPromise = (async () => {
-        for (let i = 0; i < retries; i++) {
-            try {
-                const tls = await initCycleTLS();
-                tlsInstance = tls;
-                return tls;
-            } catch (e) {
-                if (i === retries - 1) throw e;
-                await sleep(500);
-            }
-        }
-    })();
-
-    return tlsPromise.catch(e => {
-        tlsPromise = null;
-        throw e;
-    });
+// Session configuration - NO global mutable state to avoid race conditions
+const getSessionCookies = async () => {
+    try {
+        return await redis.get("coflix:session_cookies") as string || "";
+    } catch (e) { return ""; }
 };
 
 const tlsCache = new Map();
@@ -160,36 +141,43 @@ const fetchTLS = async (url: string, options: any = {}, method: 'GET' | 'POST' =
     // 1. Check Cache
     if (tlsCache.has(cacheKey)) return tlsCache.get(cacheKey);
 
-    const tls = await getTLS().catch(() => null);
-    if (!tls) return fetchAxios(url, options, method);
-
     try {
-        // Safety timeout to prevent CycleTLS from freezing Vercel
-        const res: any = await Promise.race([
-            tls(url, {
-                headers: { ...HEADERS, ...options.headers, "Cookie": cookies },
-                body: options.data,
-                ja3: "771,4865-4866-4867-49195-49199-49196-49200-52393-52392,0-23-65281-10-11-35-16-5-13",
-                userAgent: HEADERS["User-Agent"],
-                disableRedirect: false,
-                timeout: 8000
-            }, method),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("TLS timeout")), 10000))
-        ]);
+        const response = await gotScraping({
+            url,
+            method: method as any,
+            body: options.data,
+            headers: { 
+                ...HEADERS, 
+                ...options.headers, 
+                "Cookie": cookies 
+            },
+            headerGeneratorOptions: {
+                browsers: [{ name: 'chrome', minVersion: 124 }],
+                devices: ['desktop'],
+                locales: ['fr-FR', 'en-US']
+            },
+            timeout: { request: 10000 },
+            retry: { limit: 0 },
+            followRedirect: true
+        });
 
-        let data = res.body;
+        let data = response.body;
         if (typeof data === 'string' && (data.trim().startsWith('{') || data.trim().startsWith('['))) {
             try { data = JSON.parse(data); } catch (e) {}
         }
         
-        const output = { data, status: res.status, headers: res.headers };
+        const output = { 
+            data, 
+            status: response.statusCode, 
+            headers: response.headers 
+        };
         
         // 2. Set Cache Robustly
         safeSetCache(cacheKey, output);
 
         return output;
     } catch (e: any) {
-        console.warn(`[Coflix TLS Fallback] ${e.message}`);
+        console.warn(`[Got-Scraping Fallback] ${e.message}`);
         return fetchAxios(url, options, method);
     }
 };
