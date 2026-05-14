@@ -2,6 +2,23 @@ import { IncomingMessage, ServerResponse } from 'http';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { Redis } from '@upstash/redis';
+import * as dns from 'dns';
+import * as https from 'https';
+import * as http from 'http';
+
+// DNS Bypass (Bypass ISP and Vercel DNS blocks)
+dns.setServers(['1.1.1.1', '8.8.8.8']);
+
+const customLookup = (hostname: string, options: any, callback: any) => {
+    if (typeof options === 'function') { callback = options; options = {}; }
+    dns.resolve4(hostname, (err, addresses) => {
+        if (!err && addresses && addresses.length > 0) return callback(null, addresses[0], 4);
+        dns.lookup(hostname, options, callback);
+    });
+};
+
+const httpsAgent = new https.Agent({ lookup: customLookup, keepAlive: true });
+const httpAgent = new http.Agent({ lookup: customLookup, keepAlive: true });
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -76,30 +93,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.error("[Cache Error]", e);
         }
 
-        // 1. Session Init (Get Cookies)
+        // 1. Session Management (Persistent via Redis)
         let cookies = "";
         try {
-            const startInit = Date.now();
-            // Try hitting a specific film first to force a session cookie
-            const initRes = await axios.get(COFLIX_BASE_URL + "/film/", { 
-                headers: { ...HEADERS, "Referer": "https://www.google.com/" }, 
-                timeout: 3000 
-            });
-            const setCookie = initRes.headers['set-cookie'];
-            if (setCookie) {
-                cookies = setCookie.map(c => c.split(';')[0]).join('; ');
-                console.log(`[Coflix Prod] Session initialized (via /film/) in ${Date.now() - startInit}ms. Cookies: YES`);
-                await sleep(1500);
+            const cachedCookies = await redis.get<string>("coflix:session_cookies");
+            if (cachedCookies) {
+                cookies = cachedCookies;
+                console.log(`[Coflix Prod] Using cached session cookies from Redis`);
             } else {
-                // Fallback to home
-                const homeRes = await axios.get(COFLIX_BASE_URL + "/", { headers: HEADERS, timeout: 3000 });
-                if (homeRes.headers['set-cookie']) {
-                    cookies = homeRes.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
-                    console.log(`[Coflix Prod] Session initialized (via home) in ${Date.now() - startInit}ms.`);
+                const startInit = Date.now();
+                console.log(`[Coflix Prod] No cached session. Initializing new one...`);
+                // Hit home page to get new session
+                const initRes = await axios.get(COFLIX_BASE_URL + "/", { 
+                    headers: HEADERS, 
+                    timeout: 5000,
+                    httpsAgent,
+                    httpAgent
+                });
+                const setCookie = initRes.headers['set-cookie'];
+                if (setCookie) {
+                    cookies = setCookie.map(c => c.split(';')[0]).join('; ');
+                    await redis.set("coflix:session_cookies", cookies, { ex: 3600 }); // Cache for 1 hour
+                    console.log(`[Coflix Prod] New session cookies saved to Redis`);
+                    await sleep(1000);
                 }
             }
         } catch (e: any) {
-            console.error(`[Coflix Prod] Session initialization failed: ${e.message}`);
+            console.error(`[Coflix Prod] Session management failed: ${e.message}`);
         }
 
         // 2. Search
@@ -121,7 +141,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const searchUrl = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(normalized)}`;
         const searchRes = await axios.get(searchUrl, { 
             headers: { ...HEADERS, "Cookie": cookies, "X-Requested-With": "XMLHttpRequest" }, 
-            timeout: 5000 
+            timeout: 5000,
+            httpsAgent,
+            httpAgent
         });
 
         // Capture cookies from search too
@@ -187,7 +209,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (pageUrl === target.url) {
                 try {
                     const startHtml = Date.now();
-                    const seriesPage = await axios.get(target.url, { headers: { ...HEADERS, "Cookie": cookies }, timeout: 5000 });
+                    const seriesPage = await axios.get(target.url, { 
+                        headers: { ...HEADERS, "Cookie": cookies }, 
+                        timeout: 5000,
+                        httpsAgent,
+                        httpAgent
+                    });
                     const $main = cheerio.load(seriesPage.data);
                     const episodeLink = $main(`.episode:contains("T${season}-E${episode}") a`).attr('href')
                                    || $main(`.episode:contains("${season}x${episode}") a`).attr('href')
@@ -233,7 +260,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 "Referer": searchUrl, // More realistic Referer chain
                 "Sec-Fetch-Site": "same-origin"
             }, 
-            timeout: 8000 
+            timeout: 8000,
+            httpsAgent,
+            httpAgent
         });
         const $ = cheerio.load(pageRes.data);
         const players: any[] = [];
@@ -307,7 +336,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                             "Sec-Fetch-Mode": "navigate",
                             "Sec-Fetch-Site": "cross-site"
                         }, 
-                        timeout: 5000 
+                        timeout: 5000,
+                        httpsAgent,
+                        httpAgent
                     });
                     
                     const $if = cheerio.load(iframeRes.data);
