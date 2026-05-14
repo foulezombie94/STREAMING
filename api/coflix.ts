@@ -71,10 +71,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // 1. Session Init (Get Cookies)
         let cookies = "";
         try {
+            const startInit = Date.now();
             const initRes = await axios.get(COFLIX_BASE_URL + "/", { headers: HEADERS, timeout: 3000 });
             const setCookie = initRes.headers['set-cookie'];
-            if (setCookie) cookies = setCookie.map(c => c.split(';')[0]).join('; ');
-        } catch (e) {}
+            if (setCookie) {
+                cookies = setCookie.map(c => c.split(';')[0]).join('; ');
+                console.log(`[Coflix Prod] Session initialized in ${Date.now() - startInit}ms. Cookies: ${cookies ? 'YES' : 'NONE'}`);
+            } else {
+                console.warn(`[Coflix Prod] No cookies received during session init`);
+            }
+        } catch (e: any) {
+            console.error(`[Coflix Prod] Session initialization failed: ${e.message}`);
+        }
 
         // 2. Search
         const normalizeCoflixQuery = (q: string) => {
@@ -99,7 +107,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
         const results = Array.isArray(searchRes.data) ? searchRes.data : [];
-        if (results.length === 0) return res.json({ success: true, sources: [] });
+        console.log(`[Coflix Prod] Search returned ${results.length} results for "${titleStr}"`);
+        
+        if (results.length === 0) {
+            console.warn(`[Coflix Prod] No results found for query: ${normalized}`);
+            return res.json({ success: true, sources: [] });
+        }
 
         // Filter and Rank
         const mapped = results.map((r: any) => {
@@ -147,6 +160,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // Tier 2: Direct Series Page Scraping
             if (pageUrl === target.url) {
                 try {
+                    const startHtml = Date.now();
                     const seriesPage = await axios.get(target.url, { headers: { ...HEADERS, "Cookie": cookies }, timeout: 5000 });
                     const $main = cheerio.load(seriesPage.data);
                     const episodeLink = $main(`.episode:contains("T${season}-E${episode}") a`).attr('href')
@@ -157,8 +171,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     
                     if (episodeLink) {
                         pageUrl = episodeLink.startsWith('http') ? episodeLink : (COFLIX_BASE_URL + episodeLink);
+                        console.log(`[Coflix Prod] Tier 2 Success: Found episode link in HTML (${Date.now() - startHtml}ms)`);
                     }
-                } catch (e) {}
+                } catch (e: any) {
+                    console.warn(`[Coflix Prod] Tier 2 (HTML) failed: ${e.message}`);
+                }
             }
 
             // Tier 3: Deterministic URL Patterns
@@ -242,8 +259,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             if (src.includes('lecteurvideo') || src.includes('bridge') || src.includes('embed.php')) {
                 try {
+                    const startIframe = Date.now();
                     const fixUrl = (u: string) => u.startsWith('//') ? 'https:' + u : (u.startsWith('/') ? COFLIX_BASE_URL + u : u);
-                    const iframeRes = await axios.get(fixUrl(src), { 
+                    const targetIframe = fixUrl(src);
+                    
+                    const iframeRes = await axios.get(targetIframe, { 
                         headers: { 
                             ...HEADERS, 
                             "Referer": COFLIX_BASE_URL + "/", 
@@ -251,10 +271,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         }, 
                         timeout: 5000 
                     });
+                    
                     const $if = cheerio.load(iframeRes.data);
+                    const countBefore = players.length;
                     extractFromContext($if);
+                    const found = players.length - countBefore;
+                    
+                    console.log(`[Coflix Prod] Iframe Bridge [${targetIframe.substring(0, 40)}...] extracted ${found} players in ${Date.now() - startIframe}ms`);
                 } catch (e: any) {
-                    console.warn(`[Coflix Prod] Iframe extraction failed: ${e.message}`);
+                    console.warn(`[Coflix Prod] Iframe extraction failed for ${src.substring(0, 40)}... : ${e.message}`);
                 }
             }
         }
@@ -262,12 +287,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Deduplicate
         const seen = new Set();
         const finalPlayers = players.filter(p => {
-            if (seen.has(p.url)) return false;
+            if (!p.url || seen.has(p.url)) return false;
             seen.add(p.url);
             return true;
         });
 
-        console.log(`[Coflix Prod] Found ${finalPlayers.length} players`);
+        console.log(`[Coflix Prod] Final count: ${finalPlayers.length} players found for ${titleStr}`);
+        if (finalPlayers.length === 0) {
+            console.error(`[Coflix Prod] EXTRACTION FAILURE: No players found on page ${pageUrl}`);
+            // Log a snippet of the HTML for debugging if possible (limit length)
+            console.log(`[Coflix Prod] HTML Preview: ${$.html().substring(0, 500)}...`);
+        }
         
         // 5. Cache Save (24h)
         if (finalPlayers.length > 0) {
