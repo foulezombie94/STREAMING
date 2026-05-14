@@ -75,14 +75,14 @@ export default async function handler(req, res) {
         // Use a real browser User-Agent for embeds, and Coflix as Referer/Origin
         const useBrowserUA = targetUrl.includes('embed') || targetUrl.includes('php');
         const isCoflixRelated = targetUrl.includes('lecteurvideo') || targetUrl.includes('coflix');
-        const referer = isCoflixRelated ? 'https://coflix.date/' : (urlObj.origin + '/');
-        const origin = isCoflixRelated ? 'https://coflix.date' : urlObj.origin;
+        const referer = isCoflixRelated ? 'https://coflix.dance/' : (urlObj.origin + '/');
+        const origin = isCoflixRelated ? 'https://coflix.dance' : urlObj.origin;
 
         let cookieHeader = '';
         if (isCoflixRelated) {
             try {
                 // Pre-warm: get cookies from main domain
-                const warmRes = await axios.get('https://coflix.date/', { 
+                const warmRes = await axios.get('https://coflix.dance/', { 
                     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' },
                     timeout: 3000
                 });

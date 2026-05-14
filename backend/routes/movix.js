@@ -6,7 +6,7 @@ const { Buffer } = require("buffer");
 const cache = require('../utils/redis');
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY || "e1a2bb6a3ed288feb5d767908732e751";
-const COFLIX_BASE_URL = "https://coflix.date";
+const COFLIX_BASE_URL = "https://coflix.dance";
 
 const HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",

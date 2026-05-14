@@ -5,7 +5,7 @@ import type { PlayerInfo, SearchResult } from '../utils/types.js';
 
 export class CoflixScraper {
     private engine: ScraperEngine;
-    private baseURL = "https://coflix.date";
+    private baseURL = "https://coflix.dance";
     private cache: Map<string, { data: any, timestamp: number }> = new Map();
     private CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
@@ -184,7 +184,7 @@ export class CoflixScraper {
                 try {
                     const iframePageHtml = await this.engine.get(this.fixUrl(src), { 
                         headers: { 
-                            "Referer": "https://coflix.date/",
+                            "Referer": "https://coflix.dance/",
                             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8"
                         }, 
                         timeout: 10000 
@@ -329,8 +329,8 @@ export class CoflixScraper {
 
             // Priority 4: Pattern Match (Deterministic URL)
             const patterns = [
-                `https://coflix.date/episode/${seriesSlug}-${season}x${episode}/`,
-                `https://coflix.date/serie/${seriesSlug}-saison-${season}-episode-${episode}/`,
+                `https://coflix.dance/episode/${seriesSlug}-${season}x${episode}/`,
+                `https://coflix.dance/serie/${seriesSlug}-saison-${season}-episode-${episode}/`,
                 `${seriesUrl.replace(/\/$/, '')}-saison-${season}-episode-${episode}/`
             ];
 

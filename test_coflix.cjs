@@ -4,7 +4,7 @@ const { Buffer } = require('buffer');
 
 async function test() {
     try {
-        const res = await axios.get('https://coflix.date/film/mortal-kombat-ii/');
+        const res = await axios.get('https://coflix.dance/film/mortal-kombat-ii/');
         const $ = cheerio.load(res.data);
         console.log("SHOW VIDEO:");
         $('li[onclick*="showVideo"], div[onclick*="showVideo"]').each((i, el) => {

@@ -1,7 +1,7 @@
 const dns = require('dns');
 dns.setServers(['1.1.1.1', '8.8.8.8']);
 
-const hostname = 'coflix.date';
+const hostname = 'coflix.dance';
 
 dns.resolve4(hostname, (err, addresses) => {
     console.log('Resolve4:', { err, addresses });
