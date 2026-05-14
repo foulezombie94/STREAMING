@@ -189,7 +189,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const initRes = await fetchWithTLS(COFLIX_BASE_URL + "/");
                 const setCookie = initRes.headers['set-cookie'] as string[] | undefined;
                 if (setCookie) {
-                    cookies = setCookie.map(c => c.split(';')[0]).join('; ');
+                    cookies = setCookie.map((c: string) => c.split(';')[0]).join('; ');
                     await redis.set("coflix:session_cookies", cookies, { ex: 3600 }); // Cache for 1 hour
                     console.log(`[Coflix Prod] New session cookies saved to Redis (init took ${Date.now() - startInitTime}ms)`);
                     await sleep(1000);
@@ -223,14 +223,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Capture cookies from search too
         const searchSetCookie = searchRes.headers['set-cookie'] as string[] | undefined;
         if (searchSetCookie) {
-            const newCookies = searchSetCookie.map(c => c.split(';')[0]).join('; ');
+            const newCookies = searchSetCookie.map((c: string) => c.split(';')[0]).join('; ');
             if (newCookies !== cookies) {
                 cookies = newCookies;
                 await redis.set("coflix:session_cookies", cookies, { ex: 3600 });
             }
         }
         if (searchRes.headers['set-cookie']) {
-            const searchCookies = searchRes.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
+            const searchCookies = (searchRes.headers['set-cookie'] as string[]).map((c: string) => c.split(';')[0]).join('; ');
             cookies = cookies ? `${cookies}; ${searchCookies}` : searchCookies;
         }
 
@@ -420,7 +420,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Deduplicate
         const seen = new Set();
-        const finalPlayers = players.filter(p => {
+        const finalPlayers = players.filter((p: any) => {
             if (!p.url || seen.has(p.url)) return false;
             seen.add(p.url);
             return true;
@@ -437,7 +437,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (finalPlayers.length > 0) {
             try {
                 await redis.set(cacheKey, finalPlayers.slice(0, 10), { ex: 86400 });
-            } catch (e) {}
+            } catch (e: any) {}
         }
 
         return res.json({ success: true, sources: finalPlayers.slice(0, 10) });
