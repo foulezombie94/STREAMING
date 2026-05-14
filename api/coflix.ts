@@ -122,7 +122,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 cookies = cachedCookies;
                 console.log(`[Coflix Prod] Using cached session cookies from Redis`);
             } else {
-                const startInit = Date.now();
+                const startInitTime = Date.now();
                 console.log(`[Coflix Prod] No cached session. Initializing new one...`);
                 // Hit home page to get new session
                 const initRes = await axios.get(COFLIX_BASE_URL + "/", { 
@@ -135,7 +135,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (setCookie) {
                     cookies = setCookie.map(c => c.split(';')[0]).join('; ');
                     await redis.set("coflix:session_cookies", cookies, { ex: 3600 }); // Cache for 1 hour
-                    console.log(`[Coflix Prod] New session cookies saved to Redis (init took ${Date.now() - startInit}ms)`);
+                    console.log(`[Coflix Prod] New session cookies saved to Redis (init took ${Date.now() - startInitTime}ms)`);
                     await sleep(1000);
                 }
             }
@@ -232,7 +232,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         pageUrl = targetEp.links.startsWith('http') ? targetEp.links : (COFLIX_BASE_URL + targetEp.links);
                     }
                 }
-            } catch (err) {}
+            } catch (err: any) {}
             
             // Tier 2: Direct Series Page Scraping
             if (pageUrl === target.url) {

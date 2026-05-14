@@ -9,8 +9,8 @@
       "destination": "/api/diag"
     },
     {
-      "source": "/api/coflix/:path*",
-      "destination": "/api/coflix?path=:path*"
+      "source": "/api/coflix/(.*)",
+      "destination": "/api/coflix?path=$1"
     }
   ],
 
