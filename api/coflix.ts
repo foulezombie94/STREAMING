@@ -5,8 +5,16 @@ import { Redis } from '@upstash/redis';
 import * as dns from 'dns';
 import * as https from 'https';
 import * as http from 'http';
-import chromium from '@sparticuz/chromium';
-import puppeteer from 'puppeteer-core';
+import initCycleTLS from 'cycletls';
+
+let cycleTLS: any = null;
+const getCycleTLS = async () => {
+    if (!cycleTLS) {
+        cycleTLS = await initCycleTLS();
+    }
+    return cycleTLS;
+};
+
 // Session configuration
 let sessionCookies: string = "";
 
@@ -83,38 +91,52 @@ interface VercelResponse extends ServerResponse {
 }
 
 const fetchWithSession = async (url: string, options: any = {}, method: 'GET' | 'POST' = 'GET') => {
-    try {
-        const response = await axios({
-            url,
-            method,
-            data: options.data,
-            headers: { 
-                ...HEADERS, 
-                ...options.headers,
-                "Cookie": options.headers?.Cookie || sessionCookies 
-            },
-            httpsAgent,
-            httpAgent,
-            timeout: 10000,
-            validateStatus: () => true, // Don't throw on 403, handle it manually
-            maxRedirects: 5
-        });
+    const tls = await getCycleTLS();
+    if (tls) {
+        try {
+            const res = await tls(url, {
+                headers: { ...HEADERS, ...options.headers, "Cookie": options.headers?.Cookie || sessionCookies },
+                body: options.data,
+                ja3: "771,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,0-23-65281-10-11-35-16-5-13-18-51-45-43,29-23-24,0",
+                userAgent: HEADERS["User-Agent"],
+                disableRedirect: false,
+                timeout: 10000
+            }, method);
+            
+            let data = res.body;
+            try {
+                if (typeof data === 'string' && (data.trim().startsWith('{') || data.trim().startsWith('['))) {
+                    data = JSON.parse(data);
+                }
+            } catch (e) {}
 
-        // Parse JSON if needed (Axios usually does this, but for safety)
-        let data = response.data;
-        if (typeof data === 'string' && (data.trim().startsWith('{') || data.trim().startsWith('['))) {
-            try { data = JSON.parse(data); } catch (e) {}
+            return {
+                data,
+                status: res.status,
+                headers: res.headers
+            };
+        } catch (e: any) {
+            console.error(`[Coflix TLS] Error: ${e.message}`);
         }
-
-        return {
-            data,
-            status: response.status,
-            headers: response.headers
-        };
-    } catch (e: any) {
-        console.error(`[Coflix Session] Error fetching ${url}: ${e.message}`);
-        throw e;
     }
+    
+    // Fallback
+    const response = await axios({
+        url,
+        method,
+        data: options.data,
+        headers: { ...HEADERS, ...options.headers, "Cookie": options.headers?.Cookie || sessionCookies },
+        httpsAgent,
+        httpAgent,
+        timeout: 10000,
+        validateStatus: () => true
+    });
+
+    return {
+        data: response.data,
+        status: response.status,
+        headers: response.headers
+    };
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -306,60 +328,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
         }
 
-        // 4. Extract Players (Using Headless Browser for JS rendering)
+        // 4. Extract Players (Using Fast CycleTLS)
         console.log(`[Coflix Prod] Final Page URL: ${pageUrl}`);
-        let html = "";
-        let browser = null;
-        
-        try {
-            console.log(`[Coflix Prod] Launching headless browser...`);
-            browser = await puppeteer.launch({
-                args: chromium.args,
-                defaultViewport: (chromium as any).defaultViewport || { width: 1280, height: 800 },
-                executablePath: await chromium.executablePath(),
-                headless: (chromium as any).headless === true || (chromium as any).headless === "new",
-            } as any);
-            
-            const page = await browser.newPage();
-            await page.setUserAgent(HEADERS["User-Agent"]);
-            
-            // Set cookies if we have them
-            if (cookies) {
-                const cookieArray = cookies.split(';').map(c => {
-                    const [name, value] = c.trim().split('=');
-                    return { name, value, url: "https://coflix.dance" };
-                });
-                await page.setCookie(...cookieArray);
-            }
-            
-            await page.goto(pageUrl, { waitUntil: 'networkidle2', timeout: 60000 });
-            
-            // Wait for JS execution and AJAX (anti-bot delay)
-            console.log(`[Coflix Prod] Waiting for dynamic scripts (8s)...`);
-            await page.evaluate(() => new Promise(r => setTimeout(r, 8000)));
-            
-            // Debug check in DOM before closing
-            const domCount = await page.evaluate(() => 
-                document.querySelectorAll('[onclick*="Video"], [onclick*="Player"], iframe, .server, [data-url]').length
-            );
-            console.log(`[Coflix Prod] Player elements found in DOM: ${domCount}`);
-            
-            const bodyPreview = await page.evaluate(() => document.body.innerText.slice(0, 300).replace(/\n/g, ' '));
-            console.log(`[Coflix Prod] Body Preview: ${bodyPreview}`);
-            
-            html = await page.content();
-            console.log(`[Coflix Prod] Page content captured (${Math.round(html.length/1024)}kb)`);
-        } catch (e: any) {
-            console.error(`[Coflix Prod] Puppeteer failed: ${e.message}`);
-            // Fallback to TLS
-            const pageRes = await fetchWithSession(pageUrl, { headers: { "Cookie": cookies, "Referer": searchUrl } });
-            html = pageRes.data;
-        } finally {
-            if (browser) await browser.close();
-        }
-
+        const pageRes = await fetchWithSession(pageUrl, { headers: { "Cookie": cookies, "Referer": searchUrl } });
+        const html = pageRes.data;
         const $ = cheerio.load(html);
-        console.log(`[Coflix Prod] Page Title: ${$('title').text().trim()}`);
+        console.log(`[Coflix Prod] Page Title: ${$('title').text().trim()} (${Math.round(html.length/1024)}kb)`);
         
         const players: any[] = [];
 
