@@ -179,18 +179,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // 1. Session Management (Persistent via Redis)
         let cookies = "";
         try {
-            const cachedCookies = await redis.get<string>("coflix:session_cookies");
+            const cachedCookies = await getSessionCookies();
             if (cachedCookies) {
                 cookies = cachedCookies;
                 console.log(`[Coflix Prod] Using cached session cookies from Redis`);
             } else {
+                const startInitTime = Date.now();
                 // Hit home page via TLS to get new session (only if search fails or initially)
                 const initRes = await fetchTLS(COFLIX_BASE_URL + "/");
                 const setCookie = initRes.headers['set-cookie'] as string[] | undefined;
                 if (setCookie) {
                     cookies = setCookie.map((c: string) => c.split(';')[0]).join('; ');
                     await redis.set("coflix:session_cookies", cookies, { ex: 3600 }); // Cache for 1 hour
-                    console.log(`[Coflix Prod] New session cookies saved to Redis (init took ${Date.now() - startInitTime}ms)`);
+                    console.log(`[Coflix Prod] New session cookies saved (took ${Date.now() - startInitTime}ms)`);
                     await sleep(1000);
                 }
             }
