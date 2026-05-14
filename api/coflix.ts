@@ -39,13 +39,6 @@ const dedupeCookies = (cookieStr: string) => {
     return Array.from(map.entries()).map(([k, v]) => `${k}=${v}`).join('; ');
 };
 
-// Session configuration - NO global mutable state to avoid race conditions
-const getSessionCookies = async () => {
-    try {
-        return await redis.get("coflix:session_cookies") as string || "";
-    } catch (e) { return ""; }
-};
-
 // DNS Bypass (Bypass ISP and Vercel DNS blocks)
 dns.setServers(['1.1.1.1', '8.8.8.8']);
 
