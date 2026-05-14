@@ -389,52 +389,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const players: any[] = [];
         const $ = cheerio.load(html);
 
-        const seen = new Set();
         const extractFromContext = (source$: cheerio.CheerioAPI) => {
-            source$('li[onclick*="showVideo"]').each((_, el) => {
+            // Refined selector: Focus on elements likely to contain player data
+            source$('[onclick*="Video"], [onclick*="Player"], [onclick*="show"], [data-url], [data-link], .server, .player-item, iframe').each((_, el) => {
                 const onclick = source$(el).attr('onclick') || "";
-                // Extraction de la chaîne entre guillemets : showVideo('LA_CHAINE', '2')
-                const match = onclick.match(/showVideo\s*\(\s*['"]([^'"]+)['"]/);
+                const dataUrl = source$(el).attr('data-url') || "";
+                const dataLink = source$(el).attr('data-link') || "";
+                const dataSrc = source$(el).attr('data-src') || "";
+                const href = source$(el).attr('href') || "";
                 
-                if (match && match[1]) {
-                    try {
-                        // Décodage Base64 (atob en Node.js)
-                        const decodedUrl = Buffer.from(match[1], 'base64').toString('utf8');
-                        
-                        if (decodedUrl.startsWith('http') || decodedUrl.startsWith('//')) {
-                            const fullUrl = decodedUrl.startsWith('//') ? 'https:' + decodedUrl : decodedUrl;
-                            if (seen.has(fullUrl)) return;
-                            seen.add(fullUrl);
-                            
-                            // Extraction du nom (ex: LuluStream, VidVideo, etc.)
-                            const serverName = source$(el).find('span').text().split('/')[0].trim() 
-                                             || new URL(fullUrl).hostname;
-                            
-                            const langText = source$(el).find('p').text().toLowerCase();
-
-                            players.push({
-                                name: serverName.toUpperCase(),
-                                url: fullUrl,
-                                lang: langText.includes("vostfr") ? "VOSTFR" : (langText.includes("vo") ? "VO" : "VF")
-                            });
-                        }
-                    } catch (e: any) {
-                        console.warn("[Coflix Decode Error]", e.message);
+                let targetUrl = "";
+                
+                // Case 1: JS-based injection
+                if (onclick.includes('Video') || onclick.includes('Player') || onclick.includes('show')) {
+                    const match = onclick.match(/['"]([^'"]+)['"]/);
+                    if (match && match[1]) {
+                        try {
+                           let decoded = match[1];
+                           // Try to decode ONLY if it looks like base64
+                           const isBase64 = /^[A-Za-z0-9+/=]+$/.test(decoded) && decoded.length > 10;
+                           if (isBase64) {
+                               decoded = Buffer.from(decoded, 'base64').toString('utf8');
+                           }
+                           
+                           // Validation: Ensure it looks like a URL/Target
+                           if (decoded.includes('http') || decoded.startsWith('//') || decoded.includes('.html')) {
+                               targetUrl = decoded;
+                           }
+                        } catch(e) { }
                     }
+                } 
+                // Case 2: data-url/data-link
+                else if (dataUrl || dataLink) {
+                    targetUrl = dataUrl || dataLink || "";
                 }
-            });
+                // Case 3: data-src
+                else if (dataSrc && (dataSrc.includes('http') || dataSrc.includes('//'))) {
+                    targetUrl = dataSrc;
+                }
+                // Case 4: href fallback
+                else if (href && (href.includes('lecteur') || href.includes('video') || href.includes('embed'))) {
+                    targetUrl = href;
+                }
 
-            // Extraction des liens de téléchargement (1fichier, MegaUp, etc.)
-            source$('.OD_down li a').each((_, el) => {
-                const href = source$(el).attr('href');
-                const name = source$(el).find('span').text();
-                if (href && !seen.has(href)) {
-                    seen.add(href);
-                    players.push({
-                        name: `DL - ${name.toUpperCase()}`,
-                        url: href,
-                        lang: "TELECHARGER"
-                    });
+                if (targetUrl && (targetUrl.includes('http') || targetUrl.startsWith('//'))) {
+                    try {
+                        const fullUrl = targetUrl.startsWith('//') ? 'https:' + targetUrl : targetUrl;
+                        if (fullUrl.includes('xtremestream')) return;
+
+                        const name = new URL(fullUrl).hostname.replace('www.', '').split('.')[0].toUpperCase();
+                        const sub = source$(el).text().toLowerCase();
+                        
+                        players.push({
+                            name,
+                            url: fullUrl,
+                            lang: sub.includes("vostfr") ? "VOSTFR" : (sub.includes("vo") ? "VO" : "VF")
+                        });
+                    } catch (e) {}
                 }
             });
         };
@@ -474,10 +485,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await Promise.all(iframePromises);
 
         // Deduplicate
-        const finalSeen = new Set();
+        const seen = new Set();
         const finalPlayers = players.filter((p: any) => {
-            if (!p.url || finalSeen.has(p.url)) return false;
-            finalSeen.add(p.url);
+            if (!p.url || seen.has(p.url)) return false;
+            seen.add(p.url);
             return true;
         });
 
