@@ -19,16 +19,11 @@ process.on('warning', (warning: any) => {
 
 const COFLIX_BASE_URL = "https://coflix.dance";
 const HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
     "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Sec-Ch-Ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
-    "Sec-Ch-Ua-Mobile": "?0",
-    "Sec-Ch-Ua-Platform": '"Windows"',
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-    "Sec-Fetch-User": "?1",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
     "Upgrade-Insecure-Requests": "1"
 };
 
@@ -80,14 +75,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let cookies = "";
         try {
             const startInit = Date.now();
-            const initRes = await axios.get(COFLIX_BASE_URL + "/", { headers: HEADERS, timeout: 3000 });
+            // Try hitting a specific film first to force a session cookie
+            const initRes = await axios.get(COFLIX_BASE_URL + "/film/", { 
+                headers: { ...HEADERS, "Referer": "https://www.google.com/" }, 
+                timeout: 3000 
+            });
             const setCookie = initRes.headers['set-cookie'];
             if (setCookie) {
                 cookies = setCookie.map(c => c.split(';')[0]).join('; ');
-                console.log(`[Coflix Prod] Session initialized in ${Date.now() - startInit}ms. Cookies: ${cookies ? 'YES' : 'NONE'}`);
-                await sleep(1500); // Wait after session init
+                console.log(`[Coflix Prod] Session initialized (via /film/) in ${Date.now() - startInit}ms. Cookies: YES`);
+                await sleep(1500);
             } else {
-                console.warn(`[Coflix Prod] No cookies received during session init`);
+                // Fallback to home
+                const homeRes = await axios.get(COFLIX_BASE_URL + "/", { headers: HEADERS, timeout: 3000 });
+                if (homeRes.headers['set-cookie']) {
+                    cookies = homeRes.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
+                    console.log(`[Coflix Prod] Session initialized (via home) in ${Date.now() - startInit}ms.`);
+                }
             }
         } catch (e: any) {
             console.error(`[Coflix Prod] Session initialization failed: ${e.message}`);
@@ -294,9 +298,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                             ...HEADERS, 
                             "Referer": pageUrl, 
                             "Cookie": cookies,
-                            "Sec-Fetch-Dest": "iframe",
-                            "Sec-Fetch-Mode": "navigate",
-                            "Sec-Fetch-Site": "cross-site"
+                            "Origin": "https://lecteurvideo.com",
+                            "Accept": "*/*"
                         }, 
                         timeout: 5000 
                     });
