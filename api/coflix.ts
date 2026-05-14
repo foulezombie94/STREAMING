@@ -10,10 +10,31 @@ import * as http from 'http';
 dns.setServers(['1.1.1.1', '8.8.8.8']);
 
 const customLookup = (hostname: string, options: any, callback: any) => {
-    if (typeof options === 'function') { callback = options; options = {}; }
-    dns.resolve4(hostname, (err, addresses) => {
-        if (!err && addresses && addresses.length > 0) return callback(null, addresses[0], 4);
-        dns.lookup(hostname, options, callback);
+    if (typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+
+    if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(hostname)) {
+        return callback(null, hostname, 4);
+    }
+
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return dns.lookup(hostname, options, callback);
+    }
+
+    dns.lookup(hostname, options, (err, address, family) => {
+        if (!err && address && address !== '127.0.0.1' && address !== '::1') {
+            return callback(null, address, family || 4);
+        }
+
+        dns.resolve4(hostname, (err2, addresses) => {
+            if (!err2 && addresses && addresses.length > 0 && addresses[0]) {
+                return callback(null, addresses[0], 4);
+            }
+            // Ensure we don't call callback with undefined address if possible
+            return callback(err || err2 || new Error(`ENOTFOUND: ${hostname}`), null, family || 4);
+        });
     });
 };
 
