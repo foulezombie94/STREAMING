@@ -93,6 +93,8 @@ const fetchWithSession = async (url: string, options: any = {}, method: 'GET' | 
                 ...options.headers,
                 "Cookie": options.headers?.Cookie || sessionCookies 
             },
+            httpsAgent,
+            httpAgent,
             timeout: 10000,
             validateStatus: () => true, // Don't throw on 403, handle it manually
             maxRedirects: 5
