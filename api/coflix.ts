@@ -389,63 +389,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const players: any[] = [];
         const $ = cheerio.load(html);
 
+        const seen = new Set();
         const extractFromContext = (source$: cheerio.CheerioAPI) => {
-            // Refined selector: Focus on elements likely to contain player data
-            source$('[onclick*="Video"], [onclick*="Player"], [onclick*="show"], [data-url], [data-link], .server, .player-item, iframe').each((_, el) => {
+            source$('li[onclick*="showVideo"]').each((_, el) => {
                 const onclick = source$(el).attr('onclick') || "";
-                const dataUrl = source$(el).attr('data-url') || "";
-                const dataLink = source$(el).attr('data-link') || "";
-                const dataSrc = source$(el).attr('data-src') || "";
-                const href = source$(el).attr('href') || "";
+                // Extraction de la chaîne entre guillemets : showVideo('LA_CHAINE', '2')
+                const match = onclick.match(/showVideo\s*\(\s*['"]([^'"]+)['"]/);
                 
-                let targetUrl = "";
-                
-                // Case 1: JS-based injection
-                if (onclick.includes('Video') || onclick.includes('Player') || onclick.includes('show')) {
-                    const match = onclick.match(/['"]([^'"]+)['"]/);
-                    if (match && match[1]) {
-                        try {
-                           let decoded = match[1];
-                           // Try to decode ONLY if it looks like base64
-                           const isBase64 = /^[A-Za-z0-9+/=]+$/.test(decoded) && decoded.length > 10;
-                           if (isBase64) {
-                               decoded = Buffer.from(decoded, 'base64').toString('utf8');
-                           }
-                           
-                           // Validation: Ensure it looks like a URL/Target
-                           if (decoded.includes('http') || decoded.startsWith('//') || decoded.includes('.html')) {
-                               targetUrl = decoded;
-                           }
-                        } catch(e) { }
-                    }
-                } 
-                // Case 2: data-url/data-link
-                else if (dataUrl || dataLink) {
-                    targetUrl = dataUrl || dataLink || "";
-                }
-                // Case 3: data-src
-                else if (dataSrc && (dataSrc.includes('http') || dataSrc.includes('//'))) {
-                    targetUrl = dataSrc;
-                }
-                // Case 4: href fallback
-                else if (href && (href.includes('lecteur') || href.includes('video') || href.includes('embed'))) {
-                    targetUrl = href;
-                }
-
-                if (targetUrl && (targetUrl.includes('http') || targetUrl.startsWith('//'))) {
+                if (match && match[1]) {
                     try {
-                        const fullUrl = targetUrl.startsWith('//') ? 'https:' + targetUrl : targetUrl;
-                        if (fullUrl.includes('xtremestream')) return;
-
-                        const name = new URL(fullUrl).hostname.replace('www.', '').split('.')[0].toUpperCase();
-                        const sub = source$(el).text().toLowerCase();
+                        // Décodage Base64 (atob en Node.js)
+                        const decodedUrl = Buffer.from(match[1], 'base64').toString('utf8');
                         
-                        players.push({
-                            name,
-                            url: fullUrl,
-                            lang: sub.includes("vostfr") ? "VOSTFR" : (sub.includes("vo") ? "VO" : "VF")
-                        });
-                    } catch (e) {}
+                        if (decodedUrl.startsWith('http') || decodedUrl.startsWith('//')) {
+                            const fullUrl = decodedUrl.startsWith('//') ? 'https:' + decodedUrl : decodedUrl;
+                            if (seen.has(fullUrl)) return;
+                            seen.add(fullUrl);
+                            
+                            // Extraction du nom (ex: LuluStream, VidVideo, etc.)
+                            const serverName = source$(el).find('span').text().split('/')[0].trim() 
+                                             || new URL(fullUrl).hostname;
+                            
+                            const langText = source$(el).find('p').text().toLowerCase();
+
+                            players.push({
+                                name: serverName.toUpperCase(),
+                                url: fullUrl,
+                                lang: langText.includes("vostfr") ? "VOSTFR" : (langText.includes("vo") ? "VO" : "VF")
+                            });
+                        }
+                    } catch (e: any) {
+                        console.warn("[Coflix Decode Error]", e.message);
+                    }
+                }
+            });
+
+            // Extraction des liens de téléchargement (1fichier, MegaUp, etc.)
+            source$('.OD_down li a').each((_, el) => {
+                const href = source$(el).attr('href');
+                const name = source$(el).find('span').text();
+                if (href && !seen.has(href)) {
+                    seen.add(href);
+                    players.push({
+                        name: `DL - ${name.toUpperCase()}`,
+                        url: href,
+                        lang: "TELECHARGER"
+                    });
                 }
             });
         };
