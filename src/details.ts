@@ -317,6 +317,7 @@ if (trailerModal) {
 // Actor Modal Logic
 const actorModal = document.getElementById('actor-modal');
 const closeActorModalBtn = document.getElementById('close-actor-modal');
+const mobileScrollHint = document.getElementById('mobile-scroll-hint');
 const actorModalImg = document.getElementById('actor-modal-img') as HTMLImageElement;
 const actorModalName = document.getElementById('actor-modal-name');
 const actorModalMeta = document.getElementById('actor-modal-meta');
@@ -407,6 +408,7 @@ async function fetchCoflixSources(type: string, id: string, season?: string, epi
     // S'assurer que le sélecteur de serveurs est visible au début d'une recherche
     const selector = document.getElementById('server-selector');
     if (selector) selector.classList.remove('hidden');
+    if (mobileScrollHint) mobileScrollHint.classList.add('active');
 
     try {
         const title = currentMediaData?.title || currentMediaData?.name;
@@ -474,6 +476,7 @@ function renderSourceButtons() {
             // Masquer l'overlay des serveurs pour afficher la vidéo
             const selector = document.getElementById('server-selector');
             if (selector) selector.classList.add('hidden');
+            if (mobileScrollHint) mobileScrollHint.classList.remove('active');
 
             if (videoIframe) {
                 // Élargissement de la liste directe pour éviter les boucles Cloudflare (Turnstile/Bot checks)
@@ -638,6 +641,7 @@ if (closePlayerBtn && playerSection && videoIframe) {
         // Restore the server selector
         const selector = document.getElementById('server-selector');
         if (selector) selector.classList.remove('hidden');
+        if (mobileScrollHint) mobileScrollHint.classList.add('active');
 
         // Scroll back to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -651,8 +655,8 @@ if (changeServerBtn) {
         const selector = document.getElementById('server-selector');
         if (selector) {
             selector.classList.remove('hidden');
+            if (mobileScrollHint) mobileScrollHint.classList.add('active');
             // Optionnel : On peut vider l'iframe pour économiser de la bande passante 
-            // mais ce n'est pas obligatoire si on veut juste changer
             if (videoIframe) videoIframe.src = '';
         }
     });
