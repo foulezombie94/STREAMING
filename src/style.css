@@ -2137,7 +2137,13 @@ a {
     padding: 80px 4%;
     position: relative;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
-    scroll-margin-top: 80px; /* Pour un scroll auto propre */
+    scroll-margin-top: 80px;
+}
+
+@media (max-width: 768px) {
+    .player-section {
+        padding: 20px 0; /* Plus d'espace sur les côtés sur mobile */
+    }
 }
 
 /* Animation fadeIn pour le lecteur */
@@ -2227,6 +2233,14 @@ a {
     overflow: hidden;
     box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    .iframe-wrapper {
+        border-radius: 0; /* Edge-to-edge sur mobile pour plus d'immersion */
+        border-left: none;
+        border-right: none;
+    }
 }
 
 .iframe-wrapper iframe {
