@@ -2142,7 +2142,7 @@ a {
 
 @media (max-width: 768px) {
     .player-section {
-        padding: 20px 0; /* Plus d'espace sur les côtés sur mobile */
+        padding: 20px 10px; /* Petit espace sur les côtés pour plus d'élégance */
     }
 }
 
@@ -2237,9 +2237,7 @@ a {
 
 @media (max-width: 768px) {
     .iframe-wrapper {
-        border-radius: 0;
-        border-left: none;
-        border-right: none;
+        border-radius: 10px; /* On remet un petit arrondi */
         padding-bottom: 75%; /* Ratio plus haut (4:3) pour agrandir la zone vers le bas sur mobile */
     }
 }
