@@ -2349,9 +2349,9 @@ a {
 
 @media (max-width: 768px) {
     .server-buttons {
-        grid-template-columns: repeat(4, 1fr); /* 4 colonnes même sur mobile pour tout voir */
-        gap: 6px;
-        padding: 8px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px; /* Un peu moins d'espace */
+        padding: 5px; /* Un peu moins de marge */
     }
 }
 
@@ -2376,8 +2376,8 @@ a {
 
 @media (max-width: 768px) {
     .server-btn {
-        padding: 5px;
-        border-radius: 10px;
+        padding: 4px;
+        border-radius: 8px;
     }
 }
 
@@ -2409,9 +2409,9 @@ a {
 
 @media (max-width: 768px) {
     .server-icon {
-        width: 28px;
-        height: 28px;
-        border-radius: 6px;
+        width: 24px;
+        height: 24px;
+        border-radius: 5px;
     }
 }
 
@@ -2428,8 +2428,8 @@ a {
 
 @media (max-width: 768px) {
     .server-icon img {
-        width: 18px;
-        height: 18px;
+        width: 16px;
+        height: 16px;
     }
 }
 
@@ -2460,8 +2460,8 @@ a {
 
 @media (max-width: 768px) {
     .server-title {
-        font-size: 9px;
-        letter-spacing: 0;
+        font-size: 8.5px;
+        letter-spacing: -0.2px;
     }
 }
 
@@ -2475,7 +2475,7 @@ a {
 
 @media (max-width: 768px) {
     .server-subtitle {
-        font-size: 6px;
+        font-size: 5.5px;
         letter-spacing: 0;
     }
 }
