@@ -139,8 +139,15 @@ const fetchTLS = async (url: string, options: any = {}, method: 'GET' | 'POST' =
         const apiKey = process.env.SCRAPER_API_KEY;
         if (apiKey && (url.includes('coflix') || options.useProxy)) {
             console.log(`[Coflix Proxy] Tunneling request through ScraperAPI: ${url.substring(0, 50)}...`);
-            const scraperUrl = `https://api.scraperapi.com/?api_key=${apiKey}&url=${encodeURIComponent(url)}&country_code=fr`;
-            const response = await axios.get(scraperUrl, { timeout: 12000 });
+            const scraperUrl = `https://api.scraperapi.com/?api_key=${apiKey}&url=${encodeURIComponent(url)}&country_code=fr&keep_headers=true`;
+            const response = await axios.get(scraperUrl, { 
+                timeout: 12000,
+                headers: { 
+                    ...HEADERS, 
+                    ...options.headers, 
+                    "Cookie": cookies 
+                }
+            });
             
             const output = { data: response.data, status: response.status, headers: response.headers };
             safeSetCache(cacheKey, output);
@@ -268,7 +275,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         } catch (e) {}
 
         const searchUrl = `${COFLIX_BASE_URL}/suggest.php?query=${encodeURIComponent(normalized)}`;
-        const searchRes = await fetchAxios(searchUrl, { 
+        const searchRes = await fetchTLS(searchUrl, { 
             headers: { "Cookie": cookies, "X-Requested-With": "XMLHttpRequest" }
         });
 
@@ -330,7 +337,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // Tier 1: WP-JSON API
             try {
                 const apiPath = `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${seriesId}/${season}`;
-                const apiRes = await fetchAxios(apiPath, { headers: { "Cookie": cookies } });
+                const apiRes = await fetchTLS(apiPath, { headers: { "Cookie": cookies } });
                 if (apiRes.data && Array.isArray(apiRes.data.episodes)) {
                     const targetEp = apiRes.data.episodes.find((ep: any) => parseInt(ep.number) === parseInt(episode));
                     if (targetEp && targetEp.links) {
@@ -341,7 +348,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             if (pageUrl === target.url) {
                 try {
-                    const seriesPage = await fetchAxios(target.url, { headers: { "Cookie": cookies } });
+                    const seriesPage = await fetchTLS(target.url, { headers: { "Cookie": cookies } });
                     const $main = cheerio.load(seriesPage.data);
                     const episodeLink = $main(`.episode:contains("T${season}-E${episode}") a`).attr('href')
                                    || $main(`.episode:contains("${season}x${episode}") a`).attr('href')
@@ -365,7 +372,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 
                 for (const p of patterns) {
                     try {
-                        const check = await fetchAxios(p, { headers: { "Cookie": cookies } });
+                        const check = await fetchTLS(p, { headers: { "Cookie": cookies } });
                         if (check.status === 200) {
                             pageUrl = p;
                             break;
@@ -461,8 +468,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         const fixUrl = (u: string) => u.startsWith('//') ? 'https:' + u : (u.startsWith('/') ? COFLIX_BASE_URL + u : u);
                         const targetIframe = fixUrl(src);
                         
-                        const iframeRes = await fetchAxios(targetIframe, { 
-                            headers: { "Referer": pageUrl, "Cookie": cookies }
+                        const iframeRes = await fetchTLS(targetIframe, { 
+                            headers: { "Referer": pageUrl, "Cookie": cookies },
+                            useProxy: true
                         });
                         
                         const $if = cheerio.load(iframeRes.data);
