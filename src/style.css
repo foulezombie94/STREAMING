@@ -2349,9 +2349,9 @@ a {
 
 @media (max-width: 768px) {
     .server-buttons {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-        padding: 10px;
+        grid-template-columns: repeat(4, 1fr); /* 4 colonnes même sur mobile pour tout voir */
+        gap: 6px;
+        padding: 8px;
     }
 }
 
@@ -2360,10 +2360,10 @@ a {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 4px;
     aspect-ratio: 1 / 1;
-    padding: 10px;
-    border-radius: 15px;
+    padding: 8px;
+    border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(255, 255, 255, 0.05);
     color: #fff;
@@ -2372,6 +2372,13 @@ a {
     text-align: center;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+}
+
+@media (max-width: 768px) {
+    .server-btn {
+        padding: 5px;
+        border-radius: 10px;
+    }
 }
 
 .server-btn:hover {
@@ -2400,6 +2407,14 @@ a {
     transition: all 0.3s ease;
 }
 
+@media (max-width: 768px) {
+    .server-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+    }
+}
+
 .server-btn:hover .server-icon {
     transform: scale(1.08);
     background: rgba(255, 255, 255, 0.15);
@@ -2411,8 +2426,21 @@ a {
     object-fit: contain;
 }
 
+@media (max-width: 768px) {
+    .server-icon img {
+        width: 18px;
+        height: 18px;
+    }
+}
+
 .fallback-icon {
     font-size: 18px;
+}
+
+@media (max-width: 768px) {
+    .fallback-icon {
+        font-size: 14px;
+    }
 }
 
 .server-info {
@@ -2430,12 +2458,26 @@ a {
     text-transform: uppercase;
 }
 
+@media (max-width: 768px) {
+    .server-title {
+        font-size: 9px;
+        letter-spacing: 0;
+    }
+}
+
 .server-subtitle {
     font-size: 8px;
     color: #a3a3a3;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.3px;
+}
+
+@media (max-width: 768px) {
+    .server-subtitle {
+        font-size: 6px;
+        letter-spacing: 0;
+    }
 }
 
 .loading-sources, .no-sources {
