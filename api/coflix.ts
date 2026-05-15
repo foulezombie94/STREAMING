@@ -293,7 +293,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             cookies = cookies ? `${cookies}; ${searchCookies}` : searchCookies;
         }
 
-        await sleep(1000); // Wait after search
+        await sleep(500); // Short delay after search
 
         const results = Array.isArray(searchRes.data) ? searchRes.data : [];
         console.log(`[Coflix Prod] Search returned ${results.length} results for "${titleStr}"`);
@@ -388,8 +388,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const html = pageRes.data;
         console.log(`[Coflix Prod] Page Title: ${cheerio.load(html)('title').text().trim()} (${Math.round(html.length/1024)}kb)`);
         
-        // Anti-bot delay before extraction
-        await sleep(2000);
+        // Reduced anti-bot delay to save 2s as requested
+        await sleep(500);
 
         const players: any[] = [];
         const $ = cheerio.load(html);
