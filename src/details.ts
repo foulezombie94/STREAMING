@@ -476,15 +476,17 @@ function renderSourceButtons() {
             if (selector) selector.classList.add('hidden');
 
             if (videoIframe) {
-                // Élargissement de la liste directe pour éviter les boucles Cloudflare
-                const directDomains = ['vidoza', 'uqload', 'upstream', 'dood', 'streamtape', 'voe', 'mixdrop', 'lulustream', 'vidmoly', 'mbed', 'upn', 'xtreme', 'coflix'];
+                // Élargissement de la liste directe pour éviter les boucles Cloudflare (Turnstile/Bot checks)
+                const directDomains = ['vidoza', 'uqload', 'upstream', 'dood', 'streamtape', 'voe', 'mixdrop', 'lulustream', 'vidmoly', 'mbed', 'upn', 'xtreme', 'coflix', 'lecteurvideo', 'emmmmbed', 'embed', 'upn.one'];
                 const useDirect = directDomains.some(d => source.url.toLowerCase().includes(d));
                 
+                // On force le no-referrer dans tous les cas pour éviter d'envoyer le domaine Vercel qui est souvent bloqué
+                videoIframe.setAttribute('referrerpolicy', 'no-referrer');
+
                 if (useDirect) {
                     videoIframe.src = source.url;
                 } else {
                     const proxiedUrl = `/api/proxy?url=${encodeURIComponent(source.url)}`;
-                    videoIframe.setAttribute('referrerpolicy', 'no-referrer');
                     videoIframe.src = proxiedUrl;
                 }
             }
