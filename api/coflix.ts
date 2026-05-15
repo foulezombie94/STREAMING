@@ -228,13 +228,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         console.log(`[Coflix Prod] ${type} - ${titleStr} (${tmdbId}) [Year: ${yearStr}] ${type === 'series' ? `S${season}E${episode}` : ''}`);
 
-        // 0. Cache Check
-        const cacheKey = `mv:coflix:${type}:${tmdbId}_${season || '0'}_${episode || '0'}`;
+        // 0. Cache Check (Season-based for series, Item-based for movies)
+        const isSeries = type === 'series';
+        const cacheKey = isSeries 
+            ? `mv:coflix:series:${tmdbId}:s${season}` 
+            : `mv:coflix:movie:${tmdbId}`;
+
         try {
             const cached = await redis.get(cacheKey);
             if (cached) {
-                console.log(`[Cache Prod] Hit for ${titleStr}`);
-                return res.json({ success: true, sources: cached, cached: true });
+                debugLog(`[Cache Prod] Hit for ${titleStr} (${isSeries ? `S${season}` : 'Movie'})`);
+                return res.json({ success: true, data: cached, cached: true });
             }
         } catch (e) {
             console.error("[Cache Error]", e);
@@ -331,62 +335,102 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const target = ranked[0];
         if (!target) return res.json({ success: true, sources: [] });
         
-        let pageUrl = target.url;
-
-        // 3. If Series, resolve episode URL
-        if (type === 'series' && season && episode) {
+        // 3. SEASON EXTRACTION LOGIC
+        if (isSeries && season) {
             const seriesId = target.ID;
-            const seriesSlug = target.url.split('/').filter(Boolean).pop();
-
-            // Tier 1: WP-JSON API
+            debugLog(`[Coflix Prod] Extracting full season ${season} for ${titleStr}`);
+            
+            let episodesList: any[] = [];
+            
+            // Tier 1: WP-JSON API (Get all episode links at once)
             try {
                 const apiPath = `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${seriesId}/${season}`;
                 const apiRes = await fetchTLS(apiPath, { headers: { "Cookie": cookies } });
                 if (apiRes.data && Array.isArray(apiRes.data.episodes)) {
-                    const targetEp = apiRes.data.episodes.find((ep: any) => parseInt(ep.number) === parseInt(episode));
-                    if (targetEp && targetEp.links) {
-                        pageUrl = targetEp.links[0]?.url || pageUrl;
-                    }
+                    episodesList = apiRes.data.episodes.map((ep: any) => ({
+                        number: parseInt(ep.number),
+                        url: ep.links?.[0]?.url || ""
+                    })).filter((ep: any) => ep.url);
                 }
             } catch (e) {}
 
-            if (pageUrl === target.url) {
+            // Fallback: If API fails, try to scrape the series page for episode list
+            if (episodesList.length === 0) {
                 try {
                     const seriesPage = await fetchTLS(target.url, { headers: { "Cookie": cookies } });
                     const $main = cheerio.load(seriesPage.data);
-                    const episodeLink = $main(`.episode:contains("T${season}-E${episode}") a`).attr('href')
-                                   || $main(`.episode:contains("${season}x${episode}") a`).attr('href')
-                                   || $main(`[data-season="${season}"]`).find(`[data-episode="${episode}"] a`).attr('href') 
-                                   || $main(`li[data-episode="${episode}"] a`).attr('href')
-                                   || $main(`a:contains("Épisode ${episode}")`).attr('href');
-                    
-                    if (episodeLink) {
-                        pageUrl = episodeLink.startsWith('http') ? episodeLink : (COFLIX_BASE_URL + episodeLink);
-                    }
-                } catch (e: any) {}
+                    $main('.episode').each((_, el) => {
+                        const text = $main(el).text();
+                        const href = $main(el).find('a').attr('href');
+                        const match = text.match(/E(\d+)/i) || text.match(/Épisode (\d+)/i);
+                        if (match && href) {
+                            episodesList.push({
+                                number: parseInt(match[1]),
+                                url: href.startsWith('http') ? href : (COFLIX_BASE_URL + href)
+                            });
+                        }
+                    });
+                } catch (e) {}
             }
 
-            // Tier 3: Deterministic URL Patterns
-            if (pageUrl === target.url) {
-                const patterns = [
-                    `${COFLIX_BASE_URL}/episode/${seriesSlug}-${season}x${episode}/`,
-                    `${COFLIX_BASE_URL}/series/${seriesSlug}-saison-${season}-episode-${episode}/`,
-                    `${COFLIX_BASE_URL}/${seriesSlug}-saison-${season}-episode-${episode}/`
-                ];
-                
-                for (const p of patterns) {
+            if (episodesList.length === 0) return res.json({ success: false, error: "No episodes found for this season" });
+
+            // 4. Scrape ALL episodes in chunks
+            const seasonData: { [key: number]: any[] } = {};
+            const chunkSize = 4; // Process 4 episodes at a time
+
+            for (let i = 0; i < episodesList.length; i += chunkSize) {
+                const chunk = episodesList.slice(i, i + chunkSize);
+                await Promise.all(chunk.map(async (ep) => {
                     try {
-                        const check = await fetchTLS(p, { headers: { "Cookie": cookies } });
-                        if (check.status === 200) {
-                            pageUrl = p;
-                            break;
-                        }
-                    } catch (e: any) {}
-                }
+                        const epRes = await fetchTLS(ep.url, { headers: { "Cookie": cookies } });
+                        const $ep = cheerio.load(epRes.data);
+                        
+                        // Initial extraction from page
+                        let epPlayers = extractFromContext($ep);
+                        
+                        // Deep extraction for this episode
+                        const epIframeSources: string[] = [];
+                        $ep('iframe').each((_, el) => {
+                            const src = $ep(el).attr('src') || $ep(el).attr('data-src');
+                            if (src && !src.includes('google') && !src.includes('facebook') && !src.includes('twitter')) {
+                                epIframeSources.push(src);
+                            }
+                        });
+
+                        // Deep extraction (limited to first 2 iframes per episode to save time/resources)
+                        const deepRes = await Promise.all(epIframeSources.slice(0, 2).map(async (src) => {
+                            try {
+                                const targetIframe = src.startsWith('//') ? 'https:' + src : (src.startsWith('/') ? COFLIX_BASE_URL + src : src);
+                                const iframeRes = await fetchTLS(targetIframe, { 
+                                    headers: { "Referer": ep.url, "Cookie": cookies },
+                                    useProxy: true
+                                });
+                                return extractFromContext(cheerio.load(iframeRes.data));
+                            } catch (e) { return []; }
+                        }));
+
+                        const seen = new Set();
+                        seasonData[ep.number] = [...epPlayers, ...deepRes.flat()].filter(p => {
+                            if (!p.url || seen.has(p.url)) return false;
+                            seen.add(p.url);
+                            return true;
+                        }).slice(0, 8);
+                        
+                        debugLog(`[Coflix Prod] Extracted S${season}E${ep.number}: ${seasonData[ep.number].length} sources`);
+                    } catch (e) {
+                        debugLog(`[Coflix Prod] Failed S${season}E${ep.number}`);
+                    }
+                }));
             }
+
+            // Cache and return full season
+            await redis.set(cacheKey, seasonData, { ex: 86400 });
+            return res.json({ success: true, data: seasonData });
         }
 
-        // 4. Extract Players (Using Fast CycleTLS for the main page to handle anti-bot)
+        // 5. MOVIE EXTRACTION LOGIC (Simplified fallback for movies)
+        let pageUrl = target.url;
         debugLog(`[Coflix Prod] Final Page URL: ${pageUrl}`);
         const pageRes = await fetchTLS(pageUrl, { headers: { "Cookie": cookies, "Referer": searchUrl } });
         const html = pageRes.data;
@@ -519,14 +563,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.log(`[Coflix Prod] HTML Preview: ${$.html().substring(0, 500)}...`);
         }
         
-        // 5. Cache Save (24h)
+        // 6. Cache Save (24h)
         if (finalPlayers.length > 0) {
             try {
                 await redis.set(cacheKey, finalPlayers.slice(0, 10), { ex: 86400 });
             } catch (e: any) {}
         }
 
-        return res.json({ success: true, sources: finalPlayers.slice(0, 10) });
+        return res.json({ success: true, data: finalPlayers.slice(0, 10) });
 
     } catch (error: any) {
         console.error("[Coflix Prod Error]", error.message);
