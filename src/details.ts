@@ -279,19 +279,6 @@ async function fetchDetails() {
         // Animer l'entrée
         document.querySelector('.info-container')?.classList.add('loaded');
 
-        // --- PRE-CHARGEMENT DES SOURCES (Background) ---
-        // On lance la recherche dès l'affichage de la page pour gagner du temps
-        if (mediaType === 'movie') {
-            console.log("[Background Search] Initializing for movie...");
-            fetchCoflixSources('movie', mediaId!);
-        } else {
-            const lastProgress = ProgressManager.getProgress(mediaId!, 'tv');
-            const s = lastProgress?.season || 1;
-            const e = lastProgress?.episode || 1;
-            console.log(`[Background Search] Initializing for TV S${s}E${e}...`);
-            fetchCoflixSources('tv', mediaId!, s.toString(), e.toString());
-        }
-
     } catch (error) {
         console.error('Erreur', error);
         if (titleEl) titleEl.textContent = "Erreur de chargement";
@@ -547,26 +534,23 @@ if (watchMovieBtn && playerSection && videoIframe) {
 
         if (mediaType === 'movie') {
             if (playerControls) playerControls.style.display = 'none';
-            // On ne relance la recherche que si elle n'a pas encore abouti ou n'a pas été lancée
-            if (coflixSources.length === 0) {
-                fetchCoflixSources('movie', mediaId!);
-            }
+            fetchCoflixSources('movie', mediaId!);
         } else {
             if (playerControls) playerControls.style.display = 'flex';
             
             // Si on n'a pas encore de sélecteurs (premier clic)
             if (seasonSelect && (seasonSelect.value === '' || seasonSelect.options.length <= 1) && currentSeasonsCount > 0) {
                 const lastProgress = ProgressManager.getProgress(mediaId!, 'tv');
-                const targetS = lastProgress?.season || 1;
-                const targetE = lastProgress?.episode || 1;
-                
-                populateSeasonSelect(targetS);
-                fetchEpisodes(targetS, targetE);
-            } else if (seasonSelect && episodeSelect) {
-                // Si déjà peuplé, on ne relance que si nécessaire
-                if (coflixSources.length === 0) {
-                    fetchCoflixSources('tv', mediaId!, seasonSelect.value, episodeSelect.value);
+                if (lastProgress && lastProgress.season) {
+                    populateSeasonSelect(lastProgress.season);
+                    fetchEpisodes(lastProgress.season, lastProgress.episode);
+                } else {
+                    populateSeasonSelect(1);
+                    fetchEpisodes(1);
                 }
+            } else if (seasonSelect && episodeSelect) {
+                // Si déjà peuplé, on lance la recherche directement
+                fetchCoflixSources('tv', mediaId!, seasonSelect.value, episodeSelect.value);
             }
         }
     });
