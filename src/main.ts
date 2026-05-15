@@ -282,7 +282,7 @@ const heroCarouselManager = new HeroCarouselManager();
 
 // 3. Navbar Glassmorphism
 window.addEventListener('scroll', () => {
-    if (window.scrollY > 50) {
+    if (window.scrollY > 50 || currentType === 'iptv') {
         navbar?.classList.add('scrolled');
     } else {
         navbar?.classList.remove('scrolled');
@@ -373,7 +373,7 @@ function handleNavigation(type: any) {
     if (iptvSection) iptvSection.style.display = (currentType === 'iptv') ? 'block' : 'none';
 
     if (currentType === 'iptv') {
-        if (navbar) navbar.style.display = 'none';
+        if (navbar) navbar.style.display = 'flex';
         if (genreFiltersContainer) genreFiltersContainer.style.display = 'none';
         toggleSearchVisibility(false);
         initLiveTV();
@@ -976,12 +976,17 @@ async function initLiveTV() {
     // Si on a déjà des identifiants, on tente de charger
     if (xtreamConfig.host && xtreamConfig.user && xtreamConfig.pass) {
         console.log("[IPTV] Identifiants trouvés, chargement des données...");
+        if (navbar) navbar.style.display = 'none'; // Cacher le header global en mode TV active
         loginForm.style.display = 'none';
         liveContent.style.display = 'flex';
         if (!liveTVInitialized) await loadXtreamData();
         else console.log("[IPTV] Données déjà initialisées.");
     } else {
         console.log("[IPTV] Aucun identifiant trouvé, affichage du formulaire de login.");
+        if (navbar) {
+            navbar.style.display = 'flex'; // Garder le header sur la page de login
+            navbar.classList.add('scrolled'); // Force background for visibility
+        }
         loginForm.style.display = 'flex';
         liveContent.style.display = 'none';
     }
@@ -990,7 +995,7 @@ async function initLiveTV() {
 // Listeners pour fermer la TV (Retour aux films)
 document.getElementById('close-live-tv-back')?.addEventListener('click', () => {
     document.getElementById('live-tv-content')!.style.display = 'none';
-    document.getElementById('main-nav')!.style.display = 'flex';
+    if (navbar) navbar.style.display = 'flex';
 });
 document.getElementById('close-live-tv-x')?.addEventListener('click', () => {
     document.getElementById('live-tv-content')!.style.display = 'none';
