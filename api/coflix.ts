@@ -7,6 +7,13 @@ import * as https from 'https';
 import * as http from 'http';
 import { gotScraping } from 'got-scraping';
 
+// Logging Helper
+const debugLog = (msg: string) => {
+    if (process.env.DEBUG === 'true') {
+        console.log(msg);
+    }
+};
+
 // Session configuration - NO global mutable state to avoid race conditions
 const getSessionCookies = async () => {
     try {
@@ -14,17 +21,39 @@ const getSessionCookies = async () => {
     } catch (e) { return ""; }
 };
 
+// SSRF & Security Protection
+const isSafeUrl = (urlStr: string): boolean => {
+    try {
+        const url = new URL(urlStr);
+        const host = url.hostname.toLowerCase();
+
+        // 1. Block Localhost & Common Private Ranges
+        const blocked = [
+            'localhost', '127.0.0.1', '0.0.0.0', '[::1]', 
+            '169.254.169.254', 'metadata.google.internal'
+        ];
+        if (blocked.some(b => host.includes(b))) return false;
+
+        // 2. Block Private IP Patterns (Class A, B, C)
+        if (/^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/.test(host)) return false;
+        
+        // 3. Block special schemes
+        if (!['http:', 'https:'].includes(url.protocol)) return false;
+
+        return true;
+    } catch (e) { return false; }
+};
+
 const tlsCache = new Map();
 const safeSetCache = (key: string, value: any, ttl = 60000) => {
     tlsCache.set(key, value);
-    const t = setTimeout(() => {
+    setTimeout(() => {
         tlsCache.delete(key);
-        clearTimeout(t);
     }, ttl);
 };
 
-const getCacheKey = (url: string, method: string, cookies: string, data?: any) => {
-    return `${url}:${method}:${cookies.substring(0, 40)}:${JSON.stringify(data || {})}`;
+const getCacheKey = (url: string, method: string, cookies: string) => {
+    return `${url}:${method}:${cookies.slice(0, 40)}`;
 };
 
 const dedupeCookies = (cookieStr: string) => {
@@ -40,39 +69,10 @@ const dedupeCookies = (cookieStr: string) => {
 };
 
 // DNS Bypass (Bypass ISP and Vercel DNS blocks)
-dns.setServers(['1.1.1.1', '8.8.8.8']);
+dns.setServers(['1.1.1.1', '8.8.8.8', '9.9.9.9']);
 
-const customLookup = (hostname: string, options: any, callback: any) => {
-    if (typeof options === 'function') {
-        callback = options;
-        options = {};
-    }
-
-    if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(hostname)) {
-        return callback(null, hostname, 4);
-    }
-
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return dns.lookup(hostname, options, callback);
-    }
-
-    dns.lookup(hostname, options, (err, address, family) => {
-        if (!err && address && address !== '127.0.0.1' && address !== '::1') {
-            return callback(null, address, family || 4);
-        }
-
-        dns.resolve4(hostname, (err2, addresses) => {
-            if (!err2 && addresses && addresses.length > 0 && addresses[0]) {
-                return callback(null, addresses[0], 4);
-            }
-            // Ensure we don't call callback with undefined address if possible
-            return callback(err || err2 || new Error(`ENOTFOUND: ${hostname}`), null, family || 4);
-        });
-    });
-};
-
-const httpsAgent = new https.Agent({ lookup: customLookup, keepAlive: true });
-const httpAgent = new http.Agent({ lookup: customLookup, keepAlive: true });
+const httpsAgent = new https.Agent({ keepAlive: true });
+const httpAgent = new http.Agent({ keepAlive: true });
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -81,11 +81,11 @@ const redis = new Redis({
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Suppress DEP0169 warnings from dependencies
-process.removeAllListeners('warning');
+// Targeted warning filtering (Ignore specific dependency noise only)
 process.on('warning', (warning: any) => {
-  if (warning.name === 'DeprecationWarning' && warning.code === 'DEP0169') return;
-  console.warn(warning.name + ': ' + warning.message);
+    if (warning.code !== 'DEP0169') {
+        console.warn(`${warning.name}: ${warning.message}`);
+    }
 });
 
 const COFLIX_BASE_URL = "https://coflix.dance";
@@ -112,7 +112,12 @@ interface VercelResponse extends ServerResponse {
 }
 
 const fetchAxios = async (url: string, options: any = {}, method: 'GET' | 'POST' = 'GET') => {
-    const cookies = options.headers?.Cookie || "";
+    // SSRF Protection (Hardened)
+    if (!isSafeUrl(url)) {
+        throw new Error("Blocked URL (Security Violation)");
+    }
+
+    const cookies = dedupeCookies(options.headers?.Cookie || "");
     const response = await axios({
         url,
         method,
@@ -121,15 +126,20 @@ const fetchAxios = async (url: string, options: any = {}, method: 'GET' | 'POST'
         httpsAgent,
         httpAgent,
         timeout: 10000,
-        validateStatus: () => true,
+        validateStatus: (status) => status < 500,
         maxRedirects: 5
     });
     return { data: response.data, status: response.status, headers: response.headers };
 };
 
 const fetchTLS = async (url: string, options: any = {}, method: 'GET' | 'POST' = 'GET') => {
+    // SSRF Protection (Hardened)
+    if (!isSafeUrl(url)) {
+        throw new Error("Blocked URL (Security Violation)");
+    }
+
     const cookies = dedupeCookies(options.headers?.Cookie || "");
-    const cacheKey = getCacheKey(url, method, cookies, options.data);
+    const cacheKey = getCacheKey(url, method, cookies);
 
     // 1. Check Cache
     if (tlsCache.has(cacheKey)) return tlsCache.get(cacheKey);
@@ -236,16 +246,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const cachedCookies = await getSessionCookies();
             if (cachedCookies) {
                 cookies = cachedCookies;
-                console.log(`[Coflix Prod] Using cached session cookies from Redis`);
+                debugLog(`[Coflix Prod] Using cached session cookies from Redis`);
             } else {
                 const startInitTime = Date.now();
                 // Hit home page via TLS to get new session (only if search fails or initially)
                 const initRes = await fetchTLS(COFLIX_BASE_URL + "/");
-                const setCookie = initRes.headers['set-cookie'] as string[] | undefined;
+                const setCookie = initRes.headers?.['set-cookie'] as string[] | undefined;
                 if (setCookie) {
                     cookies = dedupeCookies(setCookie.map((c: string) => c.split(';')[0]).join('; '));
                     await redis.set("coflix:session_cookies", cookies, { ex: 3600 }); // Cache for 1 hour
-                    console.log(`[Coflix Prod] New session cookies saved (took ${Date.now() - startInitTime}ms)`);
+                    debugLog(`[Coflix Prod] New session cookies saved (took ${Date.now() - startInitTime}ms)`);
                 }
             }
         } catch (e: any) {
@@ -269,7 +279,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         try {
             const cachedSearch = await redis.get(searchCacheKey);
             if (cachedSearch) {
-                console.log(`[Coflix Prod] Search Cache Hit for ${normalized}`);
+                debugLog(`[Coflix Prod] Search Cache Hit for ${normalized}`);
                 return res.json({ success: true, sources: cachedSearch, cached: true });
             }
         } catch (e) {}
@@ -280,17 +290,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
         // Capture cookies from search too
-        const searchSetCookie = searchRes.headers['set-cookie'] as string[] | undefined;
+        const searchSetCookie = searchRes.headers?.['set-cookie'] as string[] | undefined;
         if (searchSetCookie) {
-            const newCookies = searchSetCookie.map((c: string) => c.split(';')[0]).join('; ');
-            if (newCookies !== cookies) {
-                cookies = newCookies;
-                await redis.set("coflix:session_cookies", cookies, { ex: 3600 });
-            }
-        }
-        if (searchRes.headers['set-cookie']) {
-            const searchCookies = (searchRes.headers['set-cookie'] as string[]).map((c: string) => c.split(';')[0]).join('; ');
-            cookies = cookies ? `${cookies}; ${searchCookies}` : searchCookies;
+            const newRawCookies = searchSetCookie.map((c: string) => c.split(';')[0]).join('; ');
+            cookies = dedupeCookies(cookies ? `${cookies}; ${newRawCookies}` : newRawCookies);
+            await redis.set("coflix:session_cookies", cookies, { ex: 3600 });
         }
 
         await sleep(1000); // Wait after search
@@ -383,18 +387,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // 4. Extract Players (Using Fast CycleTLS for the main page to handle anti-bot)
-        console.log(`[Coflix Prod] Final Page URL: ${pageUrl}`);
+        debugLog(`[Coflix Prod] Final Page URL: ${pageUrl}`);
         const pageRes = await fetchTLS(pageUrl, { headers: { "Cookie": cookies, "Referer": searchUrl } });
         const html = pageRes.data;
-        console.log(`[Coflix Prod] Page Title: ${cheerio.load(html)('title').text().trim()} (${Math.round(html.length/1024)}kb)`);
+        debugLog(`[Coflix Prod] Page Title: ${cheerio.load(html)('title').text().trim()} (${Math.round(html.length/1024)}kb)`);
         
-        // Anti-bot delay before extraction
-        await sleep(2000);
+        // Adaptive anti-bot delay
+        await sleep(500); 
 
-        const players: any[] = [];
         const $ = cheerio.load(html);
 
-        const extractFromContext = (source$: cheerio.CheerioAPI) => {
+        const extractFromContext = (source$: cheerio.CheerioAPI): any[] => {
+            const extracted: any[] = [];
             // Refined selector: Focus on elements likely to contain player data
             source$('[onclick*="Video"], [onclick*="Player"], [onclick*="show"], [data-url], [data-link], .server, .player-item, iframe').each((_, el) => {
                 const onclick = source$(el).attr('onclick') || "";
@@ -405,36 +409,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 
                 let targetUrl = "";
                 
-                // Case 1: JS-based injection
+                // Case 1: JS-based injection (Improved regex for varying quotes and separators)
                 if (onclick.includes('Video') || onclick.includes('Player') || onclick.includes('show')) {
-                    const match = onclick.match(/['"]([^'"]+)['"]/);
-                    if (match && match[1]) {
-                        try {
-                           let decoded = match[1];
-                           // Try to decode ONLY if it looks like base64
-                           const isBase64 = /^[A-Za-z0-9+/=]+$/.test(decoded) && decoded.length > 10;
-                           if (isBase64) {
-                               decoded = Buffer.from(decoded, 'base64').toString('utf8');
-                           }
-                           
-                           // Validation: Ensure it looks like a URL/Target
-                           if (decoded.includes('http') || decoded.startsWith('//') || decoded.includes('.html')) {
-                               targetUrl = decoded;
-                           }
-                        } catch(e) { }
+                    const matches = onclick.matchAll(/['"]([^'"]+)['"]/g);
+                    for (const match of matches) {
+                        if (match && match[1]) {
+                            try {
+                               let decoded = match[1];
+                               // Try to decode ONLY if it looks like base64
+                               const isBase64 = /^[A-Za-z0-9+/=]+$/.test(decoded) && decoded.length > 10;
+                               if (isBase64) {
+                                   decoded = Buffer.from(decoded, 'base64').toString('utf8');
+                               }
+                               
+                               // Validation: Ensure it looks like a URL/Target
+                               if (decoded.includes('http') || decoded.startsWith('//') || decoded.includes('.html')) {
+                                   targetUrl = decoded;
+                                   break; // Take the first valid match
+                               }
+                            } catch(e) { }
+                        }
                     }
                 } 
                 // Case 2: data-url/data-link
                 else if (dataUrl || dataLink) {
-                    targetUrl = dataUrl || dataLink || "";
+                    targetUrl = (dataUrl || dataLink || "").trim();
                 }
                 // Case 3: data-src
                 else if (dataSrc && (dataSrc.includes('http') || dataSrc.includes('//'))) {
-                    targetUrl = dataSrc;
+                    targetUrl = dataSrc.trim();
                 }
                 // Case 4: href fallback
                 else if (href && (href.includes('lecteur') || href.includes('video') || href.includes('embed'))) {
-                    targetUrl = href;
+                    targetUrl = href.trim();
                 }
 
                 if (targetUrl && (targetUrl.includes('http') || targetUrl.startsWith('//'))) {
@@ -445,7 +452,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         const name = new URL(fullUrl).hostname.replace('www.', '').split('.')[0].toUpperCase();
                         const sub = source$(el).text().toLowerCase();
                         
-                        players.push({
+                        extracted.push({
                             name,
                             url: fullUrl,
                             lang: sub.includes("vostfr") ? "VOSTFR" : (sub.includes("vo") ? "VO" : "VF")
@@ -453,46 +460,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     } catch (e) {}
                 }
             });
+            return extracted;
         };
 
         // Step 1: Initial extraction
-        extractFromContext($);
+        let allPlayers = extractFromContext($);
 
-        // 5. Parallel Deep Extraction (Iframes)
-        const iframePromises: Promise<void>[] = [];
+        // 5. Parallel Deep Extraction (Iframes) with Native Concurrency Limit (Chunks)
+        const iframeSources: string[] = [];
         $('iframe').each((_, el) => {
             const src = $(el).attr('src') || $(el).attr('data-src');
-            if (src && !src.includes('google') && !src.includes('facebook')) {
-                iframePromises.push((async () => {
-                    try {
-                        const fixUrl = (u: string) => u.startsWith('//') ? 'https:' + u : (u.startsWith('/') ? COFLIX_BASE_URL + u : u);
-                        const targetIframe = fixUrl(src);
-                        
-                        const iframeRes = await fetchTLS(targetIframe, { 
-                            headers: { "Referer": pageUrl, "Cookie": cookies },
-                            useProxy: true
-                        });
-                        
-                        const $if = cheerio.load(iframeRes.data);
-                        const countBefore = players.length;
-                        extractFromContext($if);
-                        const found = players.length - countBefore;
-                        
-                        if (found > 0) {
-                            console.log(`[Coflix Prod] Deep Extraction Success: Found ${found} players in ${new URL(targetIframe).hostname}`);
-                        }
-                    } catch (e: any) {
-                        console.warn(`[Coflix Prod] Deep extraction failed for ${src.substring(0, 30)}...`);
-                    }
-                })());
+            if (src && !src.includes('google') && !src.includes('facebook') && !src.includes('twitter')) {
+                iframeSources.push(src);
             }
         });
-        
-        await Promise.all(iframePromises);
+
+        // Process in chunks of 3 to avoid saturation
+        const chunkSize = 3;
+        for (let i = 0; i < iframeSources.length; i += chunkSize) {
+            const chunk = iframeSources.slice(i, i + chunkSize);
+            const results = await Promise.all(chunk.map(async (src) => {
+                try {
+                    const fixUrl = (u: string) => u.startsWith('//') ? 'https:' + u : (u.startsWith('/') ? COFLIX_BASE_URL + u : u);
+                    const targetIframe = fixUrl(src);
+                    
+                    const iframeRes = await fetchTLS(targetIframe, { 
+                        headers: { "Referer": pageUrl, "Cookie": cookies },
+                        useProxy: true
+                    });
+                    
+                    const $if = cheerio.load(iframeRes.data);
+                    const nestedPlayers = extractFromContext($if);
+                    
+                    if (nestedPlayers.length > 0) {
+                        debugLog(`[Coflix Prod] Deep Extraction Success: Found ${nestedPlayers.length} players in ${new URL(targetIframe).hostname}`);
+                    }
+                    return nestedPlayers;
+                } catch (e: any) {
+                    debugLog(`[Coflix Prod] Deep extraction failed for ${src.substring(0, 30)}...`);
+                    return [];
+                }
+            }));
+            allPlayers = [...allPlayers, ...results.flat()];
+        }
 
         // Deduplicate
         const seen = new Set();
-        const finalPlayers = players.filter((p: any) => {
+        const finalPlayers = allPlayers.filter((p: any) => {
             if (!p.url || seen.has(p.url)) return false;
             seen.add(p.url);
             return true;
@@ -519,4 +533,3 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ success: false, error: error.message });
     }
 }
-
