@@ -2237,9 +2237,10 @@ a {
 
 @media (max-width: 768px) {
     .iframe-wrapper {
-        border-radius: 0; /* Edge-to-edge sur mobile pour plus d'immersion */
+        border-radius: 0;
         border-left: none;
         border-right: none;
+        padding-bottom: 75%; /* Ratio plus haut (4:3) pour agrandir la zone vers le bas sur mobile */
     }
 }
 
