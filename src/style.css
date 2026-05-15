@@ -2238,6 +2238,46 @@ a {
     border: none;
 }
 
+/* Bouton pour changer de lecteur */
+.change-server-btn {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 50; /* Au-dessus de l'iframe, mais en-dessous du server-selector (100) */
+    background: rgba(15, 15, 15, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0.5; /* Semi-transparent par défaut pour ne pas gêner */
+}
+
+.change-server-btn:hover {
+    opacity: 1;
+    background: rgba(239, 68, 68, 0.8);
+    border-color: #ef4444;
+}
+
+@media (max-width: 768px) {
+    .change-server-btn {
+        top: 10px;
+        left: 10px;
+        padding: 6px 10px;
+        font-size: 12px;
+        opacity: 0.7; /* Plus visible sur mobile */
+    }
+}
+
+
 .close-player-btn {
     align-self: center;
     background: transparent;

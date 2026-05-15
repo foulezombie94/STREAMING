@@ -642,4 +642,18 @@ if (closePlayerBtn && playerSection && videoIframe) {
     });
 }
 
+// Logique pour le bouton "Changer de lecteur" (overlay sur l'iframe)
+const changeServerBtn = document.getElementById('change-server-btn');
+if (changeServerBtn) {
+    changeServerBtn.addEventListener('click', () => {
+        const selector = document.getElementById('server-selector');
+        if (selector) {
+            selector.classList.remove('hidden');
+            // Optionnel : On peut vider l'iframe pour économiser de la bande passante 
+            // mais ce n'est pas obligatoire si on veut juste changer
+            if (videoIframe) videoIframe.src = '';
+        }
+    });
+}
+
 fetchDetails();
