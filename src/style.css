@@ -2382,17 +2382,10 @@ a {
 
 @media (max-width: 768px) {
     .server-buttons {
-        display: flex;
-        flex-direction: row;
-        overflow-x: auto;
-        flex-wrap: nowrap;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
         gap: 6px;
-        padding: 10px 15px;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-    .server-buttons::-webkit-scrollbar {
-        display: none;
+        padding: 8px;
     }
 }
 
@@ -2417,7 +2410,6 @@ a {
 
 @media (max-width: 768px) {
     .server-btn {
-        flex: 0 0 70px; /* Taille compacte pour le scroll horizontal */
         padding: 5px;
         border-radius: 10px;
     }
