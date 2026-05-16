@@ -54,6 +54,7 @@ const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 const IMAGE_W342_URL = 'https://image.tmdb.org/t/p/w342';
+const IMAGE_W185_URL = 'https://image.tmdb.org/t/p/w185';
 
 // Global Blacklist for specific movies/series
 const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '1017007', '1025539', '1013441', '1439930']; 
@@ -624,12 +625,16 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                             </div>
                         ` : '';
                         
-                        // data-src au lieu de src → pas de chargement immédiat (lazy réel via IntersectionObserver)
+                        // Optimisation Mobile: w185 au lieu de w500 pour les posters de sagas
+                        const isMobile = window.innerWidth <= 768;
+                        const sagaPoster = isMobile ? saga.poster.replace('/w500/', '/w185/').replace('/w342/', '/w185/') : saga.poster;
+
                         return `
                             <div class="saga-card" data-id="${saga.id}">
-                                <img data-src="${saga.poster}" alt="${saga.title}"
+                                <img data-src="${sagaPoster}" alt="${saga.title}"
                                      src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-                                     style="background:#1a1a1a;">
+                                     style="background:#1a1a1a;"
+                                     decoding="async">
                                 ${extra}
                                 <div class="saga-card-overlay">
                                     <h3>${saga.title}</h3>
@@ -796,24 +801,29 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
 
 function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: string = '', extraUrlParams: string = '', loading: 'lazy' | 'eager' = 'lazy') {
     let displayType = item.media_type || forceType;
-    
-    // Si c'est toujours auto et pas de media_type (cas des endpoints spécifiques type /movie/popular)
-    if (displayType === 'auto') {
-        displayType = item.title ? 'movie' : 'tv';
-    }
+    if (displayType === 'auto') displayType = item.title ? 'movie' : 'tv';
  
-    // Utilisation de W342 pour les cartes normales (plus léger que W500)
-    const poster = item.poster_path ? `${IMAGE_W342_URL}${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image';
+    // Responsive Imagery: w185 pour mobile, w342 pour desktop
+    const posterPath = item.poster_path;
+    const placeholder = 'https://via.placeholder.com/185x278?text=No+Image';
+    const src = posterPath ? `${IMAGE_W342_URL}${posterPath}` : placeholder;
+    const srcset = posterPath ? `${IMAGE_W185_URL}${posterPath} 185w, ${IMAGE_W342_URL}${posterPath} 342w` : '';
+    const sizes = "(max-width: 768px) 185px, 342px";
+
     const rating = item.vote_average ? item.vote_average.toFixed(1) : '0.0';
     const badgeText = item.genre_ids?.includes(16) ? 'Animé' : (displayType === 'tv' ? 'Série' : 'Film');
-    
     const releaseDate = item.release_date || item.first_air_date;
     const year = releaseDate ? new Date(releaseDate).getFullYear() : '';
     
     return `
         <div class="movie-card" data-id="${item.id}" data-type="${displayType}" data-extra="${extraUrlParams}">
             <div class="card-badge">${badgeText}</div>
-            <img src="${poster}" alt="${item.title || item.name}" loading="${loading}">
+            <img src="${src}" 
+                 srcset="${srcset}" 
+                 sizes="${sizes}"
+                 alt="${item.title || item.name}" 
+                 loading="${loading}"
+                 decoding="async">
             <div class="card-overlay">
                 <div class="card-rating">★ ${rating}</div>
                 <div class="card-info">

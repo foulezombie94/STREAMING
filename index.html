@@ -13,33 +13,18 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
 
-    <!-- DNS Prefetch pour accélérer les images TMDB -->
+    <!-- DNS Prefetch & Preconnect pour TMDB (Accélère le chargement des posters) -->
     <link rel="dns-prefetch" href="https://image.tmdb.org">
-    <!-- PAS de crossorigin sur image.tmdb.org : les images ne sont pas CORS, le preconnect était ignoré -->
     <link rel="preconnect" href="https://image.tmdb.org">
 
-    <!--
-        FONTS STRATEGY : Non-bloquant (L-5 / Référence PageSpeed)
-        Inter chargée normalement - petite police, peu d'impact.
-        Material Symbols chargée en async via media trick pour ne PAS bloquer le rendu.
-    -->
+    <!-- Fonts : display=swap pour affichage immédiat (Réduit le LCP/TBT) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
-    <!--
-        Inter : display=optional → ne bloque JAMAIS le rendu.
-        Si non cachée, le browser utilise system-ui instantanément.
-        Si cachée (2ème visite), Inter est utilisée.
-        Élimine le 1010ms woff2 blocking time du PageSpeed.
-    -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=optional" rel="stylesheet">
-    <!-- Material Symbols : NON-BLOQUANT (async trick) - élimine ~6s de render blocking -->
-    <link rel="preload" as="style"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=block"
-          onload="this.onload=null;this.rel='stylesheet'">
-    <noscript>
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=block" rel="stylesheet">
-    </noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Material Symbols Outlined - Chargement asynchrone non-bloquant -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap" rel="stylesheet"></noscript>
     <!-- Fallback immédiat pour les icônes (visibles dès le premier rendu) -->
     <style>
         /* Masque le FOUT des Material Symbols pendant le chargement async */
@@ -105,23 +90,8 @@
                     Le JS remplacera ce slide par les vraies données TMDB.
                     fetchpriority=high + loading=eager = chargée en priorité absolue.
                 -->
-                <div class="hero-slide active" id="hero-lcp-placeholder" style="background:#0a0a0a;">
-                    <img id="hero-lcp-img"
-                         src="https://image.tmdb.org/t/p/w780/yDHYTfA3R0jFYba16jBB1ef8oIt.jpg"
-                         alt=""
-                         fetchpriority="high"
-                         loading="eager"
-                         decoding="async"
-                         style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:0;pointer-events:none;">
-                    <div class="slide-content" style="position:relative;z-index:1;">
-                        <div class="slide-info"><span class="type-tag">FILM</span></div>
-                        <h1 style="opacity:0;">Chargement...</h1>
-                        <p class="slide-synopsis" style="opacity:0;"></p>
-                        <div class="slide-actions" style="opacity:0;">
-                            <button class="hero-btn-play"><span class="material-symbols-outlined">play_arrow</span> Lecture</button>
-                            <button class="hero-btn-info"><span class="material-symbols-outlined">info</span> Plus d'infos</button>
-                        </div>
-                    </div>
+                <div class="hero-slide active" id="hero-lcp-placeholder">
+                    <div class="hero-shimmer"></div>
                 </div>
             </div>
             
