@@ -216,8 +216,17 @@ class HeroCarouselManager {
             
 
             return `
-                <div class="hero-slide ${index === 0 ? 'active' : ''} ${isLongTitle ? 'long-title' : ''}" style="background-image: url('${backdropUrl}')" data-index="${index}">
-                    ${index === 0 ? `<img src="${backdropUrl}" style="display:none" loading="eager">` : ''}
+                <div class="hero-slide ${index === 0 ? 'active' : ''} ${isLongTitle ? 'long-title' : ''}" style="${index === 0 ? '' : `background-image: url('${backdropUrl}')`}" data-index="${index}">
+                    ${index === 0
+                        ? `<img src="${backdropUrl}"
+                               alt=""
+                               fetchpriority="high"
+                               loading="eager"
+                               decoding="async"
+                               style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:0;pointer-events:none;"
+                               onerror="this.parentElement.style.backgroundImage='url(https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1400&auto=format&fit=crop)';">`
+                        : ''
+                    }
                     <div class="slide-content">
                         <div class="slide-info">
                             <span class="type-tag">${isSaga ? 'COLLECTION' : (item.genre_ids?.includes(16) ? 'ANIMÉ' : (displayType === 'tv' ? 'SÉRIE' : 'FILM'))}</span>
