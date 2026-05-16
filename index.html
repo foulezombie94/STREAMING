@@ -15,7 +15,8 @@
 
     <!-- DNS Prefetch pour accélérer les images TMDB -->
     <link rel="dns-prefetch" href="https://image.tmdb.org">
-    <link rel="preconnect" href="https://image.tmdb.org" crossorigin>
+    <!-- PAS de crossorigin sur image.tmdb.org : les images ne sont pas CORS, le preconnect était ignoré -->
+    <link rel="preconnect" href="https://image.tmdb.org">
 
     <!--
         FONTS STRATEGY : Non-bloquant (L-5 / Référence PageSpeed)
@@ -99,7 +100,29 @@
         <!-- New Hero Carousel (Movix Style) -->
         <section class="hero-carousel" id="hero-carousel">
             <div class="hero-slides-container" id="hero-slides">
-                <!-- Slides will be injected by JS -->
+                <!--
+                    LCP PLACEHOLDER : Image statique visible dès le HTML (pas besoin d'attendre le JS).
+                    Le JS remplacera ce slide par les vraies données TMDB.
+                    fetchpriority=high + loading=eager = chargée en priorité absolue.
+                -->
+                <div class="hero-slide active" id="hero-lcp-placeholder" style="background:#0a0a0a;">
+                    <img id="hero-lcp-img"
+                         src="https://image.tmdb.org/t/p/w780/yDHYTfA3R0jFYba16jBB1ef8oIt.jpg"
+                         alt=""
+                         fetchpriority="high"
+                         loading="eager"
+                         decoding="async"
+                         style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:0;pointer-events:none;">
+                    <div class="slide-content" style="position:relative;z-index:1;">
+                        <div class="slide-info"><span class="type-tag">FILM</span></div>
+                        <h1 style="opacity:0;">Chargement...</h1>
+                        <p class="slide-synopsis" style="opacity:0;"></p>
+                        <div class="slide-actions" style="opacity:0;">
+                            <button class="hero-btn-play"><span class="material-symbols-outlined">play_arrow</span> Lecture</button>
+                            <button class="hero-btn-info"><span class="material-symbols-outlined">info</span> Plus d'infos</button>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <!-- Carousel Navigation -->

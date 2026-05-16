@@ -189,10 +189,15 @@ class HeroCarouselManager {
 
     private renderSlides() {
         if (!heroSlidesContainer) return;
+        // Retirer le placeholder LCP statique avant d'injecter les vraies slides
+        const placeholder = document.getElementById('hero-lcp-placeholder');
+        if (placeholder) placeholder.remove();
+
         // Sur mobile (<768px) on utilise /w780 pour les backdrops (M-2 : poids réseau)
         const isMobile = window.innerWidth <= 768;
         const backdropSize = isMobile ? 'w780' : 'original';
         const IMAGE_HERO_URL = `https://image.tmdb.org/t/p/${backdropSize}`;
+
 
         heroSlidesContainer.innerHTML = this.slides.map((item, index) => {
             const isSaga = !!(item as any).isSaga;
