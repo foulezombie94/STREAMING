@@ -9,8 +9,9 @@ import {
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
 const BASE_URL = 'https://api.themoviedb.org/3';
-const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
+const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w1280';
 const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
+const IMAGE_W185_URL = 'https://image.tmdb.org/t/p/w185';
 
 // Domaines pour lecture directe (Coflix)
 const DIRECT_DOMAINS = ['vidoza', 'uqload', 'upstream', 'dood', 'streamtape', 'voe', 'mixdrop', 'lulustream', 'vidmoly', 'mbed', 'upn', 'xtreme', 'coflix', 'lecteurvideo', 'emmmmbed', 'embed', 'upn.one'];
@@ -207,7 +208,7 @@ async function fetchDetails() {
             const topCast: TMDBCastMember[] = data.credits.cast.slice(0, 5);
             castListEl.innerHTML = topCast.map((actor) => `
                 <div class="cast-member" data-id="${actor.id}" data-character="${actor.character ? 'Rôle : ' + actor.character : 'Rôle inconnu'}">
-                    <img src="${actor.profile_path ? IMAGE_W500_URL + actor.profile_path : 'https://i.pravatar.cc/100?img=11'}" alt="${actor.name}">
+                    <img src="${actor.profile_path ? IMAGE_W185_URL + actor.profile_path : 'https://i.pravatar.cc/100?img=11'}" alt="${actor.name}" loading="lazy">
                     <span class="cast-name">${actor.name}</span>
                 </div>
             `).join('');
@@ -378,7 +379,7 @@ async function openActorModal(actorId: string) {
         }
 
         if (actorModalImg) {
-            actorModalImg.src = data.profile_path ? `${IMAGE_W500_URL}${data.profile_path}` : 'https://i.pravatar.cc/100?img=11';
+            actorModalImg.src = data.profile_path ? `${IMAGE_W185_URL}${data.profile_path}` : 'https://i.pravatar.cc/100?img=11';
         }
 
         if (actorModalName) actorModalName.textContent = data.name;

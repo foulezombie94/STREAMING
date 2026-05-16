@@ -228,7 +228,7 @@ class HeroCarouselManager {
 
         // Sur mobile (<768px) on utilise /w780 pour les backdrops (M-2 : poids réseau)
         const isMobile = window.innerWidth <= 768;
-        const backdropSize = isMobile ? 'w780' : 'original';
+        const backdropSize = isMobile ? 'w780' : 'w1280';
         const IMAGE_HERO_URL = `https://image.tmdb.org/t/p/${backdropSize}`;
 
 
