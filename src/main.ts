@@ -1,5 +1,4 @@
 import './style.css';
-import './style.css';
 import { ProgressManager } from './storage';
 import { SAGAS_DATA } from './sagas_data';
 import { TMDBMedia, TMDBGenre } from './types';
@@ -22,7 +21,6 @@ if (/Android/i.test(navigator.userAgent) && /Chrome/i.test(navigator.userAgent))
 // 1. Constantes TMDB
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
-const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 const IMAGE_W342_URL = 'https://image.tmdb.org/t/p/w342';
 
@@ -117,14 +115,23 @@ const SECTIONS_CONFIG: SectionConfig[] = [
 class HeroCarouselManager {
     private slides: TMDBMedia[] = [];
     private currentIndex: number = 0;
-    private interval: any = null;
+    private rafId: number = 0;
+    private lastTimestamp: number = 0;
     private progress: number = 0;
     private isPaused: boolean = false;
-    private readonly DURATION: number = 8000; 
-    private readonly STEP: number = 100 / (this.DURATION / 16); 
+    private readonly DURATION: number = 8000;
 
     constructor() {
         this.initEventListeners();
+        this.initSwipe();
+        // Pause le carousel quand l'onglet est en arrière-plan (économie CPU/batterie)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.stop();
+            } else if (this.slides.length > 0 && !this.isPaused) {
+                this.start();
+            }
+        });
     }
 
     private initEventListeners() {
@@ -150,6 +157,24 @@ class HeroCarouselManager {
         });
     }
 
+    // Swipe tactile natif sur le hero carousel (H-1)
+    private initSwipe() {
+        let touchStartX = 0;
+        let touchStartY = 0;
+        heroSlidesContainer?.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+        heroSlidesContainer?.addEventListener('touchend', (e) => {
+            const dx = touchStartX - e.changedTouches[0].clientX;
+            const dy = Math.abs(touchStartY - e.changedTouches[0].clientY);
+            // Swipe horizontal uniquement (évite conflit avec scroll vertical)
+            if (Math.abs(dx) > 50 && Math.abs(dx) > dy) {
+                dx > 0 ? this.nextSlide() : this.prevSlide();
+            }
+        }, { passive: true });
+    }
+
     public setSlides(data: TMDBMedia[]) {
         // Filtrer les IDs blacklistés
         const filtered = data.filter(item => !GLOBAL_BLACKLIST_IDS.includes(item.id.toString()));
@@ -164,6 +189,11 @@ class HeroCarouselManager {
 
     private renderSlides() {
         if (!heroSlidesContainer) return;
+        // Sur mobile (<768px) on utilise /w780 pour les backdrops (M-2 : poids réseau)
+        const isMobile = window.innerWidth <= 768;
+        const backdropSize = isMobile ? 'w780' : 'original';
+        const IMAGE_HERO_URL = `https://image.tmdb.org/t/p/${backdropSize}`;
+
         heroSlidesContainer.innerHTML = this.slides.map((item, index) => {
             const isSaga = !!(item as any).isSaga;
             const displayType = isSaga ? 'saga' : (item.media_type || (currentType === 'tv' ? 'tv' : 'movie'));
@@ -173,7 +203,7 @@ class HeroCarouselManager {
             const rating = isSaga ? 'N/A' : (item.vote_average ? item.vote_average.toFixed(1) : '0.0');
             
             // Pour les sagas, on utilise l'image des icônes (poster) comme demandé par l'utilisateur
-            let backdropUrl = isSaga ? item.poster : (item.backdrop || (item.backdrop_path ? `${IMAGE_BASE_URL}${item.backdrop_path}` : ''));
+            let backdropUrl = isSaga ? item.poster : (item.backdrop || (item.backdrop_path ? `${IMAGE_HERO_URL}${item.backdrop_path}` : ''));
             
             // Si l'image est manquante ou cassée
             if (!backdropUrl || backdropUrl.includes('86Yp1S669SFWFWFW') || backdropUrl === '') {
@@ -266,21 +296,30 @@ class HeroCarouselManager {
     }
 
     public start() {
-        if (this.interval) clearInterval(this.interval);
-        this.interval = setInterval(() => {
+        this.stop();
+        this.lastTimestamp = 0;
+        const tick = (timestamp: number) => {
             if (!this.isPaused) {
-                this.progress += this.STEP;
-                if (heroProgress) heroProgress.style.width = `${this.progress}%`;
-                
+                if (this.lastTimestamp === 0) this.lastTimestamp = timestamp;
+                const elapsed = timestamp - this.lastTimestamp;
+                this.lastTimestamp = timestamp;
+                this.progress += (elapsed / this.DURATION) * 100;
+                if (heroProgress) heroProgress.style.width = `${Math.min(this.progress, 100)}%`;
                 if (this.progress >= 100) {
                     this.nextSlide();
+                    return; // nextSlide -> goToSlide -> start() de nouveau
                 }
+            } else {
+                this.lastTimestamp = timestamp;
             }
-        }, 16);
+            this.rafId = requestAnimationFrame(tick);
+        };
+        this.rafId = requestAnimationFrame(tick);
     }
 
     public stop() {
-        if (this.interval) clearInterval(this.interval);
+        if (this.rafId) cancelAnimationFrame(this.rafId);
+        this.rafId = 0;
     }
 
     public getSlidesCount(): number {
@@ -340,8 +379,9 @@ function toggleSearchVisibility(show: boolean) {
 const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
 
 function handleNavigation(type: any) {
-    // Bloquer Direct TV sur Mobile
+    // Direct TV non disponible sur mobile — afficher un toast explicatif (M-7)
     if (type === 'iptv' && window.innerWidth <= 768) {
+        showToast('📺 Direct TV est disponible uniquement sur desktop / tablette.');
         return;
     }
 
@@ -1050,9 +1090,23 @@ let xtreamConfig = {
     pass: localStorage.getItem('xtream_pass') || ''
 };
 
-// Global library declarations (Hls.js, mpegts.js)
-declare const Hls: any;
-declare const mpegts: any;
+// HLS.js et MPEG-TS sont chargés dynamiquement uniquement quand nécessaire (voir playLiveChannel)
+let HlsLib: any = null;
+let mpegtsLib: any = null;
+
+async function loadHlsLib(): Promise<any> {
+    if (HlsLib) return HlsLib;
+    const mod = await import('https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.mjs' as any);
+    HlsLib = (mod as any).default ?? mod;
+    return HlsLib;
+}
+
+async function loadMpegtsLib(): Promise<any> {
+    if (mpegtsLib) return mpegtsLib;
+    const mod = await import('https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.esm.js' as any);
+    mpegtsLib = (mod as any).default ?? mod;
+    return mpegtsLib;
+}
 
 async function initLiveTV() {
     console.log("[IPTV] Initialisation de l'onglet TV...");
@@ -1666,98 +1720,98 @@ function playLiveChannel(url: string, name: string) {
     errorOverlay!.querySelector('span')!.textContent = "⏳";
 
     if (url.includes('.m3u8')) {
-        const loadHls = (target: string) => {
-            if (Hls.isSupported()) {
-                const hls = new Hls({ 
-                    debug: false, 
-                    manifestLoadingMaxRetry: 3,
-                    manifestLoadingRetryDelay: 1000,
-                    enableWorker: true,
-                    capLevelToPlayerSize: true, // Empêche le téléchargement 4K sur petit écran
-                    maxBufferLength: 30, // Limite le préchargement à 30 secondes pour sauver la RAM
-                    maxMaxBufferLength: 60, // Limite absolue
-                    maxBufferSize: 60 * 1000 * 1000 // Limite la RAM utilisée par la vidéo à 60 MB
-                });
-                (window as any).hls = hls;
-                hls.loadSource(target);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    errorOverlay!.style.display = 'none';
+        loadHlsLib().then(Hls => {
+            const loadHls = (target: string) => {
+                if (Hls.isSupported()) {
+                    const hls = new Hls({
+                        debug: false,
+                        manifestLoadingMaxRetry: 3,
+                        manifestLoadingRetryDelay: 1000,
+                        enableWorker: true,
+                        capLevelToPlayerSize: true,
+                        maxBufferLength: 30,
+                        maxMaxBufferLength: 60,
+                        maxBufferSize: 60 * 1000 * 1000
+                    });
+                    (window as any).hls = hls;
+                    hls.loadSource(target);
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                        errorOverlay!.style.display = 'none';
+                        video.play().catch(() => {});
+                    });
+                    hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
+                        if (data.fatal) {
+                            console.warn('HLS Fatal Error:', data.type);
+                            if (tryNextProxy()) {
+                                hls.destroy();
+                                delete (window as any).hls;
+                                loadHls(streamUrl);
+                            } else {
+                                if (msg) msg.textContent = 'Flux indisponible (Erreur HLS).';
+                                errorOverlay!.querySelector('span')!.textContent = '❌';
+                            }
+                        }
+                    });
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = target;
                     video.play().catch(() => {});
-                });
-                hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
-                    if (data.fatal) {
-                        console.warn("HLS Fatal Error:", data.type);
-                        if (tryNextProxy()) {
-                            hls.destroy();
-                            delete (window as any).hls;
-                            loadHls(streamUrl);
-                        } else {
-                            if (msg) msg.textContent = "Flux indisponible (Erreur HLS).";
-                            errorOverlay!.querySelector('span')!.textContent = "❌";
-                        }
-                    }
-                });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = target;
-                video.play().catch(() => {});
-            }
-        };
-        loadHls(streamUrl);
-    } else {
-        const loadTs = (target: string) => {
-            if (mpegts.getFeatureList().mseLivePlayback) {
-                const player = mpegts.createPlayer({ 
-                    type: 'mse', 
-                    isLive: true, 
-                    url: target,
-                    cors: true
-                });
-                (window as any).mpegtsPlayer = player;
-                player.attachMediaElement(video);
-                
-                try {
-                    player.load();
-                    player.play().catch((e: any) => console.warn("MPEGTS Play catch:", e));
-                } catch (e) {
-                    console.error("MPEGTS Load error:", e);
                 }
-
-                player.on(mpegts.Events.ERROR, (type: any, detail: any, info: any) => {
-                    console.error("MPEGTS Error Event:", type, detail, info);
-                    
-                    const statusCode = info?.code || 0;
-                    const isAuthError = statusCode === 401 || statusCode === 403;
-
-                    const currentPlayer = (window as any).mpegtsPlayer;
-                    if (currentPlayer) {
-                        // FIX: On ne peut pas appeler off() sans la fonction d'origine
-                        // On utilise destroy() directement qui nettoie tout
-                        
-                        if (tryNextProxy()) {
-                            try { currentPlayer.pause(); currentPlayer.unload(); currentPlayer.detachMediaElement(); currentPlayer.destroy(); } catch(e) {}
-                            delete (window as any).mpegtsPlayer;
-                            setTimeout(() => loadTs(streamUrl), 500);
-                        } else if (url.endsWith('.ts')) {
-                            try { currentPlayer.pause(); currentPlayer.unload(); currentPlayer.detachMediaElement(); currentPlayer.destroy(); } catch(e) {}
-                            delete (window as any).mpegtsPlayer;
-                            playLiveChannel(url.replace('.ts', '.m3u8'), name);
-                        } else {
-                            if (msg) msg.textContent = isAuthError ? "Accès refusé (401/403)." : "Erreur de lecture.";
-                            errorOverlay!.querySelector('span')!.textContent = "❌";
-                        }
+            };
+            loadHls(streamUrl);
+        }).catch(err => {
+            console.error('Impossible de charger HLS.js:', err);
+            if (msg) msg.textContent = 'Erreur de chargement du lecteur HLS.';
+        });
+    } else {
+        loadMpegtsLib().then(mpegts => {
+            const loadTs = (target: string) => {
+                if (mpegts.getFeatureList().mseLivePlayback) {
+                    const player = mpegts.createPlayer({
+                        type: 'mse',
+                        isLive: true,
+                        url: target,
+                        cors: true
+                    });
+                    (window as any).mpegtsPlayer = player;
+                    player.attachMediaElement(video);
+                    try {
+                        player.load();
+                        player.play().catch((e: any) => console.warn('MPEGTS Play catch:', e));
+                    } catch (e) {
+                        console.error('MPEGTS Load error:', e);
                     }
-                });
-
-                video.onplaying = () => { 
-                    errorOverlay!.style.display = 'none';
-                };
-            } else {
-                video.src = target;
-                video.play().catch(() => {});
-            }
-        };
-        loadTs(streamUrl);
+                    player.on(mpegts.Events.ERROR, (type: any, detail: any, info: any) => {
+                        console.error('MPEGTS Error:', type, detail, info);
+                        const statusCode = info?.code || 0;
+                        const isAuthError = statusCode === 401 || statusCode === 403;
+                        const currentPlayer = (window as any).mpegtsPlayer;
+                        if (currentPlayer) {
+                            if (tryNextProxy()) {
+                                try { currentPlayer.pause(); currentPlayer.unload(); currentPlayer.detachMediaElement(); currentPlayer.destroy(); } catch(e) {}
+                                delete (window as any).mpegtsPlayer;
+                                setTimeout(() => loadTs(streamUrl), 500);
+                            } else if (url.endsWith('.ts')) {
+                                try { currentPlayer.pause(); currentPlayer.unload(); currentPlayer.detachMediaElement(); currentPlayer.destroy(); } catch(e) {}
+                                delete (window as any).mpegtsPlayer;
+                                playLiveChannel(url.replace('.ts', '.m3u8'), name);
+                            } else {
+                                if (msg) msg.textContent = isAuthError ? 'Accès refusé (401/403).' : 'Erreur de lecture.';
+                                errorOverlay!.querySelector('span')!.textContent = '❌';
+                            }
+                        }
+                    });
+                    video.onplaying = () => { errorOverlay!.style.display = 'none'; };
+                } else {
+                    video.src = target;
+                    video.play().catch(() => {});
+                }
+            };
+            loadTs(streamUrl);
+        }).catch(err => {
+            console.error('Impossible de charger mpegts.js:', err);
+            if (msg) msg.textContent = 'Erreur de chargement du lecteur TS.';
+        });
     }
 }
 }
@@ -2065,6 +2119,21 @@ export function toggleMobileMenu() {
 }
 (window as any).toggleMobileMenu = toggleMobileMenu;
 
+// Fermer le menu mobile si on clique sur le backdrop (H-7)
+const mobileMenuBackdrop = document.createElement('div');
+mobileMenuBackdrop.id = 'mobile-menu-backdrop';
+mobileMenuBackdrop.style.cssText = 'position:fixed;inset:0;z-index:9998;background:transparent;display:none;';
+document.body.appendChild(mobileMenuBackdrop);
+mobileMenuBackdrop.addEventListener('click', () => toggleMobileMenu());
+
+// Synchroniser le backdrop avec l'état du menu
+const _origToggle = toggleMobileMenu;
+(window as any).toggleMobileMenu = function() {
+    _origToggle();
+    const nav = document.getElementById('navbar');
+    mobileMenuBackdrop.style.display = (nav?.classList.contains('menu-open')) ? 'block' : 'none';
+};
+
 // Update handleNavigation to close menu on mobile
 // Removed redundant override as it's now integrated in the main handleNavigation function.
 
@@ -2079,3 +2148,44 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
+// --- Fonction Toast (M-7 / notifications mobiles) ---
+function showToast(message: string, duration = 3500) {
+    let toast = document.getElementById('mv-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'mv-toast';
+        toast.style.cssText = [
+            'position:fixed',
+            'bottom:90px',
+            'left:50%',
+            'transform:translateX(-50%) translateY(20px)',
+            'background:rgba(15,15,15,0.95)',
+            'color:#fff',
+            'padding:12px 24px',
+            'border-radius:50px',
+            'font-size:14px',
+            'font-weight:600',
+            'font-family:Inter,sans-serif',
+            'border:1px solid rgba(255,255,255,0.1)',
+            'backdrop-filter:blur(20px)',
+            'box-shadow:0 8px 30px rgba(0,0,0,0.5)',
+            'z-index:99999',
+            'opacity:0',
+            'transition:opacity 0.3s ease,transform 0.3s ease',
+            'pointer-events:none',
+            'white-space:nowrap',
+            'max-width:90vw',
+            'text-align:center',
+        ].join(';');
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    requestAnimationFrame(() => {
+        toast!.style.opacity = '1';
+        toast!.style.transform = 'translateX(-50%) translateY(0)';
+    });
+    setTimeout(() => {
+        toast!.style.opacity = '0';
+        toast!.style.transform = 'translateX(-50%) translateY(20px)';
+    }, duration);
+}

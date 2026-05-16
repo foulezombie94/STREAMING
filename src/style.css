@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+/* Font chargée via <link> dans index.html - pas de @import render-blocking (L-5) */
+
 
 /* 1. Configuration Globale */
 * {
@@ -940,6 +941,10 @@ a {
     border-radius: 50%;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Zone tactile élargie à 44x44px sans changer le visuel (H-5) */
+    padding: 17px;
+    margin: -17px;
+    background-clip: content-box;
 }
 
 .dot.active {
@@ -1302,8 +1307,10 @@ a {
         align-items: center;
         justify-content: space-between; 
         flex-wrap: nowrap;
-        background: rgba(5, 5, 5, 0.85);
-        backdrop-filter: blur(25px);
+        /* Suppression du backdrop-filter sur mobile (M-8 : fluidité scroll Android) */
+        background: rgba(5, 5, 5, 0.92);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
         border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
 
@@ -1490,11 +1497,12 @@ a {
     .popular { margin-top: 10px; }
     .movie-card { width: 100% !important; min-width: 0 !important; }
     .section-title { font-size: 15px; padding-left: 1rem; margin-bottom: 15px; }
+    /* Passer en 2 colonnes pour <480px (M-3 : tap area et lisibilité) */
     .carousel-container { 
         padding-left: 0.8rem !important; 
         padding-right: 0.8rem !important; 
         gap: 6px !important; 
-        grid-template-columns: repeat(3, 1fr) !important;
+        grid-template-columns: repeat(2, 1fr) !important;
     }
     .logo { font-size: 15px; }
     .navbar { padding: 0.8rem; }
