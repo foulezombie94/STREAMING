@@ -24,6 +24,7 @@ const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
+const IMAGE_W342_URL = 'https://image.tmdb.org/t/p/w342';
 
 // Global Blacklist for specific movies/series
 const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '1017007', '1025539', '1013441', '1439930']; 
@@ -186,6 +187,7 @@ class HeroCarouselManager {
 
             return `
                 <div class="hero-slide ${index === 0 ? 'active' : ''} ${isLongTitle ? 'long-title' : ''}" style="background-image: url('${backdropUrl}')" data-index="${index}">
+                    ${index === 0 ? `<img src="${backdropUrl}" style="display:none" loading="eager">` : ''}
                     <div class="slide-content">
                         <div class="slide-info">
                             <span class="type-tag">${isSaga ? 'COLLECTION' : (item.genre_ids?.includes(16) ? 'ANIMÉ' : (displayType === 'tv' ? 'SÉRIE' : 'FILM'))}</span>
@@ -622,6 +624,10 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
     const currentPageItems = items.slice(startIndex, startIndex + pageSize);
 
     container.innerHTML = currentPageItems.map((item: TMDBMedia, index: number) => {
+        // Optimisation : Pas de lazy loading pour les 6 premiers éléments du haut pour booster le LCP
+        const isAboveFold = startIndex === 0 && index < 6;
+        const loadingMode = isAboveFold ? 'eager' : 'lazy';
+        
         let extra = '';
         
         // Bouton RETOUR sur le 1er film si on n'est pas à la page 0
@@ -642,7 +648,7 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
             `;
         }
 
-        const cardHtml = renderMovieCard(item, conf.mediaType, extra);
+        const cardHtml = renderMovieCard(item, conf.mediaType, extra, '', loadingMode);
         return cardHtml.replace('class="movie-card"', `class="movie-card" style="animation-delay: ${index * 0.1}s; animation-name: fadeInUp"`);
     }).join('');
 
@@ -654,7 +660,7 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
 // Exposer au scope global pour les onclick
 (window as any).renderCarouselPage = renderCarouselPage;
 
-function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: string = '', extraUrlParams: string = '') {
+function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: string = '', extraUrlParams: string = '', loading: 'lazy' | 'eager' = 'lazy') {
     let displayType = item.media_type || forceType;
     
     // Si c'est toujours auto et pas de media_type (cas des endpoints spécifiques type /movie/popular)
@@ -662,7 +668,8 @@ function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: str
         displayType = item.title ? 'movie' : 'tv';
     }
  
-    const poster = item.poster_path ? `${IMAGE_W500_URL}${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image';
+    // Utilisation de W342 pour les cartes normales (plus léger que W500)
+    const poster = item.poster_path ? `${IMAGE_W342_URL}${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image';
     const rating = item.vote_average ? item.vote_average.toFixed(1) : '0.0';
     const badgeText = item.genre_ids?.includes(16) ? 'Animé' : (displayType === 'tv' ? 'Série' : 'Film');
     
@@ -672,7 +679,7 @@ function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: str
     return `
         <div class="movie-card" data-id="${item.id}" data-type="${displayType}" data-extra="${extraUrlParams}">
             <div class="card-badge">${badgeText}</div>
-            <img src="${poster}" alt="${item.title || item.name}" loading="lazy">
+            <img src="${poster}" alt="${item.title || item.name}" loading="${loading}">
             <div class="card-overlay">
                 <div class="card-rating">★ ${rating}</div>
                 <div class="card-info">
@@ -1972,7 +1979,10 @@ async function renderSagaDetailsPage(sagaId: string) {
         return;
     }
 
-    grid.innerHTML = movies.map(m => renderMovieCard(m, 'movie', '', `&fromSaga=${saga.id}`)).join('');
+    grid.innerHTML = movies.map((m, index) => {
+        const loadingMode = index < 4 ? 'eager' : 'lazy';
+        return renderMovieCard(m, 'movie', '', `&fromSaga=${saga.id}`, loadingMode);
+    }).join('');
 
     // Calculer les statistiques globales
     let totalMinutes = 0;
