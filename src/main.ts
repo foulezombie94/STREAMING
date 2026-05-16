@@ -2,8 +2,35 @@ import './style.css';
 import { ProgressManager } from './storage';
 import { SAGAS_DATA } from './sagas_data';
 
-// Tri des sagas par "popularité" (ici défini par le nombre de films dans la saga)
-SAGAS_DATA.sort((a, b) => (b.items?.length || 0) - (a.items?.length || 0));
+// Tri des sagas par "popularité" réelle (basé sur une liste de priorité manuelle)
+const SAGA_PRIORITY: { [key: string]: number } = {
+    'mcu': 100,            // Marvel
+    'starwars': 95,        // Star Wars
+    'harrypotter': 90,     // Harry Potter
+    'leseigneurdesan': 85, // Seigneur des Anneaux
+    'avatarsaga': 80,      // Avatar
+    'spidermanavenge': 78, // Spider-Man MCU
+    'deadpoolsaga': 75,    // Deadpool
+    'jurassicparksag': 72, // Jurassic Park
+    'fastandfuriouss': 70, // Fast & Furious
+    'johnwick': 68,        // John Wick
+    'missionimpossib': 65, // Mission Impossible
+    'dunesaga': 62,        // Dune
+    'toystory': 60,        // Toy Story
+    'shrek': 58,           // Shrek
+    'despicable': 56,      // Moi, Moche et Méchant
+    'conjuringsaga': 54,   // Conjuring
+    'screamsaga': 52,      // Scream
+    'iceage': 50           // L'Age de Glace
+};
+
+SAGAS_DATA.sort((a, b) => {
+    const prioA = SAGA_PRIORITY[a.id] || 0;
+    const prioB = SAGA_PRIORITY[b.id] || 0;
+    if (prioA !== prioB) return prioB - prioA;
+    return (b.items?.length || 0) - (a.items?.length || 0); // Fallback par nombre de films
+});
+
 
 import { TMDBMedia, TMDBGenre } from './types';
 
