@@ -10,6 +10,13 @@
     <meta name="theme-color" content="#050505">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- DNS Prefetch & Preconnect pour TMDB (Accélère le chargement des posters et de l'API) -->
+    <link rel="dns-prefetch" href="https://image.tmdb.org">
+    <link rel="dns-prefetch" href="https://api.themoviedb.org">
+    <link rel="preconnect" href="https://image.tmdb.org">
+    <link rel="preconnect" href="https://api.themoviedb.org">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,7 +42,7 @@
         <section class="details-hero" id="details-hero">
             <div class="details-content-wrapper">
                 <div class="poster-container">
-                    <img id="details-poster" src="" alt="Poster" fetchpriority="high" decoding="async" />
+                    <img id="details-poster" src="" alt="Poster" width="500" height="750" fetchpriority="high" decoding="async" />
                 </div>
                 <div class="info-container">
                     <h1 id="details-title">Chargement...</h1>

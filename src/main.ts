@@ -655,6 +655,8 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                             <div class="saga-card" data-id="${saga.id}">
                                 <img data-src="${sagaPoster}" alt="${saga.title}"
                                      src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                                     width="342"
+                                     height="513"
                                      style="background:#1a1a1a;"
                                      decoding="async">
                                 ${extra}
@@ -843,6 +845,8 @@ function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: str
             <img src="${src}" 
                  srcset="${srcset}" 
                  sizes="${sizes}"
+                 width="342"
+                 height="513"
                  alt="${item.title || item.name}" 
                  loading="${loading}"
                  decoding="async">
@@ -2036,7 +2040,7 @@ function updateSagasGrid() {
     const visibleSagas = SAGAS_DATA.slice(0, sagasVisibleCount);
     grid.innerHTML = visibleSagas.map(saga => `
         <div class="saga-card" data-id="${saga.id}">
-            <img src="${saga.poster}" alt="${saga.title}" loading="lazy">
+            <img src="${saga.poster}" alt="${saga.title}" width="342" height="513" loading="lazy">
             <div class="saga-card-overlay">
                 <h3>${saga.title}</h3>
                 <p>${saga.items.length} Films</p>
@@ -2067,7 +2071,7 @@ async function renderSagaDetailsPage(sagaId: string) {
                     <span class="material-symbols-outlined">arrow_back</span> Retour aux Sagas
                 </button>
                 <div class="saga-header-flex">
-                    <img src="${saga.poster}" class="saga-mini-poster" />
+                    <img src="${saga.poster}" class="saga-mini-poster" width="185" height="278" />
                     <div class="saga-header-text">
                         <h1>${saga.title}</h1>
                         <p class="saga-desc">${saga.description}</p>
