@@ -1,6 +1,10 @@
 import './style.css';
 import { ProgressManager } from './storage';
 import { SAGAS_DATA } from './sagas_data';
+
+// Tri des sagas par "popularité" (ici défini par le nombre de films dans la saga)
+SAGAS_DATA.sort((a, b) => (b.items?.length || 0) - (a.items?.length || 0));
+
 import { TMDBMedia, TMDBGenre } from './types';
 
 interface SectionConfig {

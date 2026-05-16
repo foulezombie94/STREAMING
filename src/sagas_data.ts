@@ -431,18 +431,6 @@ export const SAGAS_DATA: any[] = [
         ]
     },
     {
-        "id": "",
-        "title": "女教師日記",
-        "poster": "https://image.tmdb.org/t/p/w500/uY4e89zrjp8TPJUfrOUeHzle2q5.jpg",
-        "backdrop": "https://image.tmdb.org/t/p/original/4fujdkEPgmRVEEYeUfcwytgmnkL.jpg",
-        "description": "La saga complète de 女教師日記.",
-        "items": [
-            "id:670435",
-            "id:630940",
-            "id:631318"
-        ]
-    },
-    {
         "id": "aftersaga",
         "title": "After - Saga",
         "poster": "https://image.tmdb.org/t/p/w500/oIcmMYCVrVUftMiO9tsniNnSNBc.jpg",
