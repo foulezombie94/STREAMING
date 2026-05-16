@@ -15,7 +15,7 @@ const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 
 // Global Blacklist for specific movies/series
-const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '1017007', '1025539', '1013441']; 
+const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '1017007', '1025539', '1013441', '1439930']; 
 
 // Cache pour la pagination des sections
 const sectionDataStore: { [key: string]: { items: any[], conf: any } } = {};
@@ -91,13 +91,13 @@ const SECTIONS_CONFIG = [
     { id: 'top-tv', title: 'Séries les mieux notées', icon: 'star', endpoint: '/tv/top_rated', mediaType: 'tv' },
     { id: 'genre-adventure', title: 'Aventure', icon: 'explore', endpoint: '/discover/movie', params: '&with_genres=12', mediaType: 'movie' },
     { id: 'genre-fantasy', title: 'Fantastique', icon: 'magic_button', endpoint: '/discover/movie', params: '&with_genres=14', mediaType: 'movie' },
-    { id: 'genre-animation', title: 'Animation', icon: 'animation', endpoint: '/discover/movie', params: '&with_genres=16', mediaType: 'movie' },
+    { id: 'genre-animation', title: 'Animé', icon: 'animation', endpoint: '/discover/movie', params: '&with_genres=16', mediaType: 'movie' },
     { id: 'genre-drama', title: 'Drame', icon: 'theater_comedy', endpoint: '/discover/movie', params: '&with_genres=18', mediaType: 'movie' },
     { id: 'genre-action', title: 'Action', icon: 'sports_martial_arts', endpoint: '/discover/movie', params: '&with_genres=28', mediaType: 'movie' },
     { id: 'genre-comedy', title: 'Comédie', icon: 'sentiment_very_satisfied', endpoint: '/discover/movie', params: '&with_genres=35', mediaType: 'movie' },
     { id: 'genre-crime', title: 'Crime', icon: 'policy', endpoint: '/discover/movie', params: '&with_genres=80', mediaType: 'movie' },
     { id: 'tv-action', title: 'Séries d\'Action', icon: 'bolt', endpoint: '/discover/tv', params: '&with_genres=10759', mediaType: 'tv' },
-    { id: 'tv-animation', title: 'Séries Animées', icon: 'animation', endpoint: '/discover/tv', params: '&with_genres=16', mediaType: 'tv' }
+    { id: 'tv-animation', title: 'Animé', icon: 'animation', endpoint: '/discover/tv', params: '&with_genres=16', mediaType: 'tv' }
 ];
 
 // --- Carousel Manager (Movix Style) ---
@@ -121,8 +121,10 @@ class HeroCarouselManager {
     }
 
     public setSlides(data: any[]) {
+        // Filtrer les IDs blacklistés
+        const filtered = data.filter(item => !GLOBAL_BLACKLIST_IDS.includes(item.id.toString()));
         // Mélanger les données au hasard entre films et séries tendances
-        const shuffled = [...data].sort(() => 0.5 - Math.random());
+        const shuffled = [...filtered].sort(() => 0.5 - Math.random());
         this.slides = shuffled.slice(0, 6); 
         this.renderSlides();
         this.renderDots();
@@ -160,7 +162,7 @@ class HeroCarouselManager {
                 <div class="hero-slide ${index === 0 ? 'active' : ''} ${isLongTitle ? 'long-title' : ''}" style="background-image: url('${backdropUrl}')" data-index="${index}">
                     <div class="slide-content">
                         <div class="slide-info">
-                            <span class="type-tag">${isSaga ? 'COLLECTION' : (displayType === 'tv' ? 'SÉRIE' : 'FILM')}</span>
+                            <span class="type-tag">${isSaga ? 'COLLECTION' : (item.genre_ids?.includes(16) ? 'ANIMÉ' : (displayType === 'tv' ? 'SÉRIE' : 'FILM'))}</span>
                             <span class="year-tag">
                                 <span class="material-symbols-outlined">calendar_today</span>
                                 ${releaseYear}
@@ -633,7 +635,7 @@ function renderMovieCard(item: any, forceType: string = 'auto', extra: string = 
  
     const poster = item.poster_path ? `${IMAGE_W500_URL}${item.poster_path}` : 'https://via.placeholder.com/500x750?text=No+Image';
     const rating = item.vote_average ? item.vote_average.toFixed(1) : '0.0';
-    const badgeText = displayType === 'tv' ? 'Série' : 'Film';
+    const badgeText = item.genre_ids?.includes(16) ? 'Animé' : (displayType === 'tv' ? 'Série' : 'Film');
     
     const releaseDate = item.release_date || item.first_air_date;
     const year = releaseDate ? new Date(releaseDate).getFullYear() : '';
@@ -691,7 +693,7 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' |
             return `
                 <div class="genre-tile ${activeGenreId === g.id ? 'active' : ''}" onclick="selectGenre(${g.id}, '${type}')">
                     <span class="material-symbols-outlined">${icon}</span>
-                    <span>${g.name}</span>
+                    <span>${g.name === 'Animation' ? 'Animé' : g.name}</span>
                 </div>
             `;
         }).join('');
@@ -704,7 +706,7 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' |
             desktopGenres.innerHTML = `
                 <div class="genre-label">${type === 'movie' ? 'Genres Films' : 'Genres Séries'}</div>
                 <button class="genre-btn ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</button>
-                ${genres.map(g => `<button class="genre-btn ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name}</button>`).join('')}
+                ${genres.map(g => `<button class="genre-btn ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name === 'Animation' ? 'Animé' : g.name}</button>`).join('')}
             `;
 
             desktopGenres.querySelectorAll('.genre-btn').forEach(btn => {

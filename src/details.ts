@@ -11,7 +11,7 @@ const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 const urlParams = new URLSearchParams(window.location.search);
 const mediaId = urlParams.get('id');
 const mediaType = urlParams.get('type');
-const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '1017007'];
+const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '1017007', '1025539', '1013441', '1439930'];
 
 // 3. Éléments du DOM
 const heroSection = document.getElementById('details-hero');
@@ -117,7 +117,7 @@ async function fetchDetails() {
 
         // Genres
         if (genresEl && data.genres) {
-            genresEl.innerHTML = data.genres.map((g: any) => `<span class="genre-tag">${g.name}</span>`).join('');
+            genresEl.innerHTML = data.genres.map((g: any) => `<span class="genre-tag">${g.name === 'Animation' ? 'Animé' : g.name}</span>`).join('');
         }
 
         // Extra Info Grid
