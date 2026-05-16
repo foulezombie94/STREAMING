@@ -640,9 +640,34 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
             </div>
         `;
         mainContent.appendChild(section);
-        fetchSectionData(conf);
+    });
+
+    // --- Chargement progressif des sections (batching) ---
+    // On filtre les sections non-saga (les sagas ont déjà leur propre return)
+    const fetchableConfigs = configs.filter(c => c.id !== 'sagas');
+
+    // Les 2 premières sections chargent immédiatement (above the fold)
+    const prioritySections = fetchableConfigs.slice(0, 2);
+    const lazySections = fetchableConfigs.slice(2);
+
+    prioritySections.forEach(conf => fetchSectionData(conf));
+
+    // Les sections suivantes chargent via IntersectionObserver
+    lazySections.forEach(conf => {
+        const sectionEl = document.getElementById(`section-${conf.id}`);
+        if (!sectionEl) { fetchSectionData(conf); return; }
+
+        const sectionObserver = new IntersectionObserver((entries, obs) => {
+            if (entries[0].isIntersecting) {
+                fetchSectionData(conf);
+                obs.disconnect();
+            }
+        }, { rootMargin: '300px', threshold: 0 });
+
+        sectionObserver.observe(sectionEl);
     });
 }
+
 
 async function fetchSectionData(conf: SectionConfig) {
     const container = document.getElementById(`carousel-${conf.id}`);
@@ -1690,13 +1715,19 @@ function playLiveChannel(url: string, name: string) {
 
     if (!playerContainer || !video || !nameLabel || !errorOverlay) return;
 
+    // Lire offsetTop AVANT de modifier le DOM → évite le forced reflow (228ms PageSpeed)
+    const scrollTarget = playerContainer.offsetTop - 100;
+
     playerContainer.style.display = 'block';
     nameLabel.textContent = name;
     errorOverlay.style.display = 'none';
     const msg = errorOverlay.querySelector('p');
     
-    // Smooth scroll
-    window.scrollTo({ top: playerContainer.offsetTop - 100, behavior: 'smooth' });
+    // Smooth scroll différé au prochain frame pour ne pas bloquer le paint
+    requestAnimationFrame(() => {
+        window.scrollTo({ top: scrollTarget, behavior: 'smooth' });
+    });
+
 
     // Anti-flood: On attend un court instant pour laisser le serveur fermer la connexion précédente
     if ((window as any).isSwitching) return;

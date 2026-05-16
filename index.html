@@ -24,8 +24,14 @@
     -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Inter : chargée normalement (petite, peu d'impact) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <!--
+        Inter : display=optional → ne bloque JAMAIS le rendu.
+        Si non cachée, le browser utilise system-ui instantanément.
+        Si cachée (2ème visite), Inter est utilisée.
+        Élimine le 1010ms woff2 blocking time du PageSpeed.
+    -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=optional" rel="stylesheet">
     <!-- Material Symbols : NON-BLOQUANT (async trick) - élimine ~6s de render blocking -->
     <link rel="preload" as="style"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=block"
