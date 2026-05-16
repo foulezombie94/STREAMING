@@ -1,6 +1,16 @@
 import './style.css';
 import { ProgressManager } from './storage';
 import { SAGAS_DATA } from './sagas_data';
+import { TMDBMedia, TMDBGenre } from './types';
+
+interface SectionConfig {
+    id: string;
+    title: string;
+    icon: string;
+    endpoint: string;
+    params?: string;
+    mediaType: string;
+}
 
 // Détection Android Chrome: ajoute classe sur <html> pour cibler en CSS
 // iOS Safari ne match pas car sa UA contient "iPhone"/"iPad" mais pas "Android"
@@ -9,7 +19,7 @@ if (/Android/i.test(navigator.userAgent) && /Chrome/i.test(navigator.userAgent))
 }
 
 // 1. Constantes TMDB
-const TMDB_API_KEY = 'e1a2bb6a3ed288feb5d767908732e751';
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
@@ -18,7 +28,7 @@ const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
 const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '1017007', '1025539', '1013441', '1439930']; 
 
 // Cache pour la pagination des sections
-const sectionDataStore: { [key: string]: { items: any[], conf: any } } = {};
+const sectionDataStore: { [key: string]: { items: TMDBMedia[], conf: SectionConfig } } = {};
 
 const GENRE_ICONS: { [key: string]: string } = {
     'Action': 'bolt',
@@ -51,12 +61,12 @@ const GENRE_ICONS: { [key: string]: string } = {
 };
 
 // 2. DOM Elements & State
-let currentData: any[] = []; 
+let currentData: TMDBMedia[] = []; 
 let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' | 'sagas' = 'trending';
 
 // Genre globals
-let movieGenres: any[] = [];
-let tvGenres: any[] = [];
+let movieGenres: TMDBGenre[] = [];
+let tvGenres: TMDBGenre[] = [];
 let activeGenreId: number | null = null;
 
 // DOM Selectors
@@ -80,9 +90,9 @@ const mainContent = document.getElementById('main-content');
 const iptvSection = document.getElementById('iptv-section');
 
 // Configuration des sections Movix
-const SECTIONS_CONFIG = [
-    { id: 'trending-day', title: 'Tendances du jour', icon: 'local_fire_department', endpoint: '/trending/all/day', mediaType: 'auto' },
-    { id: 'trending-week', title: 'Tendances', icon: 'trending_up', endpoint: '/trending/all/week', mediaType: 'auto' },
+const SECTIONS_CONFIG: SectionConfig[] = [
+    { id: 'trending-day', title: 'Tendances du jour', icon: 'local_fire_department', endpoint: '/trending/all/day', mediaType: 'trending' },
+    { id: 'trending-week', title: 'Tendances', icon: 'trending_up', endpoint: '/trending/all/week', mediaType: 'trending' },
     { id: 'sagas', title: 'Les sagas incontournables', icon: 'auto_awesome', endpoint: '/movie/top_rated', mediaType: 'movie' },
     { id: 'pop-movies', title: 'Films populaires', icon: 'movie', endpoint: '/movie/popular', mediaType: 'movie' },
     { id: 'pop-tv', title: 'Séries populaires', icon: 'tv', endpoint: '/tv/popular', mediaType: 'tv' },
@@ -102,7 +112,7 @@ const SECTIONS_CONFIG = [
 
 // --- Carousel Manager (Movix Style) ---
 class HeroCarouselManager {
-    private slides: any[] = [];
+    private slides: TMDBMedia[] = [];
     private currentIndex: number = 0;
     private interval: any = null;
     private progress: number = 0;
@@ -120,7 +130,7 @@ class HeroCarouselManager {
         heroNextBtn?.addEventListener('click', () => this.nextSlide());
     }
 
-    public setSlides(data: any[]) {
+    public setSlides(data: TMDBMedia[]) {
         // Filtrer les IDs blacklistés
         const filtered = data.filter(item => !GLOBAL_BLACKLIST_IDS.includes(item.id.toString()));
         // Mélanger les données au hasard entre films et séries tendances
@@ -135,9 +145,9 @@ class HeroCarouselManager {
     private renderSlides() {
         if (!heroSlidesContainer) return;
         heroSlidesContainer.innerHTML = this.slides.map((item, index) => {
-            const isSaga = !!item.isSaga;
+            const isSaga = !!(item as any).isSaga;
             const displayType = isSaga ? 'saga' : (item.media_type || (currentType === 'tv' ? 'tv' : 'movie'));
-            const title = isSaga ? item.title : (displayType === 'tv' ? (item.name || item.original_name) : (item.title || item.original_title));
+            const title = isSaga ? (item as any).title : (displayType === 'tv' ? (item.name || item.original_name) : (item.title || item.original_title));
             const releaseDate = isSaga ? null : (displayType === 'tv' ? item.first_air_date : item.release_date);
             const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : (isSaga ? 'SAGA' : 'N/A');
             const rating = isSaga ? 'N/A' : (item.vote_average ? item.vote_average.toFixed(1) : '0.0');
@@ -150,7 +160,7 @@ class HeroCarouselManager {
                 backdropUrl = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop';
             }
 
-            const overview = item.description || item.overview || "Aucun synopsis disponible.";
+            const overview = (item as any).description || item.overview || "Aucun synopsis disponible.";
 
             const isLongTitle = title && title.length > 18;
             
@@ -215,8 +225,8 @@ class HeroCarouselManager {
         slides.forEach(s => s.classList.remove('active'));
         dots.forEach(d => d.classList.remove('active'));
 
-        slides[this.currentIndex]?.classList.add('active');
-        dots[this.currentIndex]?.classList.add('active');
+        if (slides[this.currentIndex]) slides[this.currentIndex].classList.add('active');
+        if (dots[this.currentIndex]) dots[this.currentIndex].classList.add('active');
 
         if (heroProgress) heroProgress.style.width = '0%';
     }
@@ -439,7 +449,7 @@ function renderResumePage() {
                         title: item.title,
                         name: item.title
                     };
-                    return renderMovieCard(cardItem, item.mediaType);
+                    return renderMovieCard(cardItem as any, item.mediaType);
                 }).join('')
                 : '<div class="no-history">Aucun historique de lecture disponible.</div>'
             }
@@ -466,7 +476,7 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
         
         const endpoint = `/discover/${type}`;
         const params = `&with_genres=${genreId}&sort_by=popularity.desc`;
-        fetchSectionData({ id: 'filtered', endpoint, params, mediaType: type });
+        fetchSectionData({ id: 'filtered', endpoint, params, mediaType: type, title: 'Résultats filtrés', icon: 'filter_list' });
         return;
     }
 
@@ -539,7 +549,7 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
     });
 }
 
-async function fetchSectionData(conf: any) {
+async function fetchSectionData(conf: SectionConfig) {
     const container = document.getElementById(`carousel-${conf.id}`);
     if (!container) return;
 
@@ -547,14 +557,14 @@ async function fetchSectionData(conf: any) {
         const url = `${BASE_URL}${conf.endpoint}?api_key=${TMDB_API_KEY}&language=fr-FR${conf.params || ''}`;
         const res = await fetch(url);
         const data = await res.json();
-        let allItems = data.results || [];
+        let allItems: TMDBMedia[] = data.results || [];
         
         // Filtrage global blacklist (Empêche les trous dans les carrousels)
-        allItems = allItems.filter((item: any) => !GLOBAL_BLACKLIST_IDS.includes(item.id.toString()));
+        allItems = allItems.filter((item: TMDBMedia) => !GLOBAL_BLACKLIST_IDS.includes(item.id.toString()));
         
         // Filtrage spécifique pour les carrousels Animation/Anime (ID 15 caractères max)
         if (conf.id === 'genre-animation' || conf.id === 'tv-animation') {
-            allItems = allItems.filter((item: any) => {
+            allItems = allItems.filter((item: TMDBMedia) => {
                 const title = item.title || item.name || '';
                 return title.length <= 15;
             });
@@ -623,7 +633,7 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
 // Exposer au scope global pour les onclick
 (window as any).renderCarouselPage = renderCarouselPage;
 
-function renderMovieCard(item: any, forceType: string = 'auto', extra: string = '', extraUrlParams: string = '') {
+function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: string = '', extraUrlParams: string = '') {
     let displayType = item.media_type || forceType;
     
     // Si c'est toujours auto et pas de media_type (cas des endpoints spécifiques type /movie/popular)
@@ -911,11 +921,13 @@ if (searchInput) {
 }
 
 async function performSearch(query: string) {
+    if (!query || !mainContent) return;
+    
     try {
-        const response = await fetch(`${BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(query)}&page=1`);
+        const response = await fetch(`${BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(query)}`);
         const data = await response.json();
         
-        const filteredResults = data.results.filter((item: any) => 
+        const filteredResults = data.results.filter((item: TMDBMedia) => 
             (item.media_type === 'movie' || item.media_type === 'tv') && 
             item.poster_path &&
             !GLOBAL_BLACKLIST_IDS.includes(item.id.toString())
@@ -1889,7 +1901,7 @@ async function renderSagaDetailsPage(sagaId: string) {
         } catch (e) { return null; }
     });
 
-    const movies = (await Promise.all(moviePromises)).filter(m => m !== null && m.id);
+    const movies = (await Promise.all(moviePromises)).filter(m => m !== null && m.id) as TMDBMedia[];
     
     // Si pas de résultats
     if (movies.length === 0) {
@@ -1911,7 +1923,8 @@ async function renderSagaDetailsPage(sagaId: string) {
         if (m.vote_average) totalRating += m.vote_average;
         if (m.budget) totalBudget += m.budget;
         if (m.revenue) totalRevenue += m.revenue;
-        if (m.release_date) years.push(new Date(m.release_date).getFullYear());
+        const releaseDate = m.release_date || m.first_air_date;
+        if (releaseDate) years.push(new Date(releaseDate).getFullYear());
     });
 
     const durationEl = document.getElementById('total-duration');

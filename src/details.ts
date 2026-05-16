@@ -1,11 +1,19 @@
 import './style.css';
 import { ProgressManager } from './storage';
+import { 
+    TMDBMedia, TMDBCastMember, TMDBActorDetail, 
+    CoflixSource, TMDBEpisode 
+} from './types';
 
 // 1. Constantes TMDB
-const TMDB_API_KEY = 'e1a2bb6a3ed288feb5d767908732e751';
+const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
 const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
+
+// Domaines pour lecture directe (Coflix)
+const DIRECT_DOMAINS = ['vidoza', 'uqload', 'upstream', 'dood', 'streamtape', 'voe', 'mixdrop', 'lulustream', 'vidmoly', 'mbed', 'upn', 'xtreme', 'coflix', 'lecteurvideo', 'emmmmbed', 'embed', 'upn.one'];
 
 // 2. Extraire les paramètres de l'URL
 const urlParams = new URLSearchParams(window.location.search);
@@ -29,8 +37,8 @@ const trailerIframe = document.getElementById('trailer-iframe') as HTMLIFrameEle
 const navbar = document.getElementById('navbar');
 
 let trailerKey = '';
-let currentMediaData: any = null; // Stocker les infos pour le storage
-const actorCache: Record<string, any> = {};
+let currentMediaData: TMDBMedia | null = null; 
+const actorCache: Record<string, TMDBActorDetail> = {};
 let currentSeasonsCount = 0;
 
 // Gestion Navbar
@@ -170,8 +178,8 @@ async function fetchDetails() {
 
         // Cast
         if (castListEl && data.credits && data.credits.cast) {
-            const topCast = data.credits.cast.slice(0, 5);
-            castListEl.innerHTML = topCast.map((actor: any) => `
+            const topCast: TMDBCastMember[] = data.credits.cast.slice(0, 5);
+            castListEl.innerHTML = topCast.map((actor) => `
                 <div class="cast-member" data-id="${actor.id}" data-character="${actor.character ? 'Rôle : ' + actor.character : 'Rôle inconnu'}">
                     <img src="${actor.profile_path ? IMAGE_W500_URL + actor.profile_path : 'https://i.pravatar.cc/100?img=11'}" alt="${actor.name}">
                     <span class="cast-name">${actor.name}</span>
@@ -233,7 +241,7 @@ async function fetchDetails() {
                             }
                         }
 
-                        let actorData;
+                        let actorData: TMDBActorDetail;
                         if (actorCache[actorId]) {
                             actorData = actorCache[actorId];
                         } else {
@@ -299,7 +307,7 @@ if (closeModalBtn) {
     closeModalBtn.addEventListener('click', () => {
         if (trailerModal && trailerIframe) {
             trailerModal.classList.remove('active');
-            trailerIframe.src = '';
+            trailerIframe.removeAttribute('src');
         }
     });
 }
@@ -309,7 +317,7 @@ if (trailerModal) {
     trailerModal.addEventListener('click', (e) => {
         if (e.target === trailerModal && trailerIframe) {
             trailerModal.classList.remove('active');
-            trailerIframe.src = '';
+            trailerIframe.removeAttribute('src');
         }
     });
 }
@@ -333,7 +341,7 @@ async function openActorModal(actorId: string) {
     if (actorModalMeta) actorModalMeta.innerHTML = '';
     if (actorModalBio) actorModalBio.textContent = '';
 
-    let data;
+    let data: TMDBActorDetail;
     try {
         if (actorCache[actorId]) {
             data = actorCache[actorId];
@@ -393,7 +401,7 @@ const closePlayerBtn = document.getElementById('close-player-btn');
 
 // Dynamic Sources logic
 const serverButtonsContainer = document.querySelector('.server-buttons');
-let coflixSources: any[] = [];
+let coflixSources: CoflixSource[] = [];
 
 async function fetchCoflixSources(type: string, id: string, season?: string, episode?: string) {
     if (!serverButtonsContainer) return;
@@ -412,8 +420,8 @@ async function fetchCoflixSources(type: string, id: string, season?: string, epi
         // Extract year from UI if possible (metaEl contains "Rating • Year • Duration")
         // IMPORTANT: For TV shows, we want the First Air Year, not the current season year.
         let year = "";
-        if (type === 'tv' && (currentMediaData as any)?.first_air_date) {
-            year = (currentMediaData as any).first_air_date.split('-')[0];
+        if (type === 'tv' && currentMediaData?.first_air_date) {
+            year = currentMediaData.first_air_date.split('-')[0];
         } else {
             const metaText = metaEl?.textContent || "";
             const yearMatch = metaText.match(/(\d{4})/);
@@ -482,9 +490,7 @@ function renderSourceButtons() {
             if (mobileScrollHint) mobileScrollHint.classList.remove('active');
 
             if (videoIframe) {
-                // Élargissement de la liste directe pour éviter les boucles Cloudflare (Turnstile/Bot checks)
-                const directDomains = ['vidoza', 'uqload', 'upstream', 'dood', 'streamtape', 'voe', 'mixdrop', 'lulustream', 'vidmoly', 'mbed', 'upn', 'xtreme', 'coflix', 'lecteurvideo', 'emmmmbed', 'embed', 'upn.one'];
-                const useDirect = directDomains.some(d => source.url.toLowerCase().includes(d));
+                const useDirect = DIRECT_DOMAINS.some(d => source.url.toLowerCase().includes(d));
                 
                 // On force le no-referrer dans tous les cas pour éviter d'envoyer le domaine Vercel qui est souvent bloqué
                 videoIframe.setAttribute('referrerpolicy', 'no-referrer');
@@ -609,7 +615,7 @@ async function fetchEpisodes(seasonNumber: number, targetEpisode: number | null 
         
         episodeSelect.innerHTML = '';
         if (data.episodes && data.episodes.length > 0) {
-            data.episodes.forEach((ep: any) => {
+            data.episodes.forEach((ep: TMDBEpisode) => {
                 const option = document.createElement('option');
                 option.value = ep.episode_number.toString();
                 option.textContent = `Ép. ${ep.episode_number} - ${ep.name}`;
@@ -643,7 +649,7 @@ if (episodeSelect) {
 if (closePlayerBtn && playerSection && videoIframe) {
     closePlayerBtn.addEventListener('click', () => {
         playerSection.style.display = 'none';
-        videoIframe.src = ''; // Stop video playing in background
+        videoIframe.removeAttribute('src'); // Stop video playing in background
         
         // Restore the server selector
         const selector = document.getElementById('server-selector');
@@ -660,12 +666,12 @@ const changeServerBtn = document.getElementById('change-server-btn');
 if (changeServerBtn) {
     changeServerBtn.addEventListener('click', () => {
         const selector = document.getElementById('server-selector');
-        if (selector) {
-            selector.classList.remove('hidden');
-            if (mobileScrollHint) mobileScrollHint.classList.add('active');
-            // Optionnel : On peut vider l'iframe pour économiser de la bande passante 
-            if (videoIframe) videoIframe.src = '';
-        }
+            if (selector) {
+                selector.classList.remove('hidden');
+                if (mobileScrollHint) mobileScrollHint.classList.add('active');
+                // Optionnel : On peut vider l'iframe pour économiser de la bande passante 
+                if (videoIframe) videoIframe.removeAttribute('src');
+            }
     });
 }
 

@@ -5,7 +5,7 @@ const cheerio = require("cheerio");
 const { Buffer } = require("buffer");
 const cache = require('../utils/redis');
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY || "e1a2bb6a3ed288feb5d767908732e751";
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const COFLIX_BASE_URL = "https://coflix.dance";
 
 const HEADERS = {
