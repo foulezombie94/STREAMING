@@ -1,4 +1,6 @@
 import './style.css';
+import { TMDBGenre, TMDBCrewMember, TMDBVideo } from './types';
+
 import { ProgressManager } from './storage';
 import { 
     TMDBMedia, TMDBCastMember, TMDBActorDetail, 
@@ -90,7 +92,7 @@ async function fetchDetails() {
     try {
         // Fetch details + credits + videos en Français
         const response = await fetch(`${BASE_URL}/${mediaType}/${mediaId}?api_key=${TMDB_API_KEY}&language=fr-FR&append_to_response=credits,videos`);
-        const data = await response.json();
+        const data = (await response.json()) as TMDBMedia;
         currentMediaData = data;
 
         // Background
@@ -101,12 +103,12 @@ async function fetchDetails() {
         // Poster
         if (posterEl && data.poster_path) {
             posterEl.src = `${IMAGE_W500_URL}${data.poster_path}`;
-            posterEl.alt = data.title || data.name;
+            posterEl.alt = data.title || data.name || '';
             posterEl.style.opacity = '1';
         }
 
         // Titre
-        if (titleEl) titleEl.textContent = data.title || data.name;
+        if (titleEl) titleEl.textContent = data.title || data.name || '';
 
         // Tagline
         if (taglineEl) taglineEl.textContent = data.tagline ? `"${data.tagline}"` : '';
@@ -126,7 +128,7 @@ async function fetchDetails() {
 
         // Genres
         if (genresEl && data.genres) {
-            genresEl.innerHTML = data.genres.map((g: any) => `<span class="genre-tag">${g.name === 'Animation' ? 'Animé' : g.name}</span>`).join('');
+            genresEl.innerHTML = data.genres.map((g: TMDBGenre) => `<span class="genre-tag">${g.name === 'Animation' ? 'Animé' : g.name}</span>`).join('');
         }
 
         // Extra Info Grid
@@ -137,7 +139,7 @@ async function fetchDetails() {
         if (data.original_language) extraInfo.push({ label: 'Langue', value: data.original_language.toUpperCase() });
 
         if (mediaType === 'movie') {
-            const director = data.credits?.crew?.find((c: any) => c.job === 'Director');
+            const director = data.credits?.crew?.find((c: TMDBCrewMember) => c.job === 'Director');
             if (director) extraInfo.push({ label: 'Réalisateur', value: director.name });
 
             if (data.budget && data.budget > 0) {
@@ -148,7 +150,7 @@ async function fetchDetails() {
             }
         } else if (mediaType === 'tv') {
             if (data.created_by && data.created_by.length > 0) {
-                extraInfo.push({ label: 'Créateur', value: data.created_by.map((c: any) => c.name).join(', ') });
+                extraInfo.push({ label: 'Créateur', value: data.created_by.map((c: { name: string }) => c.name).join(', ') });
             }
             if (data.number_of_episodes) {
                 extraInfo.push({ label: 'Épisodes', value: data.number_of_episodes.toString() });
@@ -195,7 +197,7 @@ async function fetchDetails() {
             const hoverBio = document.getElementById('hover-card-bio');
 
             // Cache partagé au niveau du module
-            let hoverTimeout: any;
+            let hoverTimeout: ReturnType<typeof setTimeout>;
 
             // Attach click listeners to actor cards
             document.querySelectorAll('.cast-member').forEach(card => {
@@ -214,7 +216,7 @@ async function fetchDetails() {
                         hoverCard.style.left = `${rect.left + rect.width / 2}px`;
 
                         // Si la carte est trop haute, on affiche en dessous, sinon au dessus
-                        if (rect.top > 300) {
+                        if (rect.top > window.innerHeight / 2) {
                             hoverCard.style.top = `${rect.top - 20}px`;
                             hoverCard.style.transform = 'translate(-50%, -100%) scale(0.95)';
                         } else {
@@ -234,7 +236,7 @@ async function fetchDetails() {
                         if (hoverCard) {
                             hoverCard.classList.add('show');
                             const rect = card.getBoundingClientRect();
-                            if (rect.top > 300) {
+                            if (rect.top > window.innerHeight / 2) {
                                 hoverCard.style.transform = 'translate(-50%, -100%) scale(1)';
                             } else {
                                 hoverCard.style.transform = 'translate(-50%, 0) scale(1)';
@@ -274,7 +276,7 @@ async function fetchDetails() {
 
         // Trailer
         if (data.videos && data.videos.results) {
-            const trailer = data.videos.results.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube');
+            const trailer = data.videos.results.find((v: TMDBVideo) => v.type === 'Trailer' && v.site === 'YouTube');
             if (trailer) {
                 trailerKey = trailer.key;
             } else {
@@ -589,13 +591,16 @@ function updateTvProgress() {
 function populateSeasonSelect(targetSeason: number = 1) {
     if (!seasonSelect) return;
     seasonSelect.innerHTML = '';
+    const fragment = document.createDocumentFragment();
     for (let i = 1; i <= currentSeasonsCount; i++) {
         const option = document.createElement('option');
         option.value = i.toString();
         option.textContent = `Saison ${i}`;
         if (i === targetSeason) option.selected = true;
-        seasonSelect.appendChild(option);
+        fragment.appendChild(option);
     }
+
+    seasonSelect.appendChild(fragment);
 
     seasonSelect.addEventListener('change', (e) => {
         const selectedSeason = parseInt((e.target as HTMLSelectElement).value);
@@ -615,6 +620,7 @@ async function fetchEpisodes(seasonNumber: number, targetEpisode: number | null 
         
         episodeSelect.innerHTML = '';
         if (data.episodes && data.episodes.length > 0) {
+            const fragment = document.createDocumentFragment();
             data.episodes.forEach((ep: TMDBEpisode) => {
                 const option = document.createElement('option');
                 option.value = ep.episode_number.toString();
@@ -622,8 +628,10 @@ async function fetchEpisodes(seasonNumber: number, targetEpisode: number | null 
                 if (targetEpisode && ep.episode_number === targetEpisode) {
                     option.selected = true;
                 }
-                episodeSelect.appendChild(option);
+                fragment.appendChild(option);
             });
+            episodeSelect.appendChild(fragment);
+
             
             if (seasonSelect) {
                 fetchCoflixSources('tv', mediaId, seasonNumber.toString(), episodeSelect.value);

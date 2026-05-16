@@ -556,7 +556,7 @@ async function fetchSectionData(conf: SectionConfig) {
     try {
         const url = `${BASE_URL}${conf.endpoint}?api_key=${TMDB_API_KEY}&language=fr-FR${conf.params || ''}`;
         const res = await fetch(url);
-        const data = await res.json();
+        const data = (await res.json()) as { results: TMDBMedia[] };
         let allItems: TMDBMedia[] = data.results || [];
         
         // Filtrage global blacklist (Empêche les trous dans les carrousels)
@@ -600,7 +600,7 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
     const pageSize = 6;
     const currentPageItems = items.slice(startIndex, startIndex + pageSize);
 
-    container.innerHTML = currentPageItems.map((item: any, index: number) => {
+    container.innerHTML = currentPageItems.map((item: TMDBMedia, index: number) => {
         let extra = '';
         
         // Bouton RETOUR sur le 1er film si on n'est pas à la page 0
@@ -890,7 +890,7 @@ async function initApp() {
 initApp();
 
 // 10. Gestion de la Recherche
-let searchTimeout: any;
+let searchTimeout: ReturnType<typeof setTimeout>;
 
 if (searchInput) {
     searchInput.addEventListener('input', (e) => {
