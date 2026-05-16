@@ -30,6 +30,8 @@ const navbar = document.getElementById('navbar');
 
 let trailerKey = '';
 let currentMediaData: any = null; // Stocker les infos pour le storage
+const actorCache: Record<string, any> = {};
+let currentSeasonsCount = 0;
 
 // Gestion Navbar
 window.addEventListener('scroll', () => {
@@ -53,17 +55,16 @@ function setupBackButton() {
             backBtnText.style.color = "#ef4444"; // Coloration en rouge pour signaler le retour spécial
         }
 
-        // Supprimer les anciens écouteurs en remplaçant l'élément ou via onclick
-        (backBtn as HTMLElement).onclick = (e) => {
+        // Utiliser addEventListener plutôt que onclick
+        backBtn.addEventListener('click', (e) => {
             e.preventDefault();
             console.log("Navigation vers la saga:", fromSagaId);
             window.location.href = `/?openSaga=${fromSagaId}`;
-        };
+        });
     }
 }
 
-// Appeler setupBackButton immédiatement et au chargement du DOM
-setupBackButton();
+// Appeler setupBackButton au chargement du DOM
 document.addEventListener('DOMContentLoaded', setupBackButton);
 
 async function fetchDetails() {
@@ -185,8 +186,7 @@ async function fetchDetails() {
             const hoverMeta = document.getElementById('hover-card-meta');
             const hoverBio = document.getElementById('hover-card-bio');
 
-            const actorCache: Record<string, any> = {};
-            (window as any).actorCache = actorCache; // Partager le cache avec la modale
+            // Cache partagé au niveau du module
             let hoverTimeout: any;
 
             // Attach click listeners to actor cards
@@ -333,16 +333,14 @@ async function openActorModal(actorId: string) {
     if (actorModalMeta) actorModalMeta.innerHTML = '';
     if (actorModalBio) actorModalBio.textContent = '';
 
+    let data;
     try {
-        const cache = (window as any).actorCache || {};
-        let data;
-
-        if (cache[actorId]) {
-            data = cache[actorId];
+        if (actorCache[actorId]) {
+            data = actorCache[actorId];
         } else {
             const response = await fetch(`${BASE_URL}/person/${actorId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
             data = await response.json();
-            cache[actorId] = data;
+            actorCache[actorId] = data;
         }
 
         if (actorModalImg) {
@@ -393,9 +391,6 @@ const episodeSelect = document.getElementById('episode-select') as HTMLSelectEle
 const videoIframe = document.getElementById('video-iframe') as HTMLIFrameElement | null;
 const closePlayerBtn = document.getElementById('close-player-btn');
 
-let currentSeasonsCount = 0;
-
-
 // Dynamic Sources logic
 const serverButtonsContainer = document.querySelector('.server-buttons');
 let coflixSources: any[] = [];
@@ -426,9 +421,17 @@ async function fetchCoflixSources(type: string, id: string, season?: string, epi
         }
 
         const titleUrl = `?title=${encodeURIComponent(title)}${year ? `&year=${year}` : ""}`;
-        const url = type === 'tv' 
-            ? `/api/coflix/tv/${id}/${season}/${episode}${titleUrl}`
-            : `/api/coflix/movie/${id}${titleUrl}`;
+        
+        // Vérification de la présence des paramètres obligatoires
+        if (!id) throw new Error("ID manquant");
+        
+        let url = "";
+        if (type === 'tv') {
+            if (!season || !episode) throw new Error("Saison ou Épisode manquant");
+            url = `/api/coflix/tv/${id}/${season}/${episode}${titleUrl}`;
+        } else {
+            url = `/api/coflix/movie/${id}${titleUrl}`;
+        }
 
         const res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -595,35 +598,39 @@ function populateSeasonSelect(targetSeason: number = 1) {
     });
 }
 
-function fetchEpisodes(seasonNumber: number, targetEpisode: number | null = null) {
-    if (!episodeSelect) return;
+async function fetchEpisodes(seasonNumber: number, targetEpisode: number | null = null) {
+    if (!episodeSelect || !mediaId) return;
     episodeSelect.innerHTML = '<option value="">Chargement...</option>';
 
-    fetch(`${BASE_URL}/tv/${mediaId}/season/${seasonNumber}?api_key=${TMDB_API_KEY}&language=fr-FR`)
-        .then(res => res.json())
-        .then(data => {
-            episodeSelect.innerHTML = '';
-            if (data.episodes && data.episodes.length > 0) {
-                data.episodes.forEach((ep: any) => {
-                    const option = document.createElement('option');
-                    option.value = ep.episode_number.toString();
-                    option.textContent = `Ép. ${ep.episode_number} - ${ep.name}`;
-                    if (targetEpisode && ep.episode_number === targetEpisode) {
-                        option.selected = true;
-                    }
-                    episodeSelect.appendChild(option);
-                });
-                fetchCoflixSources('tv', mediaId!, seasonNumber.toString(), episodeSelect.value);
-            } else {
-                episodeSelect.innerHTML = '<option value="1">Épisode 1</option>';
-                fetchCoflixSources('tv', mediaId!, seasonNumber.toString(), '1');
+    try {
+        const res = await fetch(`${BASE_URL}/tv/${mediaId}/season/${seasonNumber}?api_key=${TMDB_API_KEY}&language=fr-FR`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        
+        episodeSelect.innerHTML = '';
+        if (data.episodes && data.episodes.length > 0) {
+            data.episodes.forEach((ep: any) => {
+                const option = document.createElement('option');
+                option.value = ep.episode_number.toString();
+                option.textContent = `Ép. ${ep.episode_number} - ${ep.name}`;
+                if (targetEpisode && ep.episode_number === targetEpisode) {
+                    option.selected = true;
+                }
+                episodeSelect.appendChild(option);
+            });
+            
+            if (seasonSelect) {
+                fetchCoflixSources('tv', mediaId, seasonNumber.toString(), episodeSelect.value);
             }
-        })
-        .catch(err => {
-            console.error("Error fetching episodes:", err);
+        } else {
             episodeSelect.innerHTML = '<option value="1">Épisode 1</option>';
-            fetchCoflixSources('tv', mediaId!, seasonNumber.toString(), '1');
-        });
+            fetchCoflixSources('tv', mediaId, seasonNumber.toString(), '1');
+        }
+    } catch (err) {
+        console.error("Error fetching episodes:", err);
+        episodeSelect.innerHTML = '<option value="1">Épisode 1</option>';
+        fetchCoflixSources('tv', mediaId, seasonNumber.toString(), '1');
+    }
 }
 
 if (episodeSelect) {
