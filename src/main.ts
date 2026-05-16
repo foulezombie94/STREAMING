@@ -118,6 +118,30 @@ let movieGenres: TMDBGenre[] = [];
 let tvGenres: TMDBGenre[] = [];
 let activeGenreId: number | null = null;
 
+// Détection viewport une seule fois pour éviter le Layout Thrashing (réajustements de mise en page forcés)
+const isMobileViewport = window.innerWidth <= 768;
+
+// Cache de requêtes de haut niveau avec déduplication des promesses en cours
+const apiPromises: Record<string, Promise<any>> = {};
+function fetchWithCache(url: string): Promise<any> {
+    if (!apiPromises[url]) {
+        apiPromises[url] = fetch(url)
+            .then(res => {
+                if (!res.ok) {
+                    delete apiPromises[url];
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .catch(err => {
+                delete apiPromises[url];
+                throw err;
+            });
+    }
+    return apiPromises[url];
+}
+
+
 // DOM Selectors
 const navbar = document.getElementById('navbar');
 const heroSection = document.getElementById('hero-carousel');
@@ -242,7 +266,7 @@ class HeroCarouselManager {
         if (placeholder) placeholder.remove();
 
         // Sur mobile (<768px) on utilise /w780 pour les backdrops (M-2 : poids réseau)
-        const isMobile = window.innerWidth <= 768;
+        const isMobile = isMobileViewport;
         const backdropSize = isMobile ? 'w780' : 'w1280';
         const IMAGE_HERO_URL = `https://image.tmdb.org/t/p/${backdropSize}`;
 
@@ -443,9 +467,14 @@ const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
 
 async function handleNavigation(type: any) {
     // Direct TV non disponible sur mobile — afficher un toast explicatif (M-7)
-    if (type === 'iptv' && window.innerWidth <= 768) {
+    if (type === 'iptv' && isMobileViewport) {
         showToast('📺 Direct TV est disponible uniquement sur desktop / tablette.');
         return;
+    }
+
+    if (type === 'movie' || type === 'tv') {
+        // Attendre que les genres soient chargés si on navigue sur Films ou Séries
+        await ensureGenresLoaded();
     }
 
     // Sécurité: Si le hero va être affiché mais est vide, on le charge
@@ -453,8 +482,7 @@ async function handleNavigation(type: any) {
         if (type === 'sagas') {
             await heroCarouselManager.setSagaSlides();
         } else {
-            fetch(`${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`)
-                .then(res => res.json())
+            fetchWithCache(`${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`)
                 .then(data => heroCarouselManager.setSlides(data.results || []));
         }
     }
@@ -629,7 +657,7 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
         section.id = `section-${conf.id}`;
         
         if (conf.id === 'sagas') {
-            const isMobile = window.innerWidth <= 768;
+            const isMobile = isMobileViewport;
             const maxItems = isMobile ? 8 : 6;
             const sagasToDisplay = SAGAS_DATA.slice(0, maxItems);
 
@@ -648,7 +676,7 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                         ` : '';
                         
                         // Optimisation Mobile: w185 au lieu de w500 pour les posters de sagas
-                        const isMobile = window.innerWidth <= 768;
+                        const isMobile = isMobileViewport;
                         const sagaPoster = isMobile ? saga.poster.replace('/w500/', '/w185/').replace('/w342/', '/w185/') : saga.poster;
 
                         return `
@@ -741,8 +769,7 @@ async function fetchSectionData(conf: SectionConfig) {
 
     try {
         const url = `${BASE_URL}${conf.endpoint}?api_key=${TMDB_API_KEY}&language=fr-FR${conf.params || ''}`;
-        const res = await fetch(url);
-        const data = (await res.json()) as { results: TMDBMedia[] };
+        const data = await fetchWithCache(url) as { results: TMDBMedia[] };
         let allItems: TMDBMedia[] = data.results || [];
         
         // Filtrage global blacklist (Empêche les trous dans les carrousels)
@@ -1079,6 +1106,8 @@ function initCarouselDrag() {
 // 9. Démarrage de l'application
 
 // 9. Démarrage de l'application
+let genresPromise: Promise<void> | null = null;
+
 async function fetchGenres() {
     // 1. Vérifier le cache
     const cachedMovieGenres = sessionStorage.getItem('movie_genres');
@@ -1093,12 +1122,10 @@ async function fetchGenres() {
 
     try {
         console.log("Fetching genres from API...");
-        const [mRes, tRes] = await Promise.all([
-            fetch(`${BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=fr-FR`),
-            fetch(`${BASE_URL}/genre/tv/list?api_key=${TMDB_API_KEY}&language=fr-FR`)
+        const [mData, tData] = await Promise.all([
+            fetchWithCache(`${BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=fr-FR`),
+            fetchWithCache(`${BASE_URL}/genre/tv/list?api_key=${TMDB_API_KEY}&language=fr-FR`)
         ]);
-
-        const [mData, tData] = await Promise.all([mRes.json(), tRes.json()]);
 
         movieGenres = mData.genres || [];
         tvGenres = tData.genres || [];
@@ -1116,16 +1143,23 @@ async function fetchGenres() {
     }
 }
 
+function ensureGenresLoaded(): Promise<void> {
+    if (!genresPromise) {
+        genresPromise = fetchGenres();
+    }
+    return genresPromise;
+}
+
 async function initApp() {
-    await fetchGenres();
+    // Charger les genres en arrière-plan sans bloquer l'initialisation de l'application (FCP / LCP)
+    ensureGenresLoaded();
     
     const urlParams = new URLSearchParams(window.location.search);
     const sagaId = urlParams.get('openSaga');
     
     if (sagaId) {
         // Toujours initialiser le hero en arrière-plan si on commence sur une saga
-        fetch(`${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`)
-            .then(res => res.json())
+        fetchWithCache(`${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`)
             .then(data => heroCarouselManager.setSlides(data.results || []));
             
         renderSagaDetailsPage(sagaId);
