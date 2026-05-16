@@ -3113,25 +3113,6 @@ export const SAGAS_DATA: any[] = [
         ]
     },
     {
-        "id": "1376326",
-        "title": "Diary of a Nanny Collection",
-        "poster": "https://image.tmdb.org/t/p/w500/yqH5VaOQp8nx9JvgvbeLE54cX0q.jpg",
-        "backdrop": "https://image.tmdb.org/t/p/originalnull",
-        "description": "La saga complète de Diary of a Nanny Collection.",
-        "items": [
-            "id:583423",
-            "id:1529223",
-            "id:583425",
-            "id:583428",
-            "id:583431",
-            "id:498705",
-            "id:583432",
-            "id:498722",
-            "id:664436",
-            "id:672369"
-        ]
-    },
-    {
         "id": "1321891",
         "title": "In a Violent Nature Collection",
         "poster": "https://image.tmdb.org/t/p/w500/lenUyS2HXnYpCpUBdH6FYVWY9OP.jpg",
