@@ -34,7 +34,7 @@
         <section class="details-hero" id="details-hero">
             <div class="details-content-wrapper">
                 <div class="poster-container">
-                    <img id="details-poster" src="" alt="Poster" />
+                    <img id="details-poster" src="" alt="Poster" fetchpriority="high" decoding="async" />
                 </div>
                 <div class="info-container">
                     <h1 id="details-title">Chargement...</h1>
@@ -149,6 +149,6 @@
         </div>
     </main>
 
-    <script type="module" src="/src/details.ts"></script>
+    <script type="module" src="/src/details.ts" defer></script>
 </body>
 </html>

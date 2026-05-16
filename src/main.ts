@@ -1,6 +1,5 @@
 import './style.css';
 import { ProgressManager } from './storage';
-import { SAGAS_DATA } from './sagas_data';
 
 // Tri des sagas par "popularité" réelle (basé sur une liste de priorité manuelle)
 const SAGA_PRIORITY: { [key: string]: number } = {
@@ -24,12 +23,28 @@ const SAGA_PRIORITY: { [key: string]: number } = {
     'iceage': 50           // L'Age de Glace
 };
 
-SAGAS_DATA.sort((a, b) => {
-    const prioA = SAGA_PRIORITY[a.id] || 0;
-    const prioB = SAGA_PRIORITY[b.id] || 0;
-    if (prioA !== prioB) return prioB - prioA;
-    return (b.items?.length || 0) - (a.items?.length || 0); // Fallback par nombre de films
-});
+let SAGAS_DATA: any[] = [];
+let sagasLoadingPromise: Promise<any[]> | null = null;
+
+async function loadSagasData(): Promise<any[]> {
+    if (SAGAS_DATA.length > 0) return SAGAS_DATA;
+    if (sagasLoadingPromise) return sagasLoadingPromise;
+
+    sagasLoadingPromise = (async () => {
+        const module = await import('./sagas_data');
+        const loadedSagas = [...module.SAGAS_DATA];
+        loadedSagas.sort((a, b) => {
+            const prioA = SAGA_PRIORITY[a.id] || 0;
+            const prioB = SAGA_PRIORITY[b.id] || 0;
+            if (prioA !== prioB) return prioB - prioA;
+            return (b.items?.length || 0) - (a.items?.length || 0);
+        });
+        SAGAS_DATA = loadedSagas;
+        return SAGAS_DATA;
+    })();
+
+    return sagasLoadingPromise;
+}
 
 
 import { TMDBMedia, TMDBGenre } from './types';
@@ -381,7 +396,8 @@ class HeroCarouselManager {
         this.updateDOM();
     }
 
-    public setSagaSlides() {
+    public async setSagaSlides() {
+        await loadSagasData();
         // Prendre les 50 premières sagas (les plus connues)
         const topSagas = SAGAS_DATA.slice(0, 50);
         // En choisir 6 au hasard
@@ -425,7 +441,7 @@ function toggleSearchVisibility(show: boolean) {
 // 4. Navigation Management
 const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
 
-function handleNavigation(type: any) {
+async function handleNavigation(type: any) {
     // Direct TV non disponible sur mobile — afficher un toast explicatif (M-7)
     if (type === 'iptv' && window.innerWidth <= 768) {
         showToast('📺 Direct TV est disponible uniquement sur desktop / tablette.');
@@ -435,7 +451,7 @@ function handleNavigation(type: any) {
     // Sécurité: Si le hero va être affiché mais est vide, on le charge
     if (type !== 'iptv' && type !== 'reprendre' && heroCarouselManager.getSlidesCount() === 0) {
         if (type === 'sagas') {
-            heroCarouselManager.setSagaSlides();
+            await heroCarouselManager.setSagaSlides();
         } else {
             fetch(`${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`)
                 .then(res => res.json())
@@ -445,7 +461,7 @@ function handleNavigation(type: any) {
 
     // Si on passe aux sagas, on met à jour le hero avec des sagas au hasard
     if (type === 'sagas') {
-        heroCarouselManager.setSagaSlides();
+        await heroCarouselManager.setSagaSlides();
     }
 
 
@@ -507,10 +523,10 @@ function handleNavigation(type: any) {
         if (currentType === 'reprendre') {
             renderResumePage();
         } else if (currentType === 'sagas') {
-            renderSagasPage();
+            await renderSagasPage();
         } else {
             renderGenres(currentType as any);
-            renderHomeSections(currentType as any);
+            await renderHomeSections(currentType as any);
         }
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -571,6 +587,12 @@ function renderResumePage() {
 async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: number | null = null) {
     if (!mainContent) return;
     mainContent.innerHTML = ''; 
+
+    // Précharge des sagas si nécessaire (mode non filtré et type trending ou movie)
+    const hasSagas = !genreId && (type === 'trending' || type === 'movie');
+    if (hasSagas) {
+        await loadSagasData();
+    } 
 
     if (genreId !== null) {
         // Mode Filtré (un seul carrousel/grille)
@@ -1976,6 +1998,7 @@ let sagasVisibleCount = 12;
 
 async function renderSagasPage() {
     if (!mainContent) return;
+    await loadSagasData();
     
     // Titre de la page avec conteneur de grille
     mainContent.innerHTML = `
@@ -2027,6 +2050,7 @@ function updateSagasGrid() {
 }
 
 async function renderSagaDetailsPage(sagaId: string) {
+    await loadSagasData();
     const saga = SAGAS_DATA.find(s => s.id === sagaId);
     if (!saga || !mainContent) return;
 
