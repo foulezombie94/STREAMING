@@ -549,6 +549,9 @@ async function fetchSectionData(conf: any) {
         const data = await res.json();
         let allItems = data.results || [];
         
+        // Filtrage global blacklist (Empêche les trous dans les carrousels)
+        allItems = allItems.filter((item: any) => !GLOBAL_BLACKLIST_IDS.includes(item.id.toString()));
+        
         // Filtrage spécifique pour les carrousels Animation/Anime (ID 15 caractères max)
         if (conf.id === 'genre-animation' || conf.id === 'tv-animation') {
             allItems = allItems.filter((item: any) => {
@@ -621,11 +624,6 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
 (window as any).renderCarouselPage = renderCarouselPage;
 
 function renderMovieCard(item: any, forceType: string = 'auto', extra: string = '', extraUrlParams: string = '') {
-    // Check if item is blacklisted
-    if (item.id && GLOBAL_BLACKLIST_IDS.includes(item.id.toString())) {
-        return '';
-    }
-    
     let displayType = item.media_type || forceType;
     
     // Si c'est toujours auto et pas de media_type (cas des endpoints spécifiques type /movie/popular)
@@ -918,7 +916,9 @@ async function performSearch(query: string) {
         const data = await response.json();
         
         const filteredResults = data.results.filter((item: any) => 
-            (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path
+            (item.media_type === 'movie' || item.media_type === 'tv') && 
+            item.poster_path &&
+            !GLOBAL_BLACKLIST_IDS.includes(item.id.toString())
         );
 
         if (filteredResults.length > 0) {
