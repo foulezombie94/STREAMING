@@ -616,11 +616,8 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
     if (!mainContent) return;
     mainContent.innerHTML = ''; 
 
-    // Précharge des sagas si nécessaire (mode non filtré et type trending ou movie)
-    const hasSagas = !genreId && (type === 'trending' || type === 'movie');
-    if (hasSagas) {
-        await loadSagasData();
-    } 
+    // Préchargement des sagas supprimé pour éliminer sagas_data de la chaîne réseau critique au démarrage.
+    // Les données de sagas se chargeront désormais de manière asynchrone uniquement lorsque la section Sagas entre dans le viewport.
 
     if (genreId !== null) {
         // Mode Filtré (un seul carrousel/grille)
@@ -657,66 +654,16 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
         section.id = `section-${conf.id}`;
         
         if (conf.id === 'sagas') {
-            const isMobile = isMobileViewport;
-            const maxItems = isMobile ? 8 : 6;
-            const sagasToDisplay = SAGAS_DATA.slice(0, maxItems);
-
             section.innerHTML = `
                 <h2 class="section-title">
                     <span class="material-symbols-outlined">${conf.icon}</span>
                     ${conf.title}
                 </h2>
-                <div class="sagas-grid-container" id="carousel-sagas">
-                    ${sagasToDisplay.map((saga, index) => {
-                        const isLast = index === sagasToDisplay.length - 1;
-                        const extra = isLast ? `
-                            <div class="see-more-overlay" data-nav="sagas">
-                                <span class="material-symbols-outlined">chevron_right</span>
-                            </div>
-                        ` : '';
-                        
-                        // Optimisation Mobile: w185 au lieu de w500 pour les posters de sagas
-                        const isMobile = isMobileViewport;
-                        const sagaPoster = isMobile ? saga.poster.replace('/w500/', '/w185/').replace('/w342/', '/w185/') : saga.poster;
-
-                        return `
-                            <div class="saga-card" data-id="${saga.id}">
-                                <img data-src="${sagaPoster}" alt="${saga.title}"
-                                     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-                                     width="342"
-                                     height="513"
-                                     style="background:#1a1a1a;"
-                                     decoding="async">
-                                ${extra}
-                                <div class="saga-card-overlay">
-                                    <h3>${saga.title}</h3>
-                                    <p>${saga.items.length} Films</p>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
+                <div class="carousel-container" id="carousel-${conf.id}">
+                    <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
                 </div>
             `;
             mainContent.appendChild(section);
-
-            // IntersectionObserver : charge les images seulement quand la section entre dans le viewport
-            const sagaSection = section;
-            const sagaObserver = new IntersectionObserver((entries, obs) => {
-                if (entries[0].isIntersecting) {
-                    // Déclencher le chargement de toutes les images saga
-                    sagaSection.querySelectorAll('img[data-src]').forEach(img => {
-                        const el = img as HTMLImageElement;
-                        el.src = el.dataset.src!;
-                        el.removeAttribute('data-src');
-                    });
-                    obs.disconnect(); // Une seule fois suffit
-                }
-            }, {
-                rootMargin: '200px', // Commence à charger 200px avant l'entrée dans l'écran
-                threshold: 0
-            });
-            sagaObserver.observe(sagaSection);
-
             return;
         }
 
@@ -737,12 +684,14 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
     });
 
     // --- Chargement progressif des sections (batching) ---
-    // On filtre les sections non-saga (les sagas ont déjà leur propre return)
-    const fetchableConfigs = configs.filter(c => c.id !== 'sagas');
+    // Les sagas sont désormais incluses dans le chargement différé/lazy
+    const fetchableConfigs = configs;
 
-    // Les 2 premières sections chargent immédiatement (above the fold)
-    const prioritySections = fetchableConfigs.slice(0, 2);
-    const lazySections = fetchableConfigs.slice(2);
+    // Sur mobile, seule la première section est visible au-dessus du pli (above the fold)
+    // Charger uniquement cette première section au boot élimine /trending/all/week de la chaîne critique (M-3 : économie réseau critique)
+    const priorityCount = isMobileViewport ? 1 : 2;
+    const prioritySections = fetchableConfigs.slice(0, priorityCount);
+    const lazySections = fetchableConfigs.slice(priorityCount);
 
     prioritySections.forEach(conf => fetchSectionData(conf));
 
@@ -766,6 +715,63 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
 async function fetchSectionData(conf: SectionConfig) {
     const container = document.getElementById(`carousel-${conf.id}`);
     if (!container) return;
+
+    if (conf.id === 'sagas') {
+        try {
+            await loadSagasData(); // Charge dynamiquement le morceau JS asynchrone des sagas
+            const isMobile = isMobileViewport;
+            const maxItems = isMobile ? 8 : 6;
+            const sagasToDisplay = SAGAS_DATA.slice(0, maxItems);
+
+            container.innerHTML = sagasToDisplay.map((saga, index) => {
+                const isLast = index === sagasToDisplay.length - 1;
+                const extra = isLast ? `
+                    <div class="see-more-overlay" data-nav="sagas">
+                        <span class="material-symbols-outlined">chevron_right</span>
+                    </div>
+                ` : '';
+                
+                const sagaPoster = isMobile ? saga.poster.replace('/w500/', '/w185/').replace('/w342/', '/w185/') : saga.poster;
+
+                return `
+                    <div class="saga-card" data-id="${saga.id}">
+                        <img src="${sagaPoster}" alt="${saga.title}"
+                             width="342"
+                             height="513"
+                             style="background:#1a1a1a;"
+                             decoding="async">
+                        ${extra}
+                        <div class="saga-card-overlay">
+                            <h3>${saga.title}</h3>
+                            <p>${saga.items.length} Films</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Setup des événements au clic
+            container.querySelectorAll('.saga-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const id = card.getAttribute('data-id');
+                    if (id) renderSagaDetailsPage(id);
+                });
+            });
+
+            const seeMore = container.querySelector('.see-more-overlay');
+            if (seeMore) {
+                seeMore.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleNavigation('sagas');
+                });
+            }
+
+            // Initialisation du drag de carrousel
+            initCarouselDrag();
+        } catch (e) {
+            console.error("Erreur de chargement de la section sagas:", e);
+        }
+        return;
+    }
 
     try {
         const url = `${BASE_URL}${conf.endpoint}?api_key=${TMDB_API_KEY}&language=fr-FR${conf.params || ''}`;
