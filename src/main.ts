@@ -60,6 +60,7 @@ const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '10
 
 // Cache pour la pagination des sections
 const sectionDataStore: { [key: string]: { items: TMDBMedia[], conf: SectionConfig } } = {};
+const sagaCache: { [key: string]: TMDBMedia[] } = {};
 
 const GENRE_ICONS: { [key: string]: string } = {
     'Action': 'bolt',
@@ -2069,9 +2070,11 @@ async function renderSagaDetailsPage(sagaId: string) {
         <section class="popular">
             <h2 class="section-title">Les films de la collection</h2>
             <div class="carousel-container" id="saga-movies-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; padding: 20px; overflow: visible;">
-                <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
-                <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
-                <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
+                ${!sagaCache[sagaId] ? `
+                    <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
+                    <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
+                    <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
+                ` : ''}
             </div>
         </section>
     `;
@@ -2079,7 +2082,63 @@ async function renderSagaDetailsPage(sagaId: string) {
     const grid = document.getElementById('saga-movies-grid');
     if (!grid) return;
 
-    // Charger les films par lots de 5 pour éviter le Rate Limiting (DDoS TMDB)
+    // Helper pour formater les devises (conservé de l'original)
+    const formatCurrency = (amount: number) => {
+        const euroAmount = amount * 0.93;
+        if (euroAmount >= 1e9) return `${(euroAmount / 1e9).toFixed(1)} Md €`;
+        if (euroAmount >= 1e6) return `${(euroAmount / 1e6).toFixed(0)} M €`;
+        return `${Math.round(euroAmount).toLocaleString()} €`;
+    };
+
+    // Helper de rendu partagé (Cache + Frais)
+    const displaySagaResults = (movies: TMDBMedia[]) => {
+        grid.innerHTML = movies.map((m, index) => {
+            const loadingMode = index < 4 ? 'eager' : 'lazy';
+            return renderMovieCard(m, m.media_type || 'movie', '', `&fromSaga=${saga.id}`, loadingMode);
+        }).join('');
+
+        let totalMinutes = 0, totalRating = 0, totalBudget = 0, totalRevenue = 0;
+        let years: number[] = [];
+
+        movies.forEach(m => {
+            if (m.runtime) totalMinutes += m.runtime;
+            if (m.vote_average) totalRating += m.vote_average;
+            if (m.budget) totalBudget += m.budget;
+            if (m.revenue) totalRevenue += m.revenue;
+            const date = m.release_date || m.first_air_date;
+            if (date) {
+                const y = new Date(date).getFullYear();
+                if (!isNaN(y)) years.push(y);
+            }
+        });
+
+        const durationEl = document.getElementById('total-duration');
+        const ratingEl = document.getElementById('avg-rating');
+        const budgetEl = document.getElementById('total-budget');
+        const revenueEl = document.getElementById('total-revenue');
+        const yearsEl = document.getElementById('saga-years');
+
+        if (durationEl) {
+            const h = Math.floor(totalMinutes / 60);
+            const min = totalMinutes % 60;
+            durationEl.textContent = `${h}h ${min}m`;
+        }
+        if (ratingEl) ratingEl.textContent = movies.length ? (totalRating / movies.length).toFixed(1) + '/10' : '--';
+        if (budgetEl) budgetEl.textContent = totalBudget > 0 ? formatCurrency(totalBudget) : 'N/A';
+        if (revenueEl) revenueEl.textContent = totalRevenue > 0 ? formatCurrency(totalRevenue) : 'N/A';
+        if (yearsEl && years.length) {
+            const minYear = Math.min(...years), maxYear = Math.max(...years);
+            yearsEl.textContent = minYear === maxYear ? `${minYear}` : `${minYear}-${maxYear}`;
+        }
+    };
+
+    // 1. UTILISATION DU CACHE
+    if (sagaCache[sagaId]) {
+        displaySagaResults(sagaCache[sagaId]);
+        return;
+    }
+
+    // 2. CHARGEMENT FRAIS (Original conservé)
     const movies: TMDBMedia[] = [];
     const chunkSize = 5;
     
@@ -2090,25 +2149,25 @@ async function renderSagaDetailsPage(sagaId: string) {
                 if (title.startsWith('id:')) {
                     const movieId = title.split(':')[1];
                     if (GLOBAL_BLACKLIST_IDS.includes(movieId)) return null;
-                    const detailRes = await fetch(`${BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
-                    const data = await detailRes.json();
+                    const res = await fetch(`${BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
+                    const data = await res.json();
                     data.media_type = 'movie';
                     return data;
                 }
                 if (title.startsWith('tv:')) {
                     const tvId = title.split(':')[1];
                     if (GLOBAL_BLACKLIST_IDS.includes(tvId)) return null;
-                    const detailRes = await fetch(`${BASE_URL}/tv/${tvId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
-                    const data = await detailRes.json();
+                    const res = await fetch(`${BASE_URL}/tv/${tvId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
+                    const data = await res.json();
                     data.media_type = 'tv';
                     return data;
                 }
                 const searchRes = await fetch(`${BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(title)}&page=1`);
                 const searchData = await searchRes.json();
                 if (searchData.results && searchData.results.length > 0) {
-                    const movie = searchData.results[0];
-                    const detailRes = await fetch(`${BASE_URL}/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=fr-FR`);
+                    const detailRes = await fetch(`${BASE_URL}/movie/${searchData.results[0].id}?api_key=${TMDB_API_KEY}&language=fr-FR`);
                     const data = await detailRes.json();
+                    data.media_type = 'movie';
                     return data;
                 }
                 return null;
@@ -2116,73 +2175,17 @@ async function renderSagaDetailsPage(sagaId: string) {
         });
         
         const results = await Promise.all(chunkPromises);
-        results.forEach(m => {
-            if (m && m.id) movies.push(m);
-        });
-        
-        // Petit délai entre les lots si nécessaire (throttle)
-        if (i + chunkSize < saga.items.length) {
-            await new Promise(r => setTimeout(r, 100));
-        }
+        results.forEach(m => { if (m && m.id) movies.push(m); });
+        if (i + chunkSize < saga.items.length) await new Promise(r => setTimeout(r, 100));
     }
     
-    // Si pas de résultats
     if (movies.length === 0) {
         grid.innerHTML = '<p style="padding: 20px; color: #aaa;">Aucun contenu disponible pour cette saga.</p>';
         return;
     }
 
-    grid.innerHTML = movies.map((m, index) => {
-        const loadingMode = index < 4 ? 'eager' : 'lazy';
-        return renderMovieCard(m, 'movie', '', `&fromSaga=${saga.id}`, loadingMode);
-    }).join('');
-
-    // Calculer les statistiques globales
-    let totalMinutes = 0;
-    let totalRating = 0;
-    let totalBudget = 0;
-    let totalRevenue = 0;
-    let years: number[] = [];
-
-    movies.forEach(m => {
-        if (m.runtime) totalMinutes += m.runtime;
-        if (m.vote_average) totalRating += m.vote_average;
-        if (m.budget) totalBudget += m.budget;
-        if (m.revenue) totalRevenue += m.revenue;
-        const releaseDate = m.release_date || m.first_air_date;
-        if (releaseDate) years.push(new Date(releaseDate).getFullYear());
-    });
-
-    const durationEl = document.getElementById('total-duration');
-    const ratingEl = document.getElementById('avg-rating');
-    const budgetEl = document.getElementById('total-budget');
-    const revenueEl = document.getElementById('total-revenue');
-    const yearsEl = document.getElementById('saga-years');
-
-    const formatCurrency = (amount: number) => {
-        const euroAmount = amount * 0.93; // Conversion approx USD to EUR
-        if (euroAmount >= 1e9) return `${(euroAmount / 1e9).toFixed(1)} Md €`;
-        if (euroAmount >= 1e6) return `${(euroAmount / 1e6).toFixed(0)} M €`;
-        return `${Math.round(euroAmount).toLocaleString()} €`;
-    };
-
-    if (durationEl) {
-        const hours = Math.floor(totalMinutes / 60);
-        const mins = totalMinutes % 60;
-        durationEl.textContent = `${hours}h ${mins}m`;
-    }
-    if (ratingEl) {
-        const avg = movies.length > 0 ? (totalRating / movies.length).toFixed(1) : '0.0';
-        ratingEl.textContent = `${avg}/10`;
-    }
-    if (budgetEl) budgetEl.textContent = formatCurrency(totalBudget);
-    if (revenueEl) revenueEl.textContent = formatCurrency(totalRevenue);
-    
-    if (yearsEl && years.length > 0) {
-        const minYear = Math.min(...years);
-        const maxYear = Math.max(...years);
-        yearsEl.textContent = minYear === maxYear ? `${minYear}` : `${minYear}-${maxYear}`;
-    }
+    sagaCache[sagaId] = movies;
+    displaySagaResults(movies);
 }
 
 // Exposer au global
