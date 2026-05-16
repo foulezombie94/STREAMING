@@ -587,9 +587,12 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                             </div>
                         ` : '';
                         
+                        // data-src au lieu de src → pas de chargement immédiat (lazy réel via IntersectionObserver)
                         return `
                             <div class="saga-card" data-id="${saga.id}">
-                                <img src="${saga.poster}" alt="${saga.title}" loading="lazy">
+                                <img data-src="${saga.poster}" alt="${saga.title}"
+                                     src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                                     style="background:#1a1a1a;">
                                 ${extra}
                                 <div class="saga-card-overlay">
                                     <h3>${saga.title}</h3>
@@ -601,8 +604,28 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                 </div>
             `;
             mainContent.appendChild(section);
+
+            // IntersectionObserver : charge les images seulement quand la section entre dans le viewport
+            const sagaSection = section;
+            const sagaObserver = new IntersectionObserver((entries, obs) => {
+                if (entries[0].isIntersecting) {
+                    // Déclencher le chargement de toutes les images saga
+                    sagaSection.querySelectorAll('img[data-src]').forEach(img => {
+                        const el = img as HTMLImageElement;
+                        el.src = el.dataset.src!;
+                        el.removeAttribute('data-src');
+                    });
+                    obs.disconnect(); // Une seule fois suffit
+                }
+            }, {
+                rootMargin: '200px', // Commence à charger 200px avant l'entrée dans l'écran
+                threshold: 0
+            });
+            sagaObserver.observe(sagaSection);
+
             return;
         }
+
 
 
 
