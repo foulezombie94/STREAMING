@@ -1,4 +1,5 @@
 import './style.css';
+import './style.css';
 import { ProgressManager } from './storage';
 import { SAGAS_DATA } from './sagas_data';
 import { TMDBMedia, TMDBGenre } from './types';
@@ -61,6 +62,7 @@ const GENRE_ICONS: { [key: string]: string } = {
 };
 
 // 2. DOM Elements & State
+let currentIptvObserver: IntersectionObserver | null = null;
 let currentData: TMDBMedia[] = []; 
 let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' | 'sagas' = 'trending';
 
@@ -128,6 +130,23 @@ class HeroCarouselManager {
         heroPauseBtn?.addEventListener('click', () => this.togglePause());
         heroPrevBtn?.addEventListener('click', () => this.prevSlide());
         heroNextBtn?.addEventListener('click', () => this.nextSlide());
+
+        // Event Delegation for slides
+        heroSlidesContainer?.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            const btn = target.closest('button');
+            if (btn) {
+                const id = btn.getAttribute('data-id');
+                const type = btn.getAttribute('data-type');
+                if (id && type) {
+                    if (type === 'saga') {
+                        (window as any).renderSagaDetailsPage(id);
+                    } else {
+                        window.location.href = `/details.html?id=${id}&type=${type}`;
+                    }
+                }
+            }
+        });
     }
 
     public setSlides(data: TMDBMedia[]) {
@@ -139,7 +158,7 @@ class HeroCarouselManager {
         this.renderSlides();
         this.renderDots();
         this.goToSlide(0);
-        this.startTimer();
+        this.start();
     }
 
     private renderSlides() {
@@ -164,9 +183,6 @@ class HeroCarouselManager {
 
             const isLongTitle = title && title.length > 18;
             
-            const actionOnClick = isSaga 
-                ? `renderSagaDetailsPage('${item.id}')`
-                : `window.location.href='/details.html?id=${item.id}&type=${displayType}'`;
 
             return `
                 <div class="hero-slide ${index === 0 ? 'active' : ''} ${isLongTitle ? 'long-title' : ''}" style="background-image: url('${backdropUrl}')" data-index="${index}">
@@ -185,10 +201,10 @@ class HeroCarouselManager {
                         <h1>${title}</h1>
                         <p class="slide-synopsis">${overview}</p>
                         <div class="slide-actions">
-                            <button class="hero-btn-play" onclick="${actionOnClick}">
+                            <button class="hero-btn-play" data-id="${item.id}" data-type="${displayType}">
                                 <span class="material-symbols-outlined">${isSaga ? 'visibility' : 'play_arrow'}</span> ${isSaga ? 'Découvrir' : 'Lecture'}
                             </button>
-                            <button class="hero-btn-info" onclick="${actionOnClick}">
+                            <button class="hero-btn-info" data-id="${item.id}" data-type="${displayType}">
                                 <span class="material-symbols-outlined">info</span> Plus d'infos
                             </button>
                         </div>
@@ -247,7 +263,7 @@ class HeroCarouselManager {
         if (icon) icon.textContent = this.isPaused ? 'play_arrow' : 'pause';
     }
 
-    private startTimer() {
+    public start() {
         if (this.interval) clearInterval(this.interval);
         this.interval = setInterval(() => {
             if (!this.isPaused) {
@@ -286,7 +302,7 @@ class HeroCarouselManager {
         this.renderSlides();
         this.renderDots();
         this.goToSlide(0);
-        this.startTimer();
+        this.start();
     }
 }
 
@@ -371,7 +387,12 @@ function handleNavigation(type: any) {
     if (heroSection) {
         const isHidden = (currentType === 'iptv' || currentType === 'reprendre');
         heroSection.style.display = isHidden ? 'none' : 'block';
-        if (!isHidden) heroCarouselManager.refresh();
+        if (!isHidden) {
+            heroCarouselManager.refresh();
+            heroCarouselManager.start();
+        } else {
+            heroCarouselManager.stop();
+        }
     }
 
     if (mainContent) {
@@ -510,13 +531,13 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                     ${sagasToDisplay.map((saga, index) => {
                         const isLast = index === sagasToDisplay.length - 1;
                         const extra = isLast ? `
-                            <div class="see-more-overlay" onclick="event.stopPropagation(); handleNavigation('sagas')">
+                            <div class="see-more-overlay" data-nav="sagas">
                                 <span class="material-symbols-outlined">chevron_right</span>
                             </div>
                         ` : '';
                         
                         return `
-                            <div class="saga-card" onclick="renderSagaDetailsPage('${saga.id}')">
+                            <div class="saga-card" data-id="${saga.id}">
                                 <img src="${saga.poster}" alt="${saga.title}" loading="lazy">
                                 ${extra}
                                 <div class="saga-card-overlay">
@@ -615,7 +636,7 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
         // Bouton SUIVANT sur le 6ème film s'il reste des films
         if (index === pageSize - 1 && startIndex + pageSize < items.length) {
             extra += `
-                <div class="see-more-overlay" onclick="event.stopPropagation(); renderCarouselPage('${sectionId}', ${startIndex + pageSize})">
+                <div class="see-more-overlay" data-section="${sectionId}" data-next="${startIndex + pageSize}">
                     <span class="material-symbols-outlined">chevron_right</span>
                 </div>
             `;
@@ -649,7 +670,7 @@ function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: str
     const year = releaseDate ? new Date(releaseDate).getFullYear() : '';
     
     return `
-        <div class="movie-card" onclick="window.location.href='/details.html?id=${item.id}&type=${displayType}${extraUrlParams}'">
+        <div class="movie-card" data-id="${item.id}" data-type="${displayType}" data-extra="${extraUrlParams}">
             <div class="card-badge">${badgeText}</div>
             <img src="${poster}" alt="${item.title || item.name}" loading="lazy">
             <div class="card-overlay">
@@ -678,6 +699,49 @@ function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: str
         });
     });
 });
+
+// Centralized Event Delegation for Main Content
+if (mainContent) {
+    mainContent.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        
+        // 1. See More Overlay & Back Button Saga
+        const seeMore = target.closest('.see-more-overlay, .back-btn-saga') as HTMLElement | null;
+        if (seeMore) {
+            e.stopPropagation();
+            const sectionId = seeMore.dataset.section;
+            const nextIdx = seeMore.dataset.next;
+            const navType = seeMore.dataset.nav;
+
+            if (sectionId && nextIdx) {
+                renderCarouselPage(sectionId, parseInt(nextIdx));
+            } else if (navType) {
+                handleNavigation(navType);
+            }
+            return;
+        }
+
+        // 2. Movie Card
+        const card = target.closest('.movie-card') as HTMLElement | null;
+        if (card) {
+            const id = card.dataset.id;
+            const type = card.dataset.type;
+            const extra = card.dataset.extra || '';
+            if (id && type) {
+                window.location.href = `/details.html?id=${id}&type=${type}${extra}`;
+            }
+            return;
+        }
+
+        // 3. Saga Card
+        const saga = target.closest('.saga-card') as HTMLElement | null;
+        if (saga) {
+            const id = saga.dataset.id;
+            if (id) (window as any).renderSagaDetailsPage(id);
+            return;
+        }
+    });
+}
 
 const genreFiltersContainer = document.getElementById('genre-filters-container');
 const desktopGenres = document.getElementById('desktop-genres');
@@ -734,6 +798,9 @@ function initCarouselDrag() {
     const containers = document.querySelectorAll('.carousel-container, .sagas-grid-container');
     
     containers.forEach((container: any) => {
+        if (container.dataset.dragInit === 'true') return;
+        container.dataset.dragInit = 'true';
+
         let isDown = false;
         let startX: number = 0;
         let scrollLeft: number = 0;
@@ -758,6 +825,16 @@ function initCarouselDrag() {
             lastTime = performance.now();
             
             cancelAnimationFrame(rafId);
+
+            // Attacher les écouteurs globaux SEULEMENT pendant le drag pour éviter les fuites de mémoire
+            window.addEventListener('mousemove', moveDrag);
+            window.addEventListener('mouseup', endDrag);
+            window.addEventListener('touchmove', moveDragWrapper, { passive: false });
+            window.addEventListener('touchend', endDrag);
+        };
+
+        const moveDragWrapper = (e: TouchEvent) => {
+            if (isDown) moveDrag(e);
         };
 
         const endDrag = () => {
@@ -766,6 +843,12 @@ function initCarouselDrag() {
             container.style.cursor = 'grab';
             container.style.userSelect = '';
             
+            // Détacher les écouteurs globaux
+            window.removeEventListener('mousemove', moveDrag);
+            window.removeEventListener('mouseup', endDrag);
+            window.removeEventListener('touchmove', moveDragWrapper);
+            window.removeEventListener('touchend', endDrag);
+
             const step = () => {
                 if (Math.abs(velocity) > 0.2) {
                     container.scrollLeft -= velocity;
@@ -786,10 +869,6 @@ function initCarouselDrag() {
             
             if (Math.abs(walk) > 5) {
                 isDragging = true;
-                // Empêcher le scroll vertical SEULEMENT si on drag horizontalement de façon significative
-                if ('touches' in e) {
-                    // e.preventDefault(); // On ne le fait plus pour laisser le scroll natif gérer le pan-y
-                }
             }
             
             const currentTime = performance.now();
@@ -807,14 +886,7 @@ function initCarouselDrag() {
         };
 
         container.addEventListener('mousedown', beginDrag);
-        window.addEventListener('mousemove', moveDrag);
-        window.addEventListener('mouseup', endDrag);
-        
         container.addEventListener('touchstart', beginDrag, { passive: true });
-        window.addEventListener('touchmove', (e) => {
-            if (isDown) moveDrag(e);
-        }, { passive: false });
-        window.addEventListener('touchend', endDrag);
         
         container.addEventListener('click', (e: MouseEvent) => {
             if (isDragging) {
@@ -1041,20 +1113,14 @@ document.getElementById('xtream-submit')?.addEventListener('click', async () => 
         // Test de connexion via l'API player_api.php
         const rawTestUrl = `${host}/player_api.php?username=${user}&password=${pass}`;
         const proxyVercel = `/api/proxy?url=${encodeURIComponent(rawTestUrl)}`;
-        const proxyCors = `https://corsproxy.io/?${encodeURIComponent(rawTestUrl)}`;
-        const proxyAllOrigins = `https://api.allorigins.win/raw?url=${encodeURIComponent(rawTestUrl)}`;
         
         let response;
         try {
             response = await fetch(proxyVercel);
             if (!response.ok) throw new Error();
         } catch (e) {
-            try {
-                response = await fetch(proxyCors);
-                if (!response.ok) throw new Error();
-            } catch (e2) {
-                response = await fetch(proxyAllOrigins);
-            }
+            // SÉCURITÉ : Pas de fallback vers corsproxy.io ou allorigins.win pour les identifiants
+            throw new Error("Impossible de contacter le serveur TV sécurisé.");
         }
         
         if (!response || !response.ok) throw new Error(`Impossible de contacter le serveur TV (Status: ${response?.status || 'Unknown'})`);
@@ -1200,15 +1266,8 @@ async function loadXtreamData() {
 
     try {
         const fetchWithProxy = async (target: string) => {
-            try {
-                const r1 = await fetch(`/api/proxy?url=${encodeURIComponent(target)}`);
-                if (r1.ok) return r1;
-            } catch(e){}
-            try {
-                const r2 = await fetch(`https://corsproxy.io/?${encodeURIComponent(target)}`);
-                if (r2.ok) return r2;
-            } catch(e){}
-            return fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`);
+            // SÉCURITÉ : Uniquement le proxy Vercel pour les identifiants IPTV
+            return fetch(`/api/proxy?url=${encodeURIComponent(target)}`);
         };
 
         // Step 1: Categories
@@ -1514,14 +1573,18 @@ function renderLiveTV(filter: string = '', categoryId: string = 'all') {
     // Add sentinel to grid
     liveGrid.appendChild(sentinel);
 
-    // Initial Observer
-    const observer = new IntersectionObserver((entries) => {
+    // Initial Observer - Nettoyage avant réutilisation
+    if (currentIptvObserver) {
+        currentIptvObserver.disconnect();
+    }
+
+    currentIptvObserver = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) {
             renderNextBatch();
         }
     }, { rootMargin: '200px' });
 
-    observer.observe(sentinel);
+    currentIptvObserver.observe(sentinel);
 }
 
 // Logic for playing a live channel
@@ -1574,32 +1637,19 @@ function playLiveChannel(url: string, name: string) {
     }, 650);
 
     function startStreamLoad() {
-        const getProxyUrl = (targetUrl: string, type: 'vercel' | 'corsproxy' | 'allorigins') => {
+    const getProxyUrl = (targetUrl: string, type: 'vercel') => {
         const encoded = encodeURIComponent(targetUrl);
         const isHttps = window.location.protocol === 'https:';
         if (!isHttps && type === 'vercel') return targetUrl;
-        switch (type) {
-            case 'vercel': return `/api/proxy?url=${encoded}`;
-            case 'corsproxy': return `https://corsproxy.io/?${encoded}`;
-            case 'allorigins': return `https://api.allorigins.win/raw?url=${encoded}`;
-            default: return targetUrl;
-        }
+        return `/api/proxy?url=${encoded}`;
     };
 
-    let currentProxyType: 'vercel' | 'corsproxy' | 'allorigins' = 'vercel';
+    let currentProxyType: 'vercel' = 'vercel';
     let streamUrl = getProxyUrl(url, currentProxyType);
 
     const tryNextProxy = () => {
-        if (currentProxyType === 'vercel') {
-            currentProxyType = 'corsproxy';
-        } else if (currentProxyType === 'corsproxy') {
-            currentProxyType = 'allorigins';
-        } else {
-            return false;
-        }
-        streamUrl = getProxyUrl(url, currentProxyType);
-        console.log(`Bascule vers le proxy: ${currentProxyType}`);
-        return true;
+        // Suppression des proxys publics pour la sécurité des identifiants
+        return false;
     };
 
     console.log(`Lecture via ${currentProxyType}: ${streamUrl}`);
@@ -1791,7 +1841,7 @@ function updateSagasGrid() {
     
     const visibleSagas = SAGAS_DATA.slice(0, sagasVisibleCount);
     grid.innerHTML = visibleSagas.map(saga => `
-        <div class="saga-card" onclick="renderSagaDetailsPage('${saga.id}')">
+        <div class="saga-card" data-id="${saga.id}">
             <img src="${saga.poster}" alt="${saga.title}" loading="lazy">
             <div class="saga-card-overlay">
                 <h3>${saga.title}</h3>
@@ -1818,7 +1868,7 @@ async function renderSagaDetailsPage(sagaId: string) {
     mainContent.innerHTML = `
         <div class="saga-details-hero" style="background-image: url('${saga.backdrop}')">
             <div class="saga-details-content">
-                <button class="back-btn-saga" onclick="handleNavigation('sagas')">
+                <button class="back-btn-saga" data-nav="sagas">
                     <span class="material-symbols-outlined">arrow_back</span> Retour aux Sagas
                 </button>
                 <div class="saga-header-flex">
@@ -1869,39 +1919,52 @@ async function renderSagaDetailsPage(sagaId: string) {
     const grid = document.getElementById('saga-movies-grid');
     if (!grid) return;
 
-    // Charger les films
-    const moviePromises = saga.items.map(async (title: string) => {
-        try {
-            if (title.startsWith('id:')) {
-                const movieId = title.split(':')[1];
-                if (GLOBAL_BLACKLIST_IDS.includes(movieId)) return null;
-                const detailRes = await fetch(`${BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
-                const data = await detailRes.json();
-                data.media_type = 'movie'; // Ensure media_type is set
-                return data;
-            }
-            if (title.startsWith('tv:')) {
-                const tvId = title.split(':')[1];
-                if (GLOBAL_BLACKLIST_IDS.includes(tvId)) return null;
-                const detailRes = await fetch(`${BASE_URL}/tv/${tvId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
-                const data = await detailRes.json();
-                data.media_type = 'tv'; // Ensure media_type is set
-                return data;
-            }
-            // Search movie
-            const searchRes = await fetch(`${BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(title)}&page=1`);
-            const searchData = await searchRes.json();
-            if (searchData.results && searchData.results.length > 0) {
-                const movie = searchData.results[0];
-                // Fetch full details for runtime, budget, revenue
-                const detailRes = await fetch(`${BASE_URL}/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=fr-FR`);
-                return await detailRes.json();
-            }
-            return null;
-        } catch (e) { return null; }
-    });
-
-    const movies = (await Promise.all(moviePromises)).filter(m => m !== null && m.id) as TMDBMedia[];
+    // Charger les films par lots de 5 pour éviter le Rate Limiting (DDoS TMDB)
+    const movies: TMDBMedia[] = [];
+    const chunkSize = 5;
+    
+    for (let i = 0; i < saga.items.length; i += chunkSize) {
+        const chunk = saga.items.slice(i, i + chunkSize);
+        const chunkPromises = chunk.map(async (title: string) => {
+            try {
+                if (title.startsWith('id:')) {
+                    const movieId = title.split(':')[1];
+                    if (GLOBAL_BLACKLIST_IDS.includes(movieId)) return null;
+                    const detailRes = await fetch(`${BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
+                    const data = await detailRes.json();
+                    data.media_type = 'movie';
+                    return data;
+                }
+                if (title.startsWith('tv:')) {
+                    const tvId = title.split(':')[1];
+                    if (GLOBAL_BLACKLIST_IDS.includes(tvId)) return null;
+                    const detailRes = await fetch(`${BASE_URL}/tv/${tvId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
+                    const data = await detailRes.json();
+                    data.media_type = 'tv';
+                    return data;
+                }
+                const searchRes = await fetch(`${BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(title)}&page=1`);
+                const searchData = await searchRes.json();
+                if (searchData.results && searchData.results.length > 0) {
+                    const movie = searchData.results[0];
+                    const detailRes = await fetch(`${BASE_URL}/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=fr-FR`);
+                    const data = await detailRes.json();
+                    return data;
+                }
+                return null;
+            } catch (e) { return null; }
+        });
+        
+        const results = await Promise.all(chunkPromises);
+        results.forEach(m => {
+            if (m && m.id) movies.push(m);
+        });
+        
+        // Petit délai entre les lots si nécessaire (throttle)
+        if (i + chunkSize < saga.items.length) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+    }
     
     // Si pas de résultats
     if (movies.length === 0) {

@@ -37,6 +37,7 @@ export interface TMDBMedia {
     backdrop?: string;
     description?: string;
     isSaga?: boolean;
+    seasons?: TMDBSeason[];
 }
 
 export interface SectionConfig {

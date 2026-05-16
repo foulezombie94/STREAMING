@@ -1,10 +1,8 @@
 import './style.css';
-import { TMDBGenre, TMDBCrewMember, TMDBVideo } from './types';
-
 import { ProgressManager } from './storage';
 import { 
     TMDBMedia, TMDBCastMember, TMDBActorDetail, 
-    CoflixSource, TMDBEpisode 
+    CoflixSource, TMDBEpisode, TMDBGenre, TMDBCrewMember, TMDBVideo 
 } from './types';
 
 // 1. Constantes TMDB
@@ -23,20 +21,20 @@ const mediaId = urlParams.get('id');
 const mediaType = urlParams.get('type');
 const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '1017007', '1025539', '1013441', '1439930'];
 
-// 3. Éléments du DOM
-const heroSection = document.getElementById('details-hero');
-const titleEl = document.getElementById('details-title');
-const metaEl = document.getElementById('details-meta');
-const genresEl = document.getElementById('details-genres');
-const taglineEl = document.getElementById('details-tagline');
-const synopsisEl = document.getElementById('details-synopsis');
-const posterEl = document.getElementById('details-poster') as HTMLImageElement;
-const castListEl = document.getElementById('cast-list');
-const playTrailerBtn = document.getElementById('play-trailer-btn');
-const trailerModal = document.getElementById('trailer-modal');
-const closeModalBtn = document.getElementById('close-modal');
-const trailerIframe = document.getElementById('trailer-iframe') as HTMLIFrameElement;
-const navbar = document.getElementById('navbar');
+// 3. Éléments du DOM (Typage strict)
+const heroSection = document.getElementById('details-hero') as HTMLDivElement | null;
+const titleEl = document.getElementById('details-title') as HTMLHeadingElement | null;
+const metaEl = document.getElementById('details-meta') as HTMLDivElement | null;
+const genresEl = document.getElementById('details-genres') as HTMLDivElement | null;
+const taglineEl = document.getElementById('details-tagline') as HTMLDivElement | null;
+const synopsisEl = document.getElementById('details-synopsis') as HTMLParagraphElement | null;
+const posterEl = document.getElementById('details-poster') as HTMLImageElement | null;
+const castListEl = document.getElementById('cast-list') as HTMLDivElement | null;
+const playTrailerBtn = document.getElementById('play-trailer-btn') as HTMLButtonElement | null;
+const trailerModal = document.getElementById('trailer-modal') as HTMLDivElement | null;
+const closeModalBtn = document.getElementById('close-modal') as HTMLButtonElement | null;
+const trailerIframe = document.getElementById('trailer-iframe') as HTMLIFrameElement | null;
+const navbar = document.getElementById('navbar') as HTMLElement | null;
 
 let trailerKey = '';
 let currentMediaData: TMDBMedia | null = null; 
@@ -92,7 +90,19 @@ async function fetchDetails() {
     try {
         // Fetch details + credits + videos en Français
         const response = await fetch(`${BASE_URL}/${mediaType}/${mediaId}?api_key=${TMDB_API_KEY}&language=fr-FR&append_to_response=credits,videos`);
+        
+        // SÉCURITÉ : Vérification du statut HTTP avant parsing
+        if (!response.ok) {
+            throw new Error(`Erreur serveur TMDB (Status: ${response.status})`);
+        }
+
         const data = (await response.json()) as TMDBMedia;
+        
+        // Vérification de l'intégrité des données
+        if (!(data as any).id) {
+             throw new Error("Média introuvable dans la base TMDB.");
+        }
+
         currentMediaData = data;
 
         // Background
@@ -165,7 +175,21 @@ async function fetchDetails() {
         }
 
         // Watch Button Logic - Store season count
-        currentSeasonsCount = data.number_of_seasons || 0;
+        if (mediaType === 'tv') {
+            // Robust season detection
+            currentSeasonsCount = data.number_of_seasons || (data.seasons ? data.seasons.length : 0);
+            if (currentSeasonsCount === 0) currentSeasonsCount = 1;
+
+            // Pre-populate selectors immediately to avoid "Empty" state
+            const lastProgress = ProgressManager.getProgress(mediaId!, 'tv');
+            const targetS = lastProgress?.season || 1;
+            const targetE = lastProgress?.episode || 1;
+            
+            if (seasonSelect) {
+                populateSeasonSelect(targetS);
+                fetchEpisodes(targetS, targetE);
+            }
+        }
 
         if (extraInfoGrid && extraInfo.length > 0) {
             extraInfoGrid.innerHTML = extraInfo.map(info => `
@@ -402,7 +426,7 @@ const videoIframe = document.getElementById('video-iframe') as HTMLIFrameElement
 const closePlayerBtn = document.getElementById('close-player-btn');
 
 // Dynamic Sources logic
-const serverButtonsContainer = document.querySelector('.server-buttons');
+const serverButtonsContainer = document.querySelector('.server-buttons') as HTMLElement | null;
 let coflixSources: CoflixSource[] = [];
 
 async function fetchCoflixSources(type: string, id: string, season?: string, episode?: string) {
@@ -458,10 +482,10 @@ async function fetchCoflixSources(type: string, id: string, season?: string, epi
         serverButtonsContainer.innerHTML = '<span class="no-sources">❌ Erreur de recherche (Coflix).</span>';
     }
 }
-
 function renderSourceButtons() {
     if (!serverButtonsContainer) return;
     serverButtonsContainer.innerHTML = '';
+    const fragment = document.createDocumentFragment();
 
     coflixSources.forEach((source, index) => {
         const btn = document.createElement('button');
@@ -505,8 +529,10 @@ function renderSourceButtons() {
                 }
             }
         };
-        serverButtonsContainer.appendChild(btn);
+        fragment.appendChild(btn);
     });
+
+    serverButtonsContainer.appendChild(fragment);
 
     // We don't auto-play anymore so the user sees the server selection menu
     if (videoIframe) {
@@ -552,18 +578,8 @@ if (watchMovieBtn && playerSection && videoIframe) {
         } else {
             if (playerControls) playerControls.style.display = 'flex';
             
-            // Si on n'a pas encore de sélecteurs (premier clic)
-            if (seasonSelect && (seasonSelect.value === '' || seasonSelect.options.length <= 1) && currentSeasonsCount > 0) {
-                const lastProgress = ProgressManager.getProgress(mediaId!, 'tv');
-                if (lastProgress && lastProgress.season) {
-                    populateSeasonSelect(lastProgress.season);
-                    fetchEpisodes(lastProgress.season, lastProgress.episode);
-                } else {
-                    populateSeasonSelect(1);
-                    fetchEpisodes(1);
-                }
-            } else if (seasonSelect && episodeSelect) {
-                // Si déjà peuplé, on lance la recherche directement
+            // Les sélecteurs devraient déjà être peuplés par fetchDetails
+            if (seasonSelect && episodeSelect) {
                 fetchCoflixSources('tv', mediaId!, seasonSelect.value, episodeSelect.value);
             }
         }

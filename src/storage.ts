@@ -104,7 +104,7 @@ export const ProgressManager = {
      * Génère un identifiant unique (Rule 1)
      */
     generateId(mediaId: string, mediaType: string): string {
-        return `${mediaType}_${mediaId}`;
+        return `${mediaType.toLowerCase()}_${mediaId}`;
     },
 
     /**
