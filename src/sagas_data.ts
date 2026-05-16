@@ -2280,23 +2280,7 @@ export const SAGAS_DATA: any[] = [
             "id:253217"
         ]
     },
-    {
-        "id": "579938",
-        "title": "Vašátko a Horác - Saga",
-        "poster": "https://image.tmdb.org/t/p/w500/mUSiXhbq7sY6iTpimpVBwfGmWo8.jpg",
-        "backdrop": "https://image.tmdb.org/t/p/w1280/3lUTMewn0V6H4M4H12bUk7JoV0a.jpg",
-        "description": "La saga complète de Vašátko a Horác - Saga.",
-        "items": [
-            "id:579939",
-            "id:580024",
-            "id:580026",
-            "id:581598",
-            "id:579935",
-            "id:581596",
-            "id:1074369",
-            "id:1080340"
-        ]
-    },
+
     {
         "id": "375799",
         "title": "À vos marques... Party! - Saga",
@@ -2654,21 +2638,7 @@ export const SAGAS_DATA: any[] = [
             "id:882096"
         ]
     },
-    {
-        "id": "859206",
-        "title": "プロジェクトA子シリーズ",
-        "poster": "https://image.tmdb.org/t/p/w500/94rOl3N9vrqru9xu3yiqf44kLwP.jpg",
-        "backdrop": "https://image.tmdb.org/t/p/w1280/f20jF6Uzpmzr7yDoyqOwT4iM6Oe.jpg",
-        "description": "La saga complète de プロジェクトA子シリーズ.",
-        "items": [
-            "id:42025",
-            "id:134828",
-            "id:134830",
-            "id:134831",
-            "id:134832",
-            "id:134833"
-        ]
-    },
+
     {
         "id": "1321619",
         "title": "A Royal Family Collection",
@@ -3146,21 +3116,7 @@ export const SAGAS_DATA: any[] = [
             "id:582887"
         ]
     },
-    {
-        "id": "823347",
-        "title": "O pejskovi a kočičce",
-        "poster": "https://image.tmdb.org/t/p/w500null",
-        "backdrop": "https://image.tmdb.org/t/p/originalnull",
-        "description": "La saga complète de O pejskovi a kočičce.",
-        "items": [
-            "id:732663",
-            "id:454208",
-            "id:732660",
-            "id:823349",
-            "id:823351",
-            "id:823352"
-        ]
-    },
+
     {
         "id": "1273283",
         "title": "31 Minutos - Teatro a Mil",
