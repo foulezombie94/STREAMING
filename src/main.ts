@@ -855,8 +855,10 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
         return cardHtml.replace('class="movie-card"', `class="movie-card" style="animation-delay: ${index * 0.1}s; animation-name: fadeInUp"`);
     }).join('');
 
-    // Scroll to start of container for a clean switch
-    container.scrollTo({ left: 0, behavior: 'smooth' });
+    // Scroll to start of container for a clean switch (déferré pour éliminer le Forced Synchronous Reflow)
+    setTimeout(() => {
+        if (container) container.scrollTo({ left: 0, behavior: 'smooth' });
+    }, 0);
     initCarouselDrag();
 }
 

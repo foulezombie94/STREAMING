@@ -25,9 +25,9 @@
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet"></noscript>
     
-    <!-- Material Symbols Outlined - Chargement asynchrone non-bloquant -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap" rel="stylesheet"></noscript>
+    <!-- Material Symbols Outlined - Chargement asynchrone non-bloquant avec display=block pour éliminer tout Layout Shift -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=block" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=block" rel="stylesheet"></noscript>
     <!-- Fallback immédiat pour les icônes (visibles dès le premier rendu) -->
     <style>
         /* Masque le FOUT des Material Symbols pendant le chargement async */
@@ -46,8 +46,12 @@
             -webkit-font-feature-settings: 'liga';
             font-feature-settings: 'liga';
             -webkit-font-smoothing: antialiased;
-            /* Prevent layout shift while font loads */
-            font-display: block;
+            /* Empêche le texte brut des icônes de causer du décalage de mise en page (CLS) */
+            width: 24px;
+            height: 24px;
+            overflow: hidden;
+            flex-shrink: 0;
+            vertical-align: middle;
         }
         /* Critical CSS above the fold - évite FOUC */
         body { background: #050505; color: #fff; font-family: 'Inter', system-ui, sans-serif; margin: 0; }
