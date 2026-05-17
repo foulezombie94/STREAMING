@@ -1058,16 +1058,18 @@ function initCarouselDrag() {
         const beginDrag = (e: MouseEvent | TouchEvent) => {
             if ('button' in e && e.button !== 0) return;
             
-            isDown = true;
-            isDragging = false;
-            container.style.cursor = 'grabbing';
-            container.style.userSelect = 'none';
-            
+            // Lecture DOM d'abord pour éviter le Layout Thrashing (ajustement forcé de la mise en page)
             const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
             startX = clientX;
             scrollLeft = container.scrollLeft;
             lastX = clientX;
             lastTime = performance.now();
+
+            // Écritures DOM ensuite
+            isDown = true;
+            isDragging = false;
+            container.style.cursor = 'grabbing';
+            container.style.userSelect = 'none';
             
             cancelAnimationFrame(rafId);
 
@@ -1192,6 +1194,10 @@ function ensureGenresLoaded(): Promise<void> {
 }
 
 async function initApp() {
+    // Déclencher immédiatement la requête TMDB pour les tendances en parallèle (évite le waterfall réseau)
+    const trendingUrl = `${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`;
+    fetchWithCache(trendingUrl);
+
     // Charger les genres en arrière-plan sans bloquer l'initialisation de l'application (FCP / LCP)
     ensureGenresLoaded();
     
