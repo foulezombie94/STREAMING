@@ -222,6 +222,13 @@ class HeroCarouselManager {
                     if (type === 'saga') {
                         (window as any).renderSagaDetailsPage(id);
                     } else {
+                        // Trouver le media dans les slides du carousel pour l'aperçu instantané
+                        const foundMedia = this.slides.find(s => s.id.toString() === id);
+                        if (foundMedia) {
+                            sessionStorage.setItem('current_media_preview', JSON.stringify(foundMedia));
+                        } else {
+                            sessionStorage.removeItem('current_media_preview');
+                        }
                         window.location.href = `/details.html?id=${id}&type=${type}`;
                     }
                 }
@@ -938,6 +945,34 @@ if (mainContent) {
             const type = card.dataset.type;
             const extra = card.dataset.extra || '';
             if (id && type) {
+                // Trouver le média dans notre cache local
+                let foundMedia: TMDBMedia | null = null;
+                
+                // Chercher dans les sections du home
+                for (const sectionId in sectionDataStore) {
+                    const item = sectionDataStore[sectionId].items.find(i => i.id.toString() === id);
+                    if (item) {
+                        foundMedia = item;
+                        break;
+                    }
+                }
+                
+                // Chercher dans currentData (résultats de recherche)
+                if (!foundMedia && currentData) {
+                    foundMedia = currentData.find(i => i.id.toString() === id) || null;
+                }
+                
+                // Chercher dans le carousel
+                if (!foundMedia && (heroCarouselManager as any).slides) {
+                    foundMedia = (heroCarouselManager as any).slides.find((s: any) => s.id.toString() === id) || null;
+                }
+                
+                if (foundMedia) {
+                    sessionStorage.setItem('current_media_preview', JSON.stringify(foundMedia));
+                } else {
+                    sessionStorage.removeItem('current_media_preview');
+                }
+                
                 window.location.href = `/details.html?id=${id}&type=${type}${extra}`;
             }
             return;

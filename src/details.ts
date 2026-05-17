@@ -76,6 +76,41 @@ function setupBackButton() {
 // Appeler setupBackButton au chargement du DOM
 document.addEventListener('DOMContentLoaded', setupBackButton);
 
+function renderPreview(data: any) {
+    if (!data) return;
+
+    // Background
+    const backdropPath = data.backdrop_path || data.backdrop;
+    if (heroSection && backdropPath) {
+        const bgUrl = backdropPath.startsWith('http') ? backdropPath : `${IMAGE_BASE_URL}${backdropPath}`;
+        heroSection.style.backgroundImage = `url('${bgUrl}')`;
+    }
+
+    // Poster
+    const posterPath = data.poster_path || data.poster;
+    if (posterEl && posterPath) {
+        const posterUrl = posterPath.startsWith('http') ? posterPath : `${IMAGE_W500_URL}${posterPath}`;
+        posterEl.src = posterUrl;
+        posterEl.alt = data.title || data.name || '';
+        posterEl.style.opacity = '1';
+    }
+
+    // Titre
+    if (titleEl) titleEl.textContent = data.title || data.name || '';
+
+    // Synopsis
+    if (synopsisEl) synopsisEl.textContent = data.overview || data.description || "Aucun synopsis disponible.";
+
+    // Meta (Année, Note)
+    const releaseDate = data.release_date || data.first_air_date;
+    const year = releaseDate ? new Date(releaseDate).getFullYear() : '';
+    const rating = data.vote_average ? data.vote_average.toFixed(1) : '';
+
+    if (metaEl) {
+        metaEl.innerHTML = `<span class="rating">★ ${rating}/10</span> ${year ? `<span>&bull; ${year}</span>` : ''}`;
+    }
+}
+
 async function fetchDetails() {
     if (!mediaId || !mediaType) {
         if (titleEl) titleEl.textContent = "Erreur : Médias introuvables.";
@@ -86,6 +121,20 @@ async function fetchDetails() {
         if (titleEl) titleEl.textContent = "Contenu indisponible.";
         if (synopsisEl) synopsisEl.textContent = "Ce film a été retiré de la plateforme.";
         return;
+    }
+
+    // Tenter de charger un aperçu instantané du cache pour un chargement instantané (zéro latence)
+    try {
+        const cached = sessionStorage.getItem('current_media_preview');
+        if (cached) {
+            const previewData = JSON.parse(cached);
+            if (previewData && previewData.id.toString() === mediaId) {
+                console.log("[Details Cache] Loading preview data instantly:", previewData);
+                renderPreview(previewData);
+            }
+        }
+    } catch (err) {
+        console.warn("Impossible de charger l'aperçu du cache:", err);
     }
 
     try {
