@@ -141,10 +141,18 @@ router.get('/', async (req, res) => {
         
         const contentType = response.headers['content-type'] || '';
         
+        req.on('close', () => {
+            if (response && response.data) {
+                try { response.data.destroy(); } catch (e) {}
+            }
+        });
+
         if (contentType.includes('text/html')) {
             let body = '';
             response.data.on('data', chunk => body += chunk);
             response.data.on('end', () => {
+                if (res.headersSent || res.writableEnded) return;
+                
                 // Inject <base> tag to fix relative URLs (like /dl, /assets, etc.)
                 const baseTag = `<base href="${urlObj.origin}${urlObj.pathname}">`;
                 let processedBody = body;
@@ -168,7 +176,9 @@ router.get('/', async (req, res) => {
         }
     } catch (error) {
         console.error(`[Proxy Error] ${targetUrl} -> ${error.message}`);
-        res.status(500).send(`Proxy error: ${error.message}`);
+        if (!res.headersSent && !res.writableEnded) {
+            res.status(500).send(`Proxy error: ${error.message}`);
+        }
     }
 });
 

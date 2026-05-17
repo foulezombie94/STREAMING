@@ -126,6 +126,12 @@ export default async function handler(req, res) {
         
         Object.keys(headers).forEach(key => res.setHeader(key, headers[key]));
 
+        req.on('close', () => {
+            if (response && response.data) {
+                try { response.data.destroy(); } catch (e) {}
+            }
+        });
+
         response.data.pipe(res);
     } catch (error) {
         console.error(`[Proxy Error] ${targetUrl} -> ${error.message}`);
