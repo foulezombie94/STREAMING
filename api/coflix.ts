@@ -216,9 +216,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const parts = pathStr.split('/').filter(Boolean);
         const type = parts[0] === 'tv' ? 'series' : 'movie';
         const tmdbId = parts[1];
-        const season = parts[2];
-        const episode = parts[3];
+        let season = parts[2];
+        let episode = parts[3];
         const isAnime = req.query.isAnime === 'true';
+        const absoluteEpisode = Array.isArray(req.query.absoluteEpisode) ? req.query.absoluteEpisode[0] : req.query.absoluteEpisode;
+
+        if (isAnime && absoluteEpisode && type === 'series') {
+            console.log(`[Coflix Prod] Mapping animé episode TMDB S${season}E${episode} -> Coflix S1E${absoluteEpisode}`);
+            season = "1";
+            episode = absoluteEpisode;
+        }
 
         console.log(`[Coflix Prod] ${type} - ${titleStr} (${tmdbId}) [Year: ${yearStr}] [Animé: ${isAnime}] ${type === 'series' ? `S${season}E${episode}` : ''}`);
 

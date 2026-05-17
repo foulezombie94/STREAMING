@@ -460,7 +460,32 @@ async function fetchCoflixSources(type: string, id: string, season?: string, epi
         const isAnime = (currentMediaData as any)?.genres?.some((g: { id: number }) => g.id === 16)
                      || (currentMediaData as any)?.genre_ids?.includes(16);
 
-        const titleUrl = `?title=${encodeURIComponent(title)}${year ? `&year=${year}` : ""}${isAnime ? '&isAnime=true' : ''}`;
+        let absoluteEpisode = "";
+        if (isAnime && type === 'tv' && season && episode) {
+            try {
+                let sum = 0;
+                const sNum = parseInt(season);
+                const eNum = parseInt(episode);
+                
+                const seasons = (currentMediaData as any)?.seasons;
+                if (seasons && Array.isArray(seasons)) {
+                    // Filtrer et trier pour avoir toutes les saisons avant la saison actuelle
+                    const previousSeasons = seasons
+                        .filter((s: any) => s.season_number > 0 && s.season_number < sNum)
+                        .sort((a: any, b: any) => a.season_number - b.season_number);
+                        
+                    for (const s of previousSeasons) {
+                        sum += s.episode_count || 0;
+                    }
+                    absoluteEpisode = (sum + eNum).toString();
+                    console.log(`[Anime Absolute Episode] TMDB S${season}E${episode} -> Absolute Ep ${absoluteEpisode}`);
+                }
+            } catch (err) {
+                console.error("Failed to compute absolute episode number", err);
+            }
+        }
+
+        const titleUrl = `?title=${encodeURIComponent(title)}${year ? `&year=${year}` : ""}${isAnime ? '&isAnime=true' : ''}${absoluteEpisode ? `&absoluteEpisode=${absoluteEpisode}` : ''}`;
         
         // Vérification de la présence des paramètres obligatoires
         if (!id) throw new Error("ID manquant");
