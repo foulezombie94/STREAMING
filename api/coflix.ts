@@ -204,7 +204,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
         const { path, title, year } = req.query;
-        if (!path || !title) return res.status(400).json({ success: false, error: "Missing path or title" });
+        if (!path || !title) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            return res.status(400).json({ success: false, error: "Missing path or title" });
+        }
 
         const pathStr = Array.isArray(path) ? path[0] : path;
         const titleStr = Array.isArray(title) ? title[0] : title;
@@ -225,6 +228,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const cached = await redis.get(cacheKey);
             if (cached) {
                 console.log(`[Cache Prod] Hit for ${titleStr}`);
+                res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
                 return res.json({ success: true, sources: cached, cached: true });
             }
         } catch (e) {
@@ -271,6 +275,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const cachedSearch = await redis.get(searchCacheKey);
             if (cachedSearch) {
                 console.log(`[Coflix Prod] Search Cache Hit for ${normalized}`);
+                res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
                 return res.json({ success: true, sources: cachedSearch, cached: true });
             }
         } catch (e) {}
@@ -531,12 +536,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             try {
                 await redis.set(cacheKey, finalPlayers.slice(0, 10), { ex: 86400 });
             } catch (e: any) {}
+            res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
+        } else {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         }
 
         return res.json({ success: true, sources: finalPlayers.slice(0, 10) });
 
     } catch (error: any) {
         console.error("[Coflix Prod Error]", error.message);
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         return res.status(200).json({ success: false, error: error.message });
     }
 }
