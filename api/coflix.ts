@@ -312,9 +312,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Filter and Rank
         const mapped = results.map((r: any) => {
             const pType = (r.post_type || "").toLowerCase();
+            const url = (r.url || "").toLowerCase();
+            
+            // Si le post_type est anime/animes ou que l'URL contient "/animes/" ou "/anime/", on le considère comme une série (car il a des saisons/épisodes)
+            const isAnimeType = pType === 'anime' || pType === 'animes' || url.includes('/animes/') || url.includes('/anime/');
+            
             return {
                 ...r,
-                type: (pType === 'series' || pType === 'tv') ? 'series' : 'movie'
+                type: (pType === 'series' || pType === 'tv' || isAnimeType) ? 'series' : 'movie',
+                isAnimeType
             };
         }).filter((r: any) => r.type === type);
 
@@ -333,20 +339,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Si c'est un animé, on filtre pour éviter les versions live-action.
         // On détecte la version live-action par l'année dans l'URL (ex: /one-piece-2023/) ou
         // par des mots-clés comme "live", "netflix" dans le titre Coflix.
-        if (isAnime && ranked.length > 1) {
+        if (isAnime && ranked.length > 0) {
             const liveActionKeywords = /live.?action|netflix|\d{4}(?=\/|$)/i;
-            const animeOnly = ranked.filter((r: any) => {
+            const animeFiltered = ranked.filter((r: any) => {
                 const url = (r.url || "").toLowerCase();
                 const title = normalize(r.post_title || r.title || "");
                 // Exclure si l'URL ou le titre contient des indicateurs de live-action
                 return !liveActionKeywords.test(url) && !title.includes('live action');
             });
-            if (animeOnly.length > 0) {
-                console.log(`[Coflix Prod] Animé filter: ${ranked.length} -> ${animeOnly.length} résultats (live-action exclus)`);
-                ranked = animeOnly;
-            } else {
-                // Si le filtre strict élimine tout, on garde les résultats originaux
-                console.log(`[Coflix Prod] Animé filter: aucun résultat après filtrage, conservation des originaux`);
+
+            // Parmi ceux qui restent, on priorise ceux qui sont explicitement des animés (/animes/ ou type anime)
+            const exactAnimes = animeFiltered.filter((r: any) => {
+                const url = (r.url || "").toLowerCase();
+                return url.includes('/animes/') || url.includes('/anime/') || r.isAnimeType;
+            });
+
+            if (exactAnimes.length > 0) {
+                console.log(`[Coflix Prod] Strict Animé filter match: prioritizing ${exactAnimes.length} exact anime results`);
+                ranked = exactAnimes;
+            } else if (animeFiltered.length > 0) {
+                console.log(`[Coflix Prod] Animé filter: keeping ${animeFiltered.length} non-live-action results`);
+                ranked = animeFiltered;
+            }
+        } else if (!isAnime && ranked.length > 0) {
+            // Si ce n'est PAS un animé, on exclut les URLs qui contiennent "/animes/" ou "/anime/"
+            const nonAnimes = ranked.filter((r: any) => {
+                const url = (r.url || "").toLowerCase();
+                return !url.includes('/animes/') && !url.includes('/anime/') && !r.isAnimeType;
+            });
+            if (nonAnimes.length > 0) {
+                console.log(`[Coflix Prod] Non-Animé filter: keeping ${nonAnimes.length} standard series results`);
+                ranked = nonAnimes;
             }
         }
 
