@@ -191,6 +191,7 @@ class HeroCarouselManager {
     private lastTimestamp: number = 0;
     private progress: number = 0;
     private isPaused: boolean = false;
+    private isIntersecting: boolean = true;
     private readonly DURATION: number = 8000;
 
     constructor() {
@@ -204,6 +205,21 @@ class HeroCarouselManager {
                 this.start();
             }
         });
+
+        // Désactive le carrousel lorsqu'il n'est pas affiché à l'écran (économie CPU/batterie)
+        const heroSection = document.getElementById('hero-carousel');
+        if (heroSection && 'IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                const entry = entries[0];
+                this.isIntersecting = entry.isIntersecting;
+                if (!entry.isIntersecting) {
+                    this.stop();
+                } else if (this.slides.length > 0 && !this.isPaused) {
+                    this.start();
+                }
+            }, { threshold: 0.05 });
+            observer.observe(heroSection);
+        }
     }
 
     private initEventListeners() {
@@ -386,23 +402,29 @@ class HeroCarouselManager {
         this.isPaused = !this.isPaused;
         const icon = heroPauseBtn?.querySelector('.material-symbols-outlined');
         if (icon) icon.textContent = this.isPaused ? 'play_arrow' : 'pause';
+        if (this.isPaused) {
+            this.stop();
+        } else {
+            this.start();
+        }
     }
 
     public start() {
         this.stop();
+        if (this.isPaused || !this.isIntersecting) return;
         this.lastTimestamp = 0;
         const tick = (timestamp: number) => {
-            if (!this.isPaused) {
-                if (this.lastTimestamp === 0) this.lastTimestamp = timestamp;
-                const elapsed = timestamp - this.lastTimestamp;
-                this.lastTimestamp = timestamp;
-                this.progress += (elapsed / this.DURATION) * 100;
-                if (heroProgress) heroProgress.style.width = `${Math.min(this.progress, 100)}%`;
-                if (this.progress >= 100) {
-                    this.nextSlide();
-                    return; // nextSlide -> goToSlide -> start() de nouveau
-                }
-            } else {
+            if (this.isPaused || !this.isIntersecting) {
+                this.stop();
+                return;
+            }
+            if (this.lastTimestamp === 0) this.lastTimestamp = timestamp;
+            const elapsed = timestamp - this.lastTimestamp;
+            this.lastTimestamp = timestamp;
+            this.progress += (elapsed / this.DURATION) * 100;
+            if (heroProgress) heroProgress.style.width = `${Math.min(this.progress, 100)}%`;
+            if (this.progress >= 100) {
+                this.nextSlide();
                 this.lastTimestamp = timestamp;
             }
             this.rafId = requestAnimationFrame(tick);
@@ -444,13 +466,18 @@ class HeroCarouselManager {
 const heroCarouselManager = new HeroCarouselManager();
 
 // 3. Navbar Glassmorphism
+let isNavbarScrolled = false;
 window.addEventListener('scroll', () => {
-    if (window.scrollY > 50 || currentType === 'iptv') {
-        navbar?.classList.add('scrolled');
-    } else {
-        navbar?.classList.remove('scrolled');
+    const shouldScroll = window.scrollY > 50 || currentType === 'iptv';
+    if (shouldScroll !== isNavbarScrolled) {
+        isNavbarScrolled = shouldScroll;
+        if (isNavbarScrolled) {
+            navbar?.classList.add('scrolled');
+        } else {
+            navbar?.classList.remove('scrolled');
+        }
     }
-});
+}, { passive: true });
 
 // Shortcut to focus search
 window.addEventListener('keydown', (e) => {
@@ -1081,7 +1108,7 @@ function initCarouselDrag() {
             // Attacher les écouteurs globaux SEULEMENT pendant le drag pour éviter les fuites de mémoire
             window.addEventListener('mousemove', moveDrag);
             window.addEventListener('mouseup', endDrag);
-            window.addEventListener('touchmove', moveDragWrapper, { passive: false });
+            window.addEventListener('touchmove', moveDragWrapper, { passive: true });
             window.addEventListener('touchend', endDrag);
         };
 

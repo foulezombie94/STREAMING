@@ -43,13 +43,18 @@ const actorCache: Record<string, TMDBActorDetail> = {};
 let currentSeasonsCount = 0;
 
 // Gestion Navbar
+let isNavbarScrolled = false;
 window.addEventListener('scroll', () => {
-    if (window.scrollY > 50) {
-        navbar?.classList.add('scrolled');
-    } else {
-        navbar?.classList.remove('scrolled');
+    const shouldScroll = window.scrollY > 50;
+    if (shouldScroll !== isNavbarScrolled) {
+        isNavbarScrolled = shouldScroll;
+        if (isNavbarScrolled) {
+            navbar?.classList.add('scrolled');
+        } else {
+            navbar?.classList.remove('scrolled');
+        }
     }
-});
+}, { passive: true });
 
 // Gestion du bouton Retour (Saga ou Home)
 function setupBackButton() {
@@ -281,6 +286,7 @@ async function fetchDetails() {
                 });
 
                 card.addEventListener('mouseenter', async () => {
+                    clearTimeout(hoverTimeout);
                     const actorId = card.getAttribute('data-id');
                     const roleStr = card.getAttribute('data-character');
                     if (!actorId) return;
