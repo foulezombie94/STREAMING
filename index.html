@@ -19,6 +19,11 @@
     <link rel="preconnect" href="https://image.tmdb.org" crossorigin="anonymous">
     <link rel="preconnect" href="https://api.themoviedb.org" crossorigin="anonymous">
 
+    <!-- Preload Fetch des requêtes critiques TMDB pour éliminer la cascade réseau (zéro délai mobile) -->
+    <link rel="preload" as="fetch" href="https://api.themoviedb.org/3/trending/all/day?api_key=e1a2bb6a3ed288feb5d767908732e751&language=fr-FR" crossorigin="anonymous">
+    <link rel="preload" as="fetch" href="https://api.themoviedb.org/3/genre/movie/list?api_key=e1a2bb6a3ed288feb5d767908732e751&language=fr-FR" crossorigin="anonymous">
+    <link rel="preload" as="fetch" href="https://api.themoviedb.org/3/genre/tv/list?api_key=e1a2bb6a3ed288feb5d767908732e751&language=fr-FR" crossorigin="anonymous">
+
     <!-- Fonts : display=swap pour affichage immédiat (Réduit le LCP/TBT) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="anonymous">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">

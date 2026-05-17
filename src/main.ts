@@ -118,8 +118,8 @@ let movieGenres: TMDBGenre[] = [];
 let tvGenres: TMDBGenre[] = [];
 let activeGenreId: number | null = null;
 
-// Détection viewport une seule fois pour éviter le Layout Thrashing (réajustements de mise en page forcés)
-const isMobileViewport = window.innerWidth <= 768;
+// Détection viewport dynamique pour éviter le Layout Thrashing au startup (réajustements de mise en page forcés)
+const isMobileViewport = () => window.innerWidth <= 768;
 
 // Cache de requêtes de haut niveau avec déduplication des promesses en cours
 const apiPromises: Record<string, Promise<any>> = {};
@@ -272,9 +272,9 @@ class HeroCarouselManager {
         const placeholder = document.getElementById('hero-lcp-placeholder');
         if (placeholder) placeholder.remove();
 
-        // Sur mobile (<768px) on utilise /w780 pour les backdrops (M-2 : poids réseau)
-        const isMobile = isMobileViewport;
-        const backdropSize = isMobile ? 'w780' : 'w1280';
+        // Poids réseau optimisé de manière granulaire sur mobile (M-2 : w300 pour mobile <480px, w780 pour tablette, w1280 pour desktop)
+        const width = window.innerWidth;
+        const backdropSize = width <= 480 ? 'w300' : (width <= 768 ? 'w780' : 'w1280');
         const IMAGE_HERO_URL = `https://image.tmdb.org/t/p/${backdropSize}`;
 
 
@@ -474,7 +474,7 @@ const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
 
 async function handleNavigation(type: any) {
     // Direct TV non disponible sur mobile — afficher un toast explicatif (M-7)
-    if (type === 'iptv' && isMobileViewport) {
+    if (type === 'iptv' && isMobileViewport()) {
         showToast('📺 Direct TV est disponible uniquement sur desktop / tablette.');
         return;
     }
@@ -564,7 +564,10 @@ async function handleNavigation(type: any) {
             await renderHomeSections(currentType as any);
         }
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Déferré dans la tâche suivante pour éliminer le Forced Synchronous Reflow
+    setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 0);
 }
 (window as any).handleNavigation = handleNavigation;
 
@@ -696,7 +699,7 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
 
     // Sur mobile, seule la première section est visible au-dessus du pli (above the fold)
     // Charger uniquement cette première section au boot élimine /trending/all/week de la chaîne critique (M-3 : économie réseau critique)
-    const priorityCount = isMobileViewport ? 1 : 2;
+    const priorityCount = isMobileViewport() ? 1 : 2;
     const prioritySections = fetchableConfigs.slice(0, priorityCount);
     const lazySections = fetchableConfigs.slice(priorityCount);
 
@@ -726,7 +729,7 @@ async function fetchSectionData(conf: SectionConfig) {
     if (conf.id === 'sagas') {
         try {
             await loadSagasData(); // Charge dynamiquement le morceau JS asynchrone des sagas
-            const isMobile = isMobileViewport;
+            const isMobile = isMobileViewport();
             const maxItems = isMobile ? 8 : 6;
             const sagasToDisplay = SAGAS_DATA.slice(0, maxItems);
 
@@ -855,11 +858,11 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
         return cardHtml.replace('class="movie-card"', `class="movie-card" style="animation-delay: ${index * 0.1}s; animation-name: fadeInUp"`);
     }).join('');
 
-    // Scroll to start of container for a clean switch (déferré pour éliminer le Forced Synchronous Reflow)
+    // Scroll et initialisation du drag déferrés pour éliminer le Forced Synchronous Reflow et le Layout Thrashing (R-1)
     setTimeout(() => {
         if (container) container.scrollTo({ left: 0, behavior: 'smooth' });
+        initCarouselDrag();
     }, 0);
-    initCarouselDrag();
 }
 
 // Exposer au scope global pour les onclick
