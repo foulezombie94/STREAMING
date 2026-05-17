@@ -455,7 +455,12 @@ async function fetchCoflixSources(type: string, id: string, season?: string, epi
             year = yearMatch ? yearMatch[1] : "";
         }
 
-        const titleUrl = `?title=${encodeURIComponent(title)}${year ? `&year=${year}` : ""}`;
+        // Détecter si c'est un animé (genre Animation = ID 16 dans TMDB)
+        // Cela permet de distinguer One Piece (animé) vs One Piece (Netflix live-action)
+        const isAnime = (currentMediaData as any)?.genres?.some((g: { id: number }) => g.id === 16)
+                     || (currentMediaData as any)?.genre_ids?.includes(16);
+
+        const titleUrl = `?title=${encodeURIComponent(title)}${year ? `&year=${year}` : ""}${isAnime ? '&isAnime=true' : ''}`;
         
         // Vérification de la présence des paramètres obligatoires
         if (!id) throw new Error("ID manquant");

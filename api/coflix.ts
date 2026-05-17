@@ -215,8 +215,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const tmdbId = parts[1];
         const season = parts[2];
         const episode = parts[3];
+        const isAnime = req.query.isAnime === 'true';
 
-        console.log(`[Coflix Prod] ${type} - ${titleStr} (${tmdbId}) [Year: ${yearStr}] ${type === 'series' ? `S${season}E${episode}` : ''}`);
+        console.log(`[Coflix Prod] ${type} - ${titleStr} (${tmdbId}) [Year: ${yearStr}] [Animé: ${isAnime}] ${type === 'series' ? `S${season}E${episode}` : ''}`);
 
         // 0. Cache Check
         const cacheKey = `mv:coflix:${type}:${tmdbId}_${season || '0'}_${episode || '0'}`;
@@ -316,13 +317,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const normalize = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s]/gi, ' ').replace(/\s+/g, ' ').trim();
         const qNorm = normalize(titleStr);
         
-        const ranked = mapped.sort((a: any, b: any) => {
+        let ranked = mapped.sort((a: any, b: any) => {
             const aNorm = normalize(a.post_title || a.title || "");
             const bNorm = normalize(b.post_title || b.title || "");
             const aScore = aNorm === qNorm ? 1 : (aNorm.includes(qNorm) ? 0.8 : 0.5);
             const bScore = bNorm === qNorm ? 1 : (bNorm.includes(qNorm) ? 0.8 : 0.5);
             return bScore - aScore;
         });
+
+        // Si c'est un animé, on filtre pour éviter les versions live-action.
+        // On détecte la version live-action par l'année dans l'URL (ex: /one-piece-2023/) ou
+        // par des mots-clés comme "live", "netflix" dans le titre Coflix.
+        if (isAnime && ranked.length > 1) {
+            const liveActionKeywords = /live.?action|netflix|\d{4}(?=\/|$)/i;
+            const animeOnly = ranked.filter((r: any) => {
+                const url = (r.url || "").toLowerCase();
+                const title = normalize(r.post_title || r.title || "");
+                // Exclure si l'URL ou le titre contient des indicateurs de live-action
+                return !liveActionKeywords.test(url) && !title.includes('live action');
+            });
+            if (animeOnly.length > 0) {
+                console.log(`[Coflix Prod] Animé filter: ${ranked.length} -> ${animeOnly.length} résultats (live-action exclus)`);
+                ranked = animeOnly;
+            } else {
+                // Si le filtre strict élimine tout, on garde les résultats originaux
+                console.log(`[Coflix Prod] Animé filter: aucun résultat après filtrage, conservation des originaux`);
+            }
+        }
 
         const target = ranked[0];
         if (!target) return res.json({ success: true, sources: [] });
