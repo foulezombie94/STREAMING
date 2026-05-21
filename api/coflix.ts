@@ -561,10 +561,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.log(`[Coflix Prod] HTML Preview: ${$.html().substring(0, 500)}...`);
         }
         
-        // 5. Cache Save (24h)
+        // 5. Cache Save (72h)
         if (finalPlayers.length > 0) {
             try {
-                await redis.set(cacheKey, finalPlayers.slice(0, 10), { ex: 86400 });
+                await redis.set(cacheKey, finalPlayers.slice(0, 10), { ex: 259200 });
             } catch (e: any) {}
             res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
         } else {
