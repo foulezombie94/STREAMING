@@ -5,6 +5,11 @@ import {
     CoflixSource, TMDBEpisode, TMDBGenre, TMDBCrewMember, TMDBVideo 
 } from './types';
 
+// Initialisation précoce du mode performance
+if (localStorage.getItem('perf_mode') === 'low') {
+    document.documentElement.classList.add('low-perf');
+}
+
 // 1. Constantes TMDB
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 

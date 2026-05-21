@@ -64,6 +64,11 @@ if (/Android/i.test(navigator.userAgent) && /Chrome/i.test(navigator.userAgent))
     document.documentElement.classList.add('android-chrome');
 }
 
+// Initialisation précoce du mode performance
+if (localStorage.getItem('perf_mode') === 'low') {
+    document.documentElement.classList.add('low-perf');
+}
+
 // 1. Constantes TMDB
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
@@ -407,10 +412,10 @@ class HeroCarouselManager {
 
     public start() {
         this.stop();
-        if (this.isPaused || !this.isIntersecting) return;
+        if (this.isPaused || !this.isIntersecting || document.documentElement.classList.contains('low-perf')) return;
         this.lastTimestamp = 0;
         const tick = (timestamp: number) => {
-            if (this.isPaused || !this.isIntersecting) {
+            if (this.isPaused || !this.isIntersecting || document.documentElement.classList.contains('low-perf')) {
                 this.stop();
                 return;
             }
@@ -609,6 +614,21 @@ closeSearch?.addEventListener('click', () => {
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && searchOverlay?.classList.contains('active')) {
         searchOverlay?.classList.remove('active');
+    }
+});
+
+// 4c. Logique du bouton Performance (Éco)
+const perfToggle = document.getElementById('perf-toggle');
+perfToggle?.addEventListener('click', () => {
+    const isLowPerf = document.documentElement.classList.toggle('low-perf');
+    if (isLowPerf) {
+        localStorage.setItem('perf_mode', 'low');
+        heroCarouselManager.stop();
+        showToast('🚀 Mode Performance activé (Effets et animations réduits)');
+    } else {
+        localStorage.setItem('perf_mode', 'high');
+        heroCarouselManager.start();
+        showToast('✨ Mode Performance désactivé (Visuels optimisés)');
     }
 });
 
@@ -1082,6 +1102,8 @@ function initCarouselDrag() {
         let lastX: number = 0;
         let lastTime: number = 0;
         let isDragging = false;
+        let targetScrollLeft: number = 0;
+        let updateScheduled = false;
 
         const beginDrag = (e: MouseEvent | TouchEvent) => {
             if ('button' in e && e.button !== 0) return;
@@ -1090,6 +1112,7 @@ function initCarouselDrag() {
             const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
             startX = clientX;
             scrollLeft = container.scrollLeft;
+            targetScrollLeft = scrollLeft;
             lastX = clientX;
             lastTime = performance.now();
 
@@ -1154,7 +1177,17 @@ function initCarouselDrag() {
                 velocity = velocity * 0.2 + instantVelocity * 0.8;
             }
             
-            container.scrollLeft = scrollLeft - walk;
+            targetScrollLeft = scrollLeft - walk;
+
+            if (!updateScheduled) {
+                updateScheduled = true;
+                requestAnimationFrame(() => {
+                    if (isDown) {
+                        container.scrollLeft = targetScrollLeft;
+                    }
+                    updateScheduled = false;
+                });
+            }
             
             lastX = clientX;
             lastTime = currentTime;
