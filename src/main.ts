@@ -71,7 +71,7 @@ function detectLowEndDevice(): boolean {
         return true;
     }
     // 2. Mémoire vive (RAM) disponible en GB (Chromium uniquement)
-    if ((navigator as any).deviceMemory && (navigator as any).deviceMemory <= 4) {
+    if ((navigator as any).deviceMemory && (navigator as any).deviceMemory < 6) {
         return true;
     }
     // 3. Option "Économie de données" ou connexion lente
