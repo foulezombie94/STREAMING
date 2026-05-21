@@ -875,6 +875,13 @@ a {
         max-width: 160px;
     }
 
+    .hero-btn-play .material-symbols-outlined {
+        font-size: 22px;
+    }
+
+    .hero-btn-info .material-symbols-outlined {
+        font-size: 20px;
+    }
 
     .hero-btn-play {
         background: #ef4444;

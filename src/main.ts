@@ -342,12 +342,8 @@ class HeroCarouselManager {
                         <h1>${title}</h1>
                         <p class="slide-synopsis">${overview}</p>
                         <div class="slide-actions">
-                            <button class="hero-btn-play" data-id="${item.id}" data-type="${displayType}">
-                                <span class="material-symbols-outlined">${isSaga ? 'visibility' : 'play_arrow'}</span> ${isSaga ? 'Découvrir' : 'Lecture'}
-                            </button>
-                            <button class="hero-btn-info" data-id="${item.id}" data-type="${displayType}">
-                                <span class="material-symbols-outlined">info</span> Plus d'infos
-                            </button>
+                            <button class="hero-btn-play" data-id="${item.id}" data-type="${displayType}"><span class="material-symbols-outlined">${isSaga ? 'visibility' : 'play_arrow'}</span><span>${isSaga ? 'Découvrir' : 'Lecture'}</span></button>
+                            <button class="hero-btn-info" data-id="${item.id}" data-type="${displayType}"><span class="material-symbols-outlined">info</span><span>Plus d'infos</span></button>
                         </div>
                     </div>
                 </div>
