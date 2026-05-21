@@ -1381,7 +1381,7 @@ async function loadHlsLib(): Promise<any> {
 
 async function loadMpegtsLib(): Promise<any> {
     if (mpegtsLib) return mpegtsLib;
-    const mod = await import('https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.esm.js' as any);
+    const mod = await import('https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/+esm' as any);
     mpegtsLib = (mod as any).default ?? mod;
     return mpegtsLib;
 }
