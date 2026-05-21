@@ -79,8 +79,6 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 // Suppress DEP0169 warnings from dependencies
 process.removeAllListeners('warning');
 process.on('warning', (warning: any) => {
@@ -306,8 +304,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             cookies = cookies ? `${cookies}; ${searchCookies}` : searchCookies;
         }
 
-        await sleep(1000); // Wait after search
-
         const results = Array.isArray(searchRes.data) ? searchRes.data : [];
         console.log(`[Coflix Prod] Search returned ${results.length} results for "${titleStr}"`);
         
@@ -426,15 +422,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     `${COFLIX_BASE_URL}/${seriesSlug}-saison-${season}-episode-${episode}/`
                 ];
                 
-                for (const p of patterns) {
-                    try {
-                        const check = await fetchTLS(p, { headers: { "Cookie": cookies } });
-                        if (check.status === 200) {
-                            pageUrl = p;
-                            break;
-                        }
-                    } catch (e: any) {}
-                }
+                try {
+                    const checkPromises = patterns.map(async (p) => {
+                        try {
+                            const check = await fetchTLS(p, { headers: { "Cookie": cookies } });
+                            if (check.status === 200) {
+                                return p;
+                            }
+                        } catch (e: any) {}
+                        return null;
+                    });
+                    const checkedUrls = await Promise.all(checkPromises);
+                    const matchedUrl = checkedUrls.find(url => url !== null);
+                    if (matchedUrl) {
+                        pageUrl = matchedUrl;
+                    }
+                } catch (e: any) {}
             }
         }
 
@@ -444,9 +447,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const html = pageRes.data;
         console.log(`[Coflix Prod] Page Title: ${cheerio.load(html)('title').text().trim()} (${Math.round(html.length/1024)}kb)`);
         
-        // Anti-bot delay before extraction
-        await sleep(2000);
-
         const players: any[] = [];
         const $ = cheerio.load(html);
 

@@ -53,6 +53,9 @@ const httpAgent = isVercel ? undefined : new http.Agent({ lookup: customLookup, 
 
 const ALLOWED_DOMAINS = ['gndk28.xyz', 'iptv', 'stream', 'movie', 'series', 'premium', 'tv', 'live', 'play', 'vod', 'video', 'cdn', 'media', 'net', 'pro', 'top', 'host', 'box', 'voe', 'uqload', 'vidoza', 'dood', 'upstream', 'fembed', 'vidsrc', 'embed', 'frembed', 'coflix', 'lecteurvideo', 'emmmmbed', 'upn.one'];
 
+let cachedCookies = '';
+let lastCookieFetch = 0;
+
 export default async function handler(req, res) {
     // Manual URL parsing to avoid legacy req.query
     const fullUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
@@ -80,17 +83,27 @@ export default async function handler(req, res) {
 
         let cookieHeader = '';
         if (isCoflixRelated) {
-            try {
-                // Pre-warm: get cookies from main domain
-                const warmRes = await axios.get('https://coflix.dance/', { 
-                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' },
-                    timeout: 3000
-                });
-                if (warmRes.headers['set-cookie']) {
-                    cookieHeader = warmRes.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
+            const now = Date.now();
+            if (cachedCookies && (now - lastCookieFetch < 15 * 60 * 1000)) {
+                cookieHeader = cachedCookies;
+            } else {
+                try {
+                    // Pre-warm: get cookies from main domain
+                    const warmRes = await axios.get('https://coflix.dance/', { 
+                        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' },
+                        timeout: 3000
+                    });
+                    if (warmRes.headers['set-cookie']) {
+                        cookieHeader = warmRes.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
+                        cachedCookies = cookieHeader;
+                        lastCookieFetch = now;
+                    }
+                } catch (e) {
+                    console.warn(`[Proxy Warmup Failed] ${e.message}`);
+                    if (cachedCookies) {
+                        cookieHeader = cachedCookies;
+                    }
                 }
-            } catch (e) {
-                console.warn(`[Proxy Warmup Failed] ${e.message}`);
             }
         }
 
