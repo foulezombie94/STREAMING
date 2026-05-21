@@ -26,7 +26,9 @@ function detectLowEndDevice(): boolean {
 
 // Initialisation précoce du mode performance
 const savedPerfMode = localStorage.getItem('perf_mode');
-if (savedPerfMode === 'low' || (!savedPerfMode && detectLowEndDevice())) {
+const isLowEnd = detectLowEndDevice();
+console.log(`[Performance Mode] Hardware Auto-Detection: ${isLowEnd ? 'Low-end device' : 'Standard device'}. Active: ${savedPerfMode === 'low' || (!savedPerfMode && isLowEnd)}`);
+if (savedPerfMode === 'low' || (!savedPerfMode && isLowEnd)) {
     document.documentElement.classList.add('low-perf');
 }
 

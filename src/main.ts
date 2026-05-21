@@ -85,7 +85,9 @@ function detectLowEndDevice(): boolean {
 
 // Initialisation précoce du mode performance
 const savedPerfMode = localStorage.getItem('perf_mode');
-if (savedPerfMode === 'low' || (!savedPerfMode && detectLowEndDevice())) {
+const isLowEnd = detectLowEndDevice();
+console.log(`[Performance Mode] Hardware Auto-Detection: ${isLowEnd ? 'Low-end device' : 'Standard device'}. Active: ${savedPerfMode === 'low' || (!savedPerfMode && isLowEnd)}`);
+if (savedPerfMode === 'low' || (!savedPerfMode && isLowEnd)) {
     document.documentElement.classList.add('low-perf');
 }
 
@@ -636,22 +638,6 @@ window.addEventListener('keydown', (e) => {
         searchOverlay?.classList.remove('active');
     }
 });
-
-// 4c. Logique du bouton Performance (Éco)
-const perfToggle = document.getElementById('perf-toggle');
-perfToggle?.addEventListener('click', () => {
-    const isLowPerf = document.documentElement.classList.toggle('low-perf');
-    if (isLowPerf) {
-        localStorage.setItem('perf_mode', 'low');
-        heroCarouselManager.stop();
-        showToast('🚀 Mode Performance activé (Effets et animations réduits)');
-    } else {
-        localStorage.setItem('perf_mode', 'high');
-        heroCarouselManager.start();
-        showToast('✨ Mode Performance désactivé (Visuels optimisés)');
-    }
-});
-
 
 
 function renderResumePage() {

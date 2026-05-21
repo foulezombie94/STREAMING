@@ -339,24 +339,6 @@ a {
     font-size: 28px;
 }
 
-.perf-toggle {
-    background: transparent;
-    color: #fff;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-.perf-toggle span {
-    font-size: 28px;
-}
-
-.perf-toggle:hover {
-    transform: scale(1.1);
-}
-
 .search-overlay {
     position: fixed;
     top: 0;
@@ -3520,13 +3502,5 @@ html.low-perf .movie-card:hover {
 /* Masquage de la barre de progression temporelle du carrousel */
 html.low-perf .carousel-timer {
     display: none !important;
-}
-
-/* Indicateur visuel vert pour le bouton Mode Performance actif */
-html.low-perf .perf-toggle {
-    color: #10b981 !important;
-}
-html.low-perf .perf-toggle span {
-    font-variation-settings: 'FILL' 1 !important;
 }
 
