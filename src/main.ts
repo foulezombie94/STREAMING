@@ -64,8 +64,28 @@ if (/Android/i.test(navigator.userAgent) && /Chrome/i.test(navigator.userAgent))
     document.documentElement.classList.add('android-chrome');
 }
 
+// Détection automatique de matériel limité
+function detectLowEndDevice(): boolean {
+    // 1. Nombre de cœurs CPU (concurrency)
+    if (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4) {
+        return true;
+    }
+    // 2. Mémoire vive (RAM) disponible en GB (Chromium uniquement)
+    if ((navigator as any).deviceMemory && (navigator as any).deviceMemory <= 4) {
+        return true;
+    }
+    // 3. Option "Économie de données" ou connexion lente
+    const conn = (navigator as any).connection;
+    if (conn) {
+        if (conn.saveData) return true;
+        if (['slow-2g', '2g', '3g'].includes(conn.effectiveType)) return true;
+    }
+    return false;
+}
+
 // Initialisation précoce du mode performance
-if (localStorage.getItem('perf_mode') === 'low') {
+const savedPerfMode = localStorage.getItem('perf_mode');
+if (savedPerfMode === 'low' || (!savedPerfMode && detectLowEndDevice())) {
     document.documentElement.classList.add('low-perf');
 }
 
