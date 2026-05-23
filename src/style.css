@@ -697,6 +697,7 @@ a {
     justify-content: center;
     gap: 12px;
     padding: 16px 40px; /* PLUS GRAND */
+    height: 56px; /* Hauteur fixe pour éliminer le CLS de swap de police */
     font-size: 20px; /* PLUS GRAND */
     font-weight: 700;
     border-radius: 8px;
@@ -870,6 +871,7 @@ a {
     .hero-btn-play, .hero-btn-info {
         flex: 1;
         padding: 12px 8px; /* PLUS FIN */
+        height: 48px; /* Hauteur fixe mobile pour éliminer le CLS de swap de police (touch target standard) */
         font-size: 15px; /* PLUS FIN */
         border-radius: 12px; /* PLUS MODERNE */
         max-width: 160px;
