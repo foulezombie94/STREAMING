@@ -136,7 +136,11 @@ function renderPreview(data: any) {
     }
 
     // Titre
-    if (titleEl) titleEl.textContent = data.title || data.name || '';
+    const title = data.title || data.name || '';
+    if (titleEl) titleEl.textContent = title;
+    if (title) {
+        document.title = `${title} - MOVIEVERSE`;
+    }
 
     // Synopsis
     if (synopsisEl) synopsisEl.textContent = data.overview || data.description || "Aucun synopsis disponible.";
@@ -213,7 +217,11 @@ async function fetchDetails() {
         }
 
         // Titre
-        if (titleEl) titleEl.textContent = data.title || data.name || '';
+        const title = data.title || data.name || '';
+        if (titleEl) titleEl.textContent = title;
+        if (title) {
+            document.title = `${title} - MOVIEVERSE`;
+        }
 
         // Tagline
         if (taglineEl) taglineEl.textContent = data.tagline ? `"${data.tagline}"` : '';

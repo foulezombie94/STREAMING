@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://movieverse-gules.vercel.app/sitemap.xml
