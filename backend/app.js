@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const axios = require('axios');
 const dns = require('dns');
 const https = require('https');
@@ -46,6 +47,11 @@ axios.defaults.httpAgent = new http.Agent({ lookup: customLookup, keepAlive: tru
 axios.defaults.proxy = false; // Disable system proxy to avoid local redirection interference
 
 const app = express();
+
+app.use(compression({
+    level: 6,
+    threshold: 1024
+}));
 
 
 app.use(cors());

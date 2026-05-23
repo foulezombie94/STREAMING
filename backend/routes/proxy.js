@@ -134,6 +134,13 @@ router.get('/', async (req, res) => {
         
         strip.forEach(h => delete headers[h]);
 
+        // Cache optimization for static media segments (.ts, .m4s) and playlists (.m3u8)
+        if (targetUrl.includes('.ts') || targetUrl.includes('.m4s') || targetUrl.includes('.mp4')) {
+            headers['cache-control'] = 'public, max-age=604800, immutable'; // 7 days cache for static video segments
+        } else if (targetUrl.includes('.m3u8')) {
+            headers['cache-control'] = 'public, max-age=2'; // short cache for live playlists
+        }
+
         // Add CORS headers
         res.set(headers);
         res.set('Access-Control-Allow-Origin', '*');

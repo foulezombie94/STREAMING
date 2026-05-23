@@ -32,13 +32,16 @@ if (savedPerfMode === 'low' || (!savedPerfMode && isLowEnd)) {
     document.documentElement.classList.add('low-perf');
 }
 
+// Mode basse performance actif
+const isLowEndActive = savedPerfMode === 'low' || (!savedPerfMode && isLowEnd);
+
 // 1. Constantes TMDB
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
 const BASE_URL = 'https://api.themoviedb.org/3';
-const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w1280';
-const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
-const IMAGE_W185_URL = 'https://image.tmdb.org/t/p/w185';
+const IMAGE_BASE_URL = isLowEndActive ? 'https://image.tmdb.org/t/p/w780' : 'https://image.tmdb.org/t/p/w1280';
+const IMAGE_W500_URL = isLowEndActive ? 'https://image.tmdb.org/t/p/w342' : 'https://image.tmdb.org/t/p/w500';
+const IMAGE_W185_URL = isLowEndActive ? 'https://image.tmdb.org/t/p/w154' : 'https://image.tmdb.org/t/p/w185';
 
 // Domaines pour lecture directe (Coflix)
 const DIRECT_DOMAINS = ['vidoza', 'uqload', 'upstream', 'dood', 'streamtape', 'voe', 'mixdrop', 'lulustream', 'vidmoly', 'mbed', 'upn', 'xtreme', 'coflix', 'lecteurvideo', 'emmmmbed', 'embed', 'upn.one'];
@@ -111,11 +114,16 @@ document.addEventListener('DOMContentLoaded', setupBackButton);
 function renderPreview(data: any) {
     if (!data) return;
 
-    // Background
+    // Background (optimisé pour vieux PC)
     const backdropPath = data.backdrop_path || data.backdrop;
     if (heroSection && backdropPath) {
-        const bgUrl = backdropPath.startsWith('http') ? backdropPath : `${IMAGE_BASE_URL}${backdropPath}`;
-        heroSection.style.backgroundImage = `url('${bgUrl}')`;
+        if (isLowEndActive) {
+            heroSection.style.backgroundImage = 'none';
+            heroSection.style.backgroundColor = '#0a0a0a';
+        } else {
+            const bgUrl = backdropPath.startsWith('http') ? backdropPath : `${IMAGE_BASE_URL}${backdropPath}`;
+            heroSection.style.backgroundImage = `url('${bgUrl}')`;
+        }
     }
 
     // Poster
@@ -187,9 +195,14 @@ async function fetchDetails() {
 
         currentMediaData = data;
 
-        // Background
+        // Background (optimisé pour vieux PC)
         if (heroSection && data.backdrop_path) {
-            heroSection.style.backgroundImage = `url('${IMAGE_BASE_URL}${data.backdrop_path}')`;
+            if (isLowEndActive) {
+                heroSection.style.backgroundImage = 'none';
+                heroSection.style.backgroundColor = '#0a0a0a';
+            } else {
+                heroSection.style.backgroundImage = `url('${IMAGE_BASE_URL}${data.backdrop_path}')`;
+            }
         }
 
         // Poster

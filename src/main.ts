@@ -2009,13 +2009,13 @@ function playLiveChannel(url: string, name: string) {
                 if (Hls.isSupported()) {
                     const hls = new Hls({
                         debug: false,
-                        manifestLoadingMaxRetry: 3,
-                        manifestLoadingRetryDelay: 1000,
+                        manifestLoadingMaxRetry: 6,
+                        manifestLoadingRetryDelay: 1500,
                         enableWorker: true,
                         capLevelToPlayerSize: true,
-                        maxBufferLength: 30,
-                        maxMaxBufferLength: 60,
-                        maxBufferSize: 60 * 1000 * 1000
+                        maxBufferLength: isLowEnd ? 10 : 30,
+                        maxMaxBufferLength: isLowEnd ? 15 : 60,
+                        maxBufferSize: isLowEnd ? 15 * 1024 * 1024 : 60 * 1024 * 1024
                     });
                     (window as any).hls = hls;
                     hls.loadSource(target);
