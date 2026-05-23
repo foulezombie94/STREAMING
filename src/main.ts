@@ -139,7 +139,6 @@ const GENRE_ICONS: { [key: string]: string } = {
 };
 
 // 2. DOM Elements & State
-let currentIptvObserver: IntersectionObserver | null = null;
 let currentData: TMDBMedia[] = []; 
 let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' | 'sagas' = 'trending';
 
@@ -1371,6 +1370,8 @@ async function performSearch(query: string) {
 let liveTVInitialized = false;
 let allLiveChannels: any[] = [];
 let liveCategories: any[] = [];
+let iptvCurrentPage = 1;
+const iptvItemsPerPage = 48;
 let xtreamConfig = {
     host: localStorage.getItem('xtream_host') || '',
     user: localStorage.getItem('xtream_user') || '',
@@ -1775,6 +1776,7 @@ function renderCategories() {
             }, 150);
 
             const catId = el.getAttribute('data-id') || 'all';
+            iptvCurrentPage = 1;
             renderLiveTV('', catId);
         });
     });
@@ -1802,137 +1804,178 @@ function renderLiveTV(filter: string = '', categoryId: string = 'all') {
         return;
     }
 
-    // 1. Initial State
-    liveGrid.innerHTML = '';
-    let renderedCount = 0;
-    const batchSize = 24;
-
-    // Create Sentinel for Intersection Observer
-    const sentinel = document.createElement('div');
-    sentinel.id = 'live-sentinel';
-    sentinel.className = "w-full h-10 col-span-full flex items-center justify-center py-10 opacity-0";
-    sentinel.innerHTML = '<div class="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>';
-
-    const renderNextBatch = () => {
-        if (renderedCount >= filtered.length) {
-            sentinel.remove();
-            return;
-        }
-
-        const nextBatch = filtered.slice(renderedCount, renderedCount + batchSize);
-        const fragment = document.createDocumentFragment();
-
-        nextBatch.forEach((c, index) => {
-            const streamUrl = `${xtreamConfig.host}/live/${xtreamConfig.user}/${xtreamConfig.pass}/${c.stream_id}.ts`;
-            const div = document.createElement('div');
-            div.style.cssText = `
-                position: relative;
-                aspect-ratio: 2/3;
-                overflow: hidden;
-                cursor: pointer;
-                border: 2px solid rgba(255,255,255,0.05);
-                background: #111;
-                transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-                border-radius: 6px;
-            `;
-            div.style.animationDelay = `${(index % batchSize) * 20}ms`;
-            div.className = 'fade-in-progressive live-channel-card';
-            div.setAttribute('data-url', streamUrl);
-            
-            div.innerHTML = `
-                <!-- Logo/Poster -->
-                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#1a1a1a;">
-                     <img src="${c.stream_icon || ''}" loading="lazy" style="width:100%;height:100%;object-fit:cover;opacity:0.8;transition:opacity 0.3s,transform 0.5s;" onerror="this.src='https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&q=80&w=400';"/>
-                </div>
-
-                <!-- Overlay Gradient -->
-                <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.15) 60%,transparent 100%);transition:opacity 0.3s;"></div>
-
-                <!-- Channel Name -->
-                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:12px 8px;text-align:center;">
-                    <h3 style="font-size:11px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:-0.02em;line-height:1.3;text-shadow:0 2px 6px rgba(0,0,0,0.9);margin:0;">
-                        ${c.name}
-                    </h3>
-                </div>
-
-                <!-- Play Icon (hover) -->
-                <div class="play-icon-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;z-index:20;">
-                    <div style="width:44px;height:44px;border-radius:50%;background:rgba(239,68,68,0.25);backdrop-filter:blur(8px);border:2px solid rgba(239,68,68,0.6);display:flex;align-items:center;justify-content:center;">
-                        <span class="material-symbols-outlined" style="color:#ef4444;font-size:28px;">play_arrow</span>
-                    </div>
-                </div>
-            `;
-
-            // Hover
-            div.addEventListener('mouseenter', () => {
-                if (!div.dataset.playing) {
-                    div.style.borderColor = 'rgba(239,68,68,0.4)';
-                    div.style.transform = 'scale(1.03)';
-                }
-                const overlay = div.querySelector('.play-icon-overlay') as HTMLElement;
-                if (overlay) overlay.style.opacity = '1';
-            });
-            div.addEventListener('mouseleave', () => {
-                if (!div.dataset.playing) {
-                    div.style.borderColor = 'rgba(255,255,255,0.05)';
-                    div.style.transform = 'scale(1)';
-                }
-                const overlay = div.querySelector('.play-icon-overlay') as HTMLElement;
-                if (overlay) overlay.style.opacity = '0';
-            });
-
-            div.addEventListener('click', () => {
-                const url = div.getAttribute('data-url');
-                const name = div.querySelector('h3')?.textContent?.trim() || 'Chaîne';
-
-                // Retirer le contour rouge de toutes les cartes
-                document.querySelectorAll('.live-channel-card').forEach(card => {
-                    const c = card as HTMLElement;
-                    delete c.dataset.playing;
-                    c.style.borderColor = 'rgba(255,255,255,0.05)';
-                    c.style.boxShadow = 'none';
-                    c.style.transform = 'scale(1)';
-                });
-
-                // Flash immédiat blanc → rouge persistant
-                div.style.borderColor = '#ffffff';
-                div.style.boxShadow = '0 0 0 2px rgba(239,68,68,0.6)';
-                setTimeout(() => {
-                    div.dataset.playing = '1';
-                    div.style.borderColor = '#ef4444';
-                    div.style.boxShadow = '0 0 20px rgba(239,68,68,0.35), 0 0 0 2px #ef4444';
-                    div.style.transform = 'scale(1)';
-                }, 120);
-
-                if (url) playLiveChannel(url, name);
-            });
-
-            fragment.appendChild(div);
-        });
-
-        // Insert before sentinel
-        liveGrid.insertBefore(fragment, sentinel);
-        renderedCount += batchSize;
-        
-        // Make sentinel visible briefly to show loader if scroll is at bottom
-        sentinel.style.opacity = '0.3';
-    };
-
-    // Add sentinel to grid
-    liveGrid.appendChild(sentinel);
-
-    // Initial Observer - Nettoyage avant réutilisation
-    if (currentIptvObserver) {
-        currentIptvObserver.disconnect();
+    // Calcul de la pagination
+    const totalPages = Math.ceil(filtered.length / iptvItemsPerPage);
+    if (iptvCurrentPage > totalPages) {
+        iptvCurrentPage = totalPages || 1;
+    }
+    if (iptvCurrentPage < 1) {
+        iptvCurrentPage = 1;
     }
 
-    currentIptvObserver = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) {
-            renderNextBatch();
-        }
-    }, { rootMargin: '200px' });
+    const startIdx = (iptvCurrentPage - 1) * iptvItemsPerPage;
+    const pageItems = filtered.slice(startIdx, startIdx + iptvItemsPerPage);
 
-    currentIptvObserver.observe(sentinel);
+    // 1. Initial State
+    liveGrid.innerHTML = '';
+
+    const fragment = document.createDocumentFragment();
+
+    pageItems.forEach((c, index) => {
+        const streamUrl = `${xtreamConfig.host}/live/${xtreamConfig.user}/${xtreamConfig.pass}/${c.stream_id}.ts`;
+        const div = document.createElement('div');
+        div.style.cssText = `
+            position: relative;
+            aspect-ratio: 2/3;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.05);
+            background: #111;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+            border-radius: 6px;
+        `;
+        div.style.animationDelay = `${(index % iptvItemsPerPage) * 15}ms`;
+        div.className = 'fade-in-progressive live-channel-card';
+        div.setAttribute('data-url', streamUrl);
+        
+        div.innerHTML = `
+            <!-- Logo/Poster -->
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#1a1a1a;">
+                 <img src="${c.stream_icon || ''}" loading="lazy" style="width:100%;height:100%;object-fit:cover;opacity:0.8;transition:opacity 0.3s,transform 0.5s;" onerror="this.src='https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&q=80&w=400';"/>
+            </div>
+
+            <!-- Overlay Gradient -->
+            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.15) 60%,transparent 100%);transition:opacity 0.3s;"></div>
+
+            <!-- Channel Name -->
+            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:12px 8px;text-align:center;">
+                <h3 style="font-size:11px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:-0.02em;line-height:1.3;text-shadow:0 2px 6px rgba(0,0,0,0.9);margin:0;">
+                    ${c.name}
+                </h3>
+            </div>
+
+            <!-- Play Icon (hover) -->
+            <div class="play-icon-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;z-index:20;">
+                <div style="width:44px;height:44px;border-radius:50%;background:rgba(239,68,68,0.25);backdrop-filter:blur(8px);border:2px solid rgba(239,68,68,0.6);display:flex;align-items:center;justify-content:center;">
+                    <span class="material-symbols-outlined" style="color:#ef4444;font-size:28px;">play_arrow</span>
+                </div>
+            </div>
+        `;
+
+        // Hover
+        div.addEventListener('mouseenter', () => {
+            if (!div.dataset.playing) {
+                div.style.borderColor = 'rgba(239,68,68,0.4)';
+                div.style.transform = 'scale(1.03)';
+            }
+            const overlay = div.querySelector('.play-icon-overlay') as HTMLElement;
+            if (overlay) overlay.style.opacity = '1';
+        });
+        div.addEventListener('mouseleave', () => {
+            if (!div.dataset.playing) {
+                div.style.borderColor = 'rgba(255,255,255,0.05)';
+                div.style.transform = 'scale(1)';
+            }
+            const overlay = div.querySelector('.play-icon-overlay') as HTMLElement;
+            if (overlay) overlay.style.opacity = '0';
+        });
+
+        div.addEventListener('click', () => {
+            const url = div.getAttribute('data-url');
+            const name = div.querySelector('h3')?.textContent?.trim() || 'Chaîne';
+
+            // Retirer le contour rouge de toutes les cartes
+            document.querySelectorAll('.live-channel-card').forEach(card => {
+                const c = card as HTMLElement;
+                delete c.dataset.playing;
+                c.style.borderColor = 'rgba(255,255,255,0.05)';
+                c.style.boxShadow = 'none';
+                c.style.transform = 'scale(1)';
+            });
+
+            // Flash immédiat blanc → rouge persistant
+            div.style.borderColor = '#ffffff';
+            div.style.boxShadow = '0 0 0 2px rgba(239,68,68,0.6)';
+            setTimeout(() => {
+                div.dataset.playing = '1';
+                div.style.borderColor = '#ef4444';
+                div.style.boxShadow = '0 0 20px rgba(239,68,68,0.35), 0 0 0 2px #ef4444';
+                div.style.transform = 'scale(1)';
+            }, 120);
+
+            if (url) playLiveChannel(url, name);
+        });
+
+        fragment.appendChild(div);
+    });
+
+    liveGrid.appendChild(fragment);
+
+    // Create / Update pagination UI container at the end of liveGrid
+    const paginationContainerId = 'live-pagination-controls';
+    let paginationContainer = document.getElementById(paginationContainerId);
+    if (paginationContainer) {
+        paginationContainer.remove();
+    }
+
+    paginationContainer = document.createElement('div');
+    paginationContainer.id = paginationContainerId;
+    paginationContainer.className = 'col-span-full flex items-center justify-center gap-4 py-8 mt-4';
+    paginationContainer.style.cssText = `
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        padding: 32px 0 16px 0;
+        margin-top: 16px;
+        width: 100%;
+        color: #fff;
+    `;
+
+    // Button Prev
+    const btnPrev = document.createElement('button');
+    btnPrev.className = 'w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10 hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed';
+    btnPrev.disabled = iptvCurrentPage === 1;
+    btnPrev.innerHTML = '<span class="material-symbols-outlined">chevron_left</span>';
+    btnPrev.addEventListener('click', () => {
+        if (iptvCurrentPage > 1) {
+            iptvCurrentPage--;
+            renderLiveTV(filter, categoryId);
+            const gridParent = liveGrid.parentElement;
+            if (gridParent) gridParent.scrollTop = 0;
+        }
+    });
+
+    // Page Info text
+    const pageInfo = document.createElement('span');
+    pageInfo.style.cssText = `
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.25em;
+        opacity: 0.8;
+    `;
+    pageInfo.textContent = `Page ${iptvCurrentPage} / ${totalPages}`;
+
+    // Button Next
+    const btnNext = document.createElement('button');
+    btnNext.className = 'w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10 hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed';
+    btnNext.disabled = iptvCurrentPage === totalPages;
+    btnNext.innerHTML = '<span class="material-symbols-outlined">chevron_right</span>';
+    btnNext.addEventListener('click', () => {
+        if (iptvCurrentPage < totalPages) {
+            iptvCurrentPage++;
+            renderLiveTV(filter, categoryId);
+            const gridParent = liveGrid.parentElement;
+            if (gridParent) gridParent.scrollTop = 0;
+        }
+    });
+
+    paginationContainer.appendChild(btnPrev);
+    paginationContainer.appendChild(pageInfo);
+    paginationContainer.appendChild(btnNext);
+
+    liveGrid.appendChild(paginationContainer);
 }
 
 // Logic for playing a live channel
@@ -2022,9 +2065,12 @@ function playLiveChannel(url: string, name: string) {
                         manifestLoadingRetryDelay: 1500,
                         enableWorker: true,
                         capLevelToPlayerSize: true,
-                        maxBufferLength: isLowEnd ? 10 : 30,
-                        maxMaxBufferLength: isLowEnd ? 15 : 60,
-                        maxBufferSize: isLowEnd ? 15 * 1024 * 1024 : 60 * 1024 * 1024
+                        // Buffer court adapté au direct TV pour économiser la RAM
+                        maxBufferLength: 6,
+                        maxMaxBufferLength: 10,
+                        maxBufferSize: 8 * 1024 * 1024,
+                        liveSyncDurationCount: 3,
+                        liveMaxLatencyDurationCount: 5
                     });
                     (window as any).hls = hls;
                     hls.loadSource(target);
@@ -2065,6 +2111,12 @@ function playLiveChannel(url: string, name: string) {
                         isLive: true,
                         url: target,
                         cors: true
+                    }, {
+                        // Limiter la RAM de mpegts.js sur le direct TS
+                        enableStashBuffer: false,
+                        stashInitialSize: 128 * 1024,
+                        lazyLoadMaxKeepBehindDuration: 10,
+                        lazyLoad: true
                     });
                     (window as any).mpegtsPlayer = player;
                     player.attachMediaElement(video);
@@ -2113,6 +2165,7 @@ function playLiveChannel(url: string, name: string) {
 document.getElementById('live-search')?.addEventListener('input', (e) => {
     const val = (e.target as HTMLInputElement).value;
     const activeCat = document.querySelector('#live-categories [data-id].active')?.getAttribute('data-id') || 'all';
+    iptvCurrentPage = 1;
     renderLiveTV(val, activeCat);
 });
 
