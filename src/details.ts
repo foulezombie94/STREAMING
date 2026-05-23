@@ -354,8 +354,8 @@ async function fetchDetails() {
                         if (hoverBio) hoverBio.textContent = '';
 
                         if (hoverCard) {
-                            hoverCard.classList.add('show');
                             const rect = card.getBoundingClientRect();
+                            hoverCard.classList.add('show');
                             if (rect.top > window.innerHeight / 2) {
                                 hoverCard.style.transform = 'translate(-50%, -100%) scale(1)';
                             } else {

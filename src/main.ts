@@ -909,8 +909,12 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
 
     // Scroll et initialisation du drag déferrés pour éliminer le Forced Synchronous Reflow et le Layout Thrashing (R-1)
     setTimeout(() => {
-        if (container) container.scrollTo({ left: 0, behavior: 'smooth' });
-        initCarouselDrag();
+        if (container) {
+            if (startIndex > 0) {
+                container.scrollLeft = 0;
+            }
+            initCarouselDrag(container);
+        }
     }, 0);
 }
 
@@ -1093,8 +1097,10 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' |
 }
 
 // 5. Gestion Drag Carrousel ultra-fluide pour toutes les sections
-function initCarouselDrag() {
-    const containers = document.querySelectorAll('.carousel-container, .sagas-grid-container');
+function initCarouselDrag(specificContainer?: HTMLElement) {
+    const containers = specificContainer 
+        ? [specificContainer] 
+        : document.querySelectorAll('.carousel-container, .sagas-grid-container');
     
     containers.forEach((container: any) => {
         if (container.dataset.dragInit === 'true') return;
