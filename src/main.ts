@@ -930,9 +930,28 @@ function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: str
     // Responsive Imagery: w185 pour mobile, w342 pour desktop
     const posterPath = item.poster_path;
     const placeholder = 'https://via.placeholder.com/185x278?text=No+Image';
-    const src = posterPath ? `${IMAGE_W342_URL}${posterPath}` : placeholder;
-    const srcset = posterPath ? `${IMAGE_W185_URL}${posterPath} 185w, ${IMAGE_W342_URL}${posterPath} 342w` : '';
-    const sizes = "(max-width: 768px) 185px, 342px";
+    
+    const isMobile = window.innerWidth <= 768;
+    let src: string;
+    let srcset: string;
+    let sizes: string;
+
+    if (posterPath) {
+        if (isMobile) {
+            const mobileUrl = isLowEndActive ? 'https://image.tmdb.org/t/p/w154' : 'https://image.tmdb.org/t/p/w185';
+            src = `${mobileUrl}${posterPath}`;
+            srcset = `${mobileUrl}${posterPath} 185w`;
+            sizes = "185px";
+        } else {
+            src = `${IMAGE_W342_URL}${posterPath}`;
+            srcset = `${IMAGE_W185_URL}${posterPath} 185w, ${IMAGE_W342_URL}${posterPath} 342w`;
+            sizes = "(max-width: 768px) 185px, 342px";
+        }
+    } else {
+        src = placeholder;
+        srcset = '';
+        sizes = '';
+    }
 
     const rating = item.vote_average ? item.vote_average.toFixed(1) : '0.0';
     const badgeText = item.genre_ids?.includes(16) ? 'Animé' : (displayType === 'tv' ? 'Série' : 'Film');
