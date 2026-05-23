@@ -91,12 +91,15 @@ if (savedPerfMode === 'low' || (!savedPerfMode && isLowEnd)) {
     document.documentElement.classList.add('low-perf');
 }
 
+// Mode basse performance actif
+const isLowEndActive = savedPerfMode === 'low' || (!savedPerfMode && isLowEnd);
+
 // 1. Constantes TMDB
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
-const IMAGE_W500_URL = 'https://image.tmdb.org/t/p/w500';
-const IMAGE_W342_URL = 'https://image.tmdb.org/t/p/w342';
-const IMAGE_W185_URL = 'https://image.tmdb.org/t/p/w185';
+const IMAGE_W500_URL = isLowEndActive ? 'https://image.tmdb.org/t/p/w342' : 'https://image.tmdb.org/t/p/w500';
+const IMAGE_W342_URL = isLowEndActive ? 'https://image.tmdb.org/t/p/w185' : 'https://image.tmdb.org/t/p/w342';
+const IMAGE_W185_URL = isLowEndActive ? 'https://image.tmdb.org/t/p/w154' : 'https://image.tmdb.org/t/p/w185';
 
 // Global Blacklist for specific movies/series
 const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '1017007', '1025539', '1013441', '1439930']; 
