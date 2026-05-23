@@ -541,8 +541,31 @@ async function handleNavigation(type: any) {
         if (type === 'sagas') {
             await heroCarouselManager.setSagaSlides();
         } else {
+            const cacheKey = 'mv_trending_day';
+            const cached = localStorage.getItem(cacheKey);
+            let hasRenderedFromCache = false;
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    // Cache valide pendant 4 heures
+                    if (Date.now() - parsed.timestamp < 4 * 60 * 60 * 1000) {
+                        heroCarouselManager.setSlides(parsed.data || []);
+                        hasRenderedFromCache = true;
+                    }
+                } catch(e){}
+            }
+
             fetchWithCache(`${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`)
-                .then(data => heroCarouselManager.setSlides(data.results || []));
+                .then(data => {
+                    const results = data.results || [];
+                    localStorage.setItem(cacheKey, JSON.stringify({
+                        timestamp: Date.now(),
+                        data: results
+                    }));
+                    if (!hasRenderedFromCache) {
+                        heroCarouselManager.setSlides(results);
+                    }
+                });
         }
     }
 
@@ -1300,8 +1323,30 @@ async function initApp() {
     
     if (sagaId) {
         // Toujours initialiser le hero en arrière-plan si on commence sur une saga
+        const cacheKey = 'mv_trending_day';
+        const cached = localStorage.getItem(cacheKey);
+        let hasRenderedFromCache = false;
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (Date.now() - parsed.timestamp < 4 * 60 * 60 * 1000) {
+                    heroCarouselManager.setSlides(parsed.data || []);
+                    hasRenderedFromCache = true;
+                }
+            } catch(e){}
+        }
+
         fetchWithCache(`${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`)
-            .then(data => heroCarouselManager.setSlides(data.results || []));
+            .then(data => {
+                const results = data.results || [];
+                localStorage.setItem(cacheKey, JSON.stringify({
+                    timestamp: Date.now(),
+                    data: results
+                }));
+                if (!hasRenderedFromCache) {
+                    heroCarouselManager.setSlides(results);
+                }
+            });
             
         renderSagaDetailsPage(sagaId);
         // Nettoyer l'URL pour éviter que le paramètre ne reste affiché
