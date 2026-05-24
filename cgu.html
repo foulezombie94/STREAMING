@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conditions Générales d'Utilisation | Movix</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Variables globales - Thème ROUGE */
+        :root {
+            --bg-color: #050101;
+            --text-main: #f1f1f1;
+            --text-muted: #a39ca0;
+            --header-bg: rgba(5, 1, 1, 0.95);
+            
+            --accent-gradient: linear-gradient(135deg, #ff003c, #ff3333);
+            --accent-solid: #ff003c;
+            --accent-hover: #e60036;
+            
+            --glass-bg: rgba(25, 5, 5, 0.4);
+            --glass-border: rgba(255, 50, 50, 0.08);
+            --card-bg: rgba(255, 255, 255, 0.02);
+            --card-border: rgba(255, 255, 255, 0.05);
+
+            --nav-width: 280px;
+            --header-height: 80px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Amélioration du défilement */
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: calc(var(--header-height) + 20px);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Effets de lumière en arrière-plan */
+        .ambient-light {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(140px);
+            z-index: -1;
+            animation: float 12s infinite alternate ease-in-out;
+            pointer-events: none;
+        }
+
+        .light-red-1 {
+            top: -10%;
+            right: 10%;
+            width: 500px;
+            height: 500px;
+            background: rgba(255, 0, 60, 0.15);
+        }
+
+        .light-red-2 {
+            bottom: -10%;
+            left: 10%;
+            width: 600px;
+            height: 600px;
+            background: rgba(255, 51, 51, 0.12);
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-40px, 40px); }
+        }
+
+        /* --- Header --- */
+        .main-header {
+            height: var(--header-height);
+            background-color: var(--header-bg);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            padding: 0 50px;
+        }
+
+        .logo {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo span {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* --- Layout Principal --- */
+        .cgu-main-container {
+            display: flex;
+            max-width: 1400px;
+            margin: var(--header-height) auto 0;
+            padding: 40px 50px 80px;
+            gap: 50px;
+        }
+
+        /* Sommaire (Sidebar) */
+        .cgu-sidebar {
+            width: var(--nav-width);
+            flex-shrink: 0;
+            position: sticky;
+            top: calc(var(--header-height) + 40px);
+            height: fit-content;
+        }
+
+        .cgu-nav {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+        }
+
+        .cgu-nav h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: var(--text-main);
+        }
+
+        .cgu-nav ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .cgu-nav a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            transition: color 0.3s ease, padding-left 0.3s ease;
+            display: block;
+            line-height: 1.4;
+        }
+
+        .cgu-nav a:hover {
+            color: var(--accent-solid);
+            padding-left: 5px;
+        }
+
+        /* Style pour Scrollspy */
+        .cgu-nav a.active {
+            color: var(--accent-solid);
+            font-weight: 500;
+            padding-left: 10px;
+            border-left: 2px solid var(--accent-solid);
+        }
+
+        /* Zone de contenu principale */
+        .cgu-content-main {
+            flex-grow: 1;
+        }
+
+        /* En-tête de la page */
+        .page-header {
+            margin-bottom: 50px;
+        }
+
+        .icon-gavel {
+            font-size: 2.5rem;
+            color: var(--accent-solid);
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px rgba(255, 0, 60, 0.3));
+        }
+
+        .page-header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            max-width: 700px;
+        }
+
+        /* Conteneur des clauses */
+        .cgu-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        /* Cartes de sections */
+        .cgu-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 40px;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .cgu-card:hover {
+            transform: translateY(-5px); /* Soulevé légèrement plus */
+            border-color: rgba(255, 0, 60, 0.3);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 0, 60, 0.03);
+        }
+
+        /* En-tête de la carte */
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .card-header i {
+            font-size: 1.4rem;
+            color: var(--accent-solid);
+            background: rgba(255, 0, 60, 0.08);
+            padding: 14px;
+            border-radius: 12px;
+        }
+
+        .card-header h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.5rem;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        /* Contenu textuel */
+        .cgu-card p, .cgu-card ul {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.8; /* Espacement amélioré */
+        }
+
+        .cgu-card p + p {
+            margin-top: 15px;
+        }
+
+        .cgu-card ul {
+            margin-top: 20px;
+            margin-left: 5px;
+            list-style-type: none;
+        }
+
+        .cgu-card li {
+            position: relative;
+            margin-bottom: 12px;
+            padding-left: 25px;
+        }
+
+        .cgu-card li::before {
+            content: '✓'; /* Symbole plus professionnel */
+            color: var(--accent-solid);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        /* --- Footer --- */
+        .page-footer {
+            margin-top: 80px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            padding-top: 30px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .discord-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #5865F2; /* Couleur Discord */
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+        .discord-link:hover {
+            background-color: #4752c4;
+        }
+
+        /* --- Bouton Back to Top --- */
+        #backToTop {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none; /* Caché par défaut */
+            z-index: 99;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        #backToTop:hover {
+            transform: scale(1.1);
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 1100px) {
+            .cgu-main-container {
+                padding: 30px 20px;
+                gap: 30px;
+            }
+            .page-header h1 {
+                font-size: 2.4rem;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .main-header {
+                padding: 0 20px;
+            }
+            .cgu-main-container {
+                flex-direction: column; /* Le sommaire passe au-dessus */
+            }
+            .cgu-sidebar {
+                width: 100%;
+                position: relative;
+                top: 0;
+                margin-bottom: 30px;
+            }
+            .cgu-nav {
+                padding: 20px;
+            }
+            .cgu-nav ul {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 10px 20px;
+            }
+            .cgu-nav a.active {
+                border-left: none;
+                border-bottom: 2px solid var(--accent-solid);
+                padding-left: 0;
+                padding-bottom: 2px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            :root {
+                --header-height: 70px;
+            }
+            .page-header h1 {
+                font-size: 2rem;
+            }
+            .cgu-card {
+                padding: 30px 20px;
+            }
+            .card-header h2 {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <a href="/" class="logo back-home">
+            <i class="fa-solid fa-play"></i>
+            Movix<span>.io</span>
+        </a>
+    </header>
+
+    <div class="ambient-light light-red-1"></div>
+    <div class="ambient-light light-red-2"></div>
+
+    <div class="cgu-main-container">
+        
+        <aside class="cgu-sidebar">
+            <nav class="cgu-nav">
+                <h3>Sommaire</h3>
+                <ul>
+                    <li><a href="#section1">1. Acceptation</a></li>
+                    <li><a href="#section2">2. Services</a></li>
+                    <li><a href="#section3">3. Comportement</a></li>
+                    <li><a href="#section4">4. Responsabilité</a></li>
+                    <li><a href="#section5">5. Modifications</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="cgu-content-main">
+            <header class="page-header">
+                <i class="fa-solid fa-gavel icon-gavel"></i>
+                <h1>Conditions Générales</h1>
+                <p>Bienvenue sur Movix. En utilisant notre plateforme, vous acceptez de respecter les règles suivantes. Veuillez les lire attentivement.</p>
+            </header>
+
+            <div class="cgu-container">
+                
+                <section id="section1" class="cgu-card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <h2>1. Acceptation des conditions</h2>
+                    </div>
+                    <p>L’accès et l’utilisation de la plateforme Movix sont soumis à l’acceptation pleine et entière des présentes Conditions Générales d’Utilisation. En naviguant sur le site ou en créant un compte, vous reconnaissez avoir pris connaissance de ces règles et vous engagez à les respecter.</p>
+                    <p>Si vous n'acceptez pas tout ou partie de ces conditions, vous devez cesser immédiatement d'utiliser nos services.</p>
+                </section>
+
+                <section id="section2" class="cgu-card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-photo-film"></i>
+                        <h2>2. Description des services</h2>
+                    </div>
+                    <p>Movix met à disposition un espace communautaire de partage et d'organisation de contenus liés au cinéma et aux séries. Les services incluent, sans s'y limiter :</p>
+                    <ul>
+                        <li>La création de listes personnalisées.</li>
+                        <li>Les outils de synchronisation (suivi de progression).</li>
+                        <li>Les fonctionnalités de "Watch Party" communautaire.</li>
+                        <li>L'accès à des outils statistiques (CinéGraph).</li>
+                    </ul>
+                </section>
+
+                <section id="section3" class="cgu-card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-users-gear"></i>
+                        <h2>3. Comportement des utilisateurs</h2>
+                    </div>
+                    <p>En rejoignant la communauté Movix ou ses espaces associés (Discord, Telegram), vous vous engagez à adopter une attitude respectueuse. Sont strictement interdits :</p>
+                    <ul>
+                        <li>Les contenus injurieux, haineux, diffamatoires, racistes ou discriminatoires.</li>
+                        <li>Le harcèlement envers d'autres membres ou l'équipe de modération.</li>
+                        <li>Toute tentative d'attaque, de reverse-engineering ou de perturbation des serveurs de Movix.</li>
+                        <li>L'utilisation de scripts automatisés sans autorisation préalable.</li>
+                    </ul>
+                    <p>Tout manquement à ces règles pourra entraîner un bannissement temporaire ou définitif de la plateforme.</p>
+                </section>
+
+                <section id="section4" class="cgu-card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <h2>4. Limitation de responsabilité</h2>
+                    </div>
+                    <p>Movix est un projet passion géré bénévolement. Bien que nous fassions notre maximum pour assurer une disponibilité et une sécurité optimales :</p>
+                    <ul>
+                        <li>Le service est fourni "en l'état" sans garantie absolue de disponibilité.</li>
+                        <li>Nous ne sommes pas responsables de la perte potentielle de données de profil ou de listes de lecture.</li>
+                        <li>Les liens externes partagés par la communauté relèvent de la responsabilité exclusive de leurs éditeurs respectifs.</li>
+                    </ul>
+                </section>
+
+                <section id="section5" class="cgu-card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-sliders"></i>
+                        <h2>5. Modifications des conditions</h2>
+                    </div>
+                    <p>Movix évolue en permanence. Nous nous réservons le droit de modifier les présentes CGU à tout moment afin de les adapter aux nouvelles fonctionnalités du site ou aux évolutions légales.</p>
+                    <p>Les modifications prennent effet dès leur publication. Nous vous encourageons à consulter régulièrement cette page.</p>
+                </section>
+
+            </div>
+
+            <footer class="page-footer">
+                <p>Dernière mise à jour : 24 Mai 2026</p>
+                <a href="#" class="discord-link">
+                    <i class="fa-brands fa-discord"></i> Une question ? Rejoignez notre Discord
+                </a>
+            </footer>
+        </main>
+    </div>
+
+    <button id="backToTop" title="Retour en haut">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <script>
+        // --- Back to Top ---
+        const backToTopBtn = document.getElementById('backToTop');
+        const overlay = document.getElementById('cgu-overlay');
+
+        function setupScrollBehavior(scrollContainer) {
+            scrollContainer.onscroll = function() {
+                const scrollTop = scrollContainer.scrollTop || scrollContainer.pageYOffset || 0;
+                if (scrollTop > 300) {
+                    backToTopBtn.style.display = "block";
+                } else {
+                    backToTopBtn.style.display = "none";
+                }
+                scrollSpy(scrollContainer);
+            };
+
+            backToTopBtn.onclick = function() {
+                scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+        }
+
+        // --- ScrollSpy ---
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.cgu-nav a');
+
+        function scrollSpy(scrollContainer) {
+            let currentSectionId = '';
+            const containerScrollTop = scrollContainer.scrollTop || window.scrollY || 0;
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (containerScrollTop >= (sectionTop - 150)) {
+                    currentSectionId = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${currentSectionId}`) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        // Detect if loaded inside an overlay or standalone
+        window.addEventListener('load', () => {
+            if (overlay && overlay.style.display !== 'none') {
+                setupScrollBehavior(overlay);
+                scrollSpy(overlay);
+            } else {
+                setupScrollBehavior(window);
+                scrollSpy(window);
+            }
+        });
+    </script>
+
+</body>
+</html>
