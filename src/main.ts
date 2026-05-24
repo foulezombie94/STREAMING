@@ -1012,9 +1012,11 @@ function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: str
         }
 
         item.addEventListener('click', (e) => {
-            e.preventDefault();
             const type = item.getAttribute('data-type');
-            if (type) handleNavigation(type);
+            if (type) {
+                e.preventDefault();
+                handleNavigation(type);
+            }
         });
     });
 });
@@ -2603,3 +2605,106 @@ function showToast(message: string, duration = 3500) {
         toast!.style.transform = 'translateX(-50%) translateY(20px)';
     }, duration);
 }
+
+// Cache global pour le contenu HTML de project.html (pour ne pas recharger à chaque ouverture)
+let projectPageCache: string | null = null;
+
+async function openProjectOverlay() {
+    const overlay = document.getElementById('project-overlay');
+    if (!overlay) return;
+
+    // Affiche l'overlay
+    overlay.style.display = 'block';
+    overlay.offsetHeight; // Force reflow
+    overlay.style.opacity = '1';
+    document.body.style.overflow = 'hidden'; // Bloque le défilement de la page arrière
+
+    // Change l'URL de l'historique sans recharger la page
+    history.pushState({ page: 'project' }, '', '/project');
+
+    // Charge le contenu depuis le cache, ou le télécharge si c'est la première fois
+    if (projectPageCache) {
+        overlay.innerHTML = projectPageCache;
+        setupProjectOverlayEvents(overlay);
+    } else {
+        overlay.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
+                <div style="width: 48px; height: 48px; border: 4px solid #ef4444; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="color: #a0a0a0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Chargement du projet...</p>
+            </div>
+        `;
+        try {
+            const response = await fetch('/project.html');
+            if (!response.ok) throw new Error('Failed to load project page');
+            const html = await response.text();
+            
+            // Extrait les styles du <head> et le contenu du <body> pour conserver toute la mise en page
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
+                .map(el => el.outerHTML)
+                .join('\n');
+            const bodyContent = styles + doc.body.innerHTML;
+            
+            projectPageCache = bodyContent;
+            overlay.innerHTML = bodyContent;
+            setupProjectOverlayEvents(overlay);
+        } catch (err) {
+            console.error("Impossible de charger le projet:", err);
+            overlay.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
+                    <p>Erreur lors du chargement de la page projet.</p>
+                    <button onclick="window.closeProjectOverlay()" style="background: #ef4444; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Retour</button>
+                </div>
+            `;
+        }
+    }
+}
+
+function setupProjectOverlayEvents(overlay: HTMLElement) {
+    // Écouteur pour fermer l'overlay quand on clique sur "Retour"
+    const backButtons = overlay.querySelectorAll('.back-home');
+    backButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeProjectOverlay();
+        });
+    });
+}
+
+function closeProjectOverlay() {
+    const overlay = document.getElementById('project-overlay');
+    if (!overlay) return;
+
+    overlay.style.opacity = '0';
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        document.body.style.overflow = ''; // Rétablit le défilement
+    }, 300);
+
+    // Rétablit l'URL racine
+    history.pushState({ page: 'home' }, '', '/');
+}
+
+// Exposer globalement pour le bouton d'erreur
+(window as any).closeProjectOverlay = closeProjectOverlay;
+
+// Intercepte les clics sur les liens du projet dans le site
+document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const projectLink = target.closest('a[href="/project.html"]');
+    if (projectLink) {
+        e.preventDefault();
+        openProjectOverlay();
+    }
+});
+
+// Écoute le bouton retour/suivant du navigateur
+window.addEventListener('popstate', (e) => {
+    if (e.state && e.state.page === 'project') {
+        openProjectOverlay();
+    } else {
+        closeProjectOverlay();
+    }
+});
+
