@@ -15,6 +15,7 @@ export default defineConfig({
         contact: resolve(__dirname, 'contact.html'),
         cgu: resolve(__dirname, 'cgu.html'),
         privacy: resolve(__dirname, 'privacy.html'),
+        dmca: resolve(__dirname, 'dmca.html'),
       },
       output: {
         manualChunks(id) {

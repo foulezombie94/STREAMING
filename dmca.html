@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Politique DMCA | MOVIEVERSE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Variables globales - Thème ROUGE */
+        :root {
+            --bg-color: #050101;
+            --text-main: #f1f1f1;
+            --text-muted: #a39ca0;
+            --header-bg: rgba(5, 1, 1, 0.95);
+            
+            --accent-gradient: linear-gradient(135deg, #ff003c, #ff3333);
+            --accent-solid: #ff003c;
+            --accent-hover: #e60036;
+            
+            --glass-bg: rgba(25, 5, 5, 0.4);
+            --glass-border: rgba(255, 50, 50, 0.08);
+            --card-bg: rgba(255, 255, 255, 0.02);
+            --card-border: rgba(255, 255, 255, 0.05);
+
+            --nav-width: 280px;
+            --header-height: 80px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Amélioration du défilement */
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: calc(var(--header-height) + 20px);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Effets de lumière en arrière-plan */
+        .ambient-light {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(140px);
+            z-index: -1;
+            animation: float 12s infinite alternate ease-in-out;
+            pointer-events: none;
+        }
+
+        .light-red-1 {
+            top: -10%;
+            right: 15%;
+            width: 500px;
+            height: 500px;
+            background: rgba(255, 0, 60, 0.15);
+        }
+
+        .light-red-2 {
+            bottom: -10%;
+            left: 5%;
+            width: 600px;
+            height: 600px;
+            background: rgba(255, 51, 51, 0.12);
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(40px, -40px); }
+        }
+
+        /* --- Layout Principal --- */
+        .dmca-main-container {
+            max-width: 1400px;
+            margin: 40px auto 0;
+            padding: 40px 50px 80px;
+        }
+
+        .dmca-layout-cols {
+            display: flex;
+            gap: 50px;
+        }
+
+        .back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.3s, transform 0.3s;
+            margin-bottom: 30px;
+            align-self: flex-start;
+        }
+        
+        .back-home:hover {
+            color: var(--accent-solid);
+            transform: translateX(-4px);
+        }
+
+        /* Sommaire (Sidebar) */
+        .dmca-sidebar {
+            width: var(--nav-width);
+            flex-shrink: 0;
+            position: sticky;
+            top: 40px;
+            height: fit-content;
+        }
+
+        .dmca-nav {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+        }
+
+        .dmca-nav h3 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: var(--text-main);
+        }
+
+        .dmca-nav ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .dmca-nav a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            transition: color 0.3s ease, padding-left 0.3s ease;
+            display: block;
+            line-height: 1.4;
+        }
+
+        .dmca-nav a:hover {
+            color: var(--accent-solid);
+            padding-left: 5px;
+        }
+
+        .dmca-nav a.active {
+            color: var(--accent-solid);
+            font-weight: 500;
+            padding-left: 10px;
+            border-left: 2px solid var(--accent-solid);
+        }
+
+        /* Zone de contenu principale */
+        .dmca-content-main {
+            flex-grow: 1;
+        }
+
+        /* En-tête de la page */
+        .page-header {
+            margin-bottom: 50px;
+        }
+
+        .icon-scale {
+            font-size: 2.5rem;
+            color: var(--accent-solid);
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px rgba(255, 0, 60, 0.3));
+        }
+
+        .page-header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.8rem;
+            margin-bottom: 15px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            max-width: 700px;
+        }
+
+        /* Conteneur des politiques */
+        .policy-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        /* Cartes de sections */
+        .policy-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .policy-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: var(--accent-gradient);
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+
+        .policy-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 0, 60, 0.3);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 0, 60, 0.03);
+        }
+
+        .policy-card:hover::before {
+            opacity: 1;
+        }
+
+        /* En-tête de la carte */
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .card-header i {
+            font-size: 1.4rem;
+            color: var(--accent-solid);
+            background: rgba(255, 0, 60, 0.08);
+            padding: 14px;
+            border-radius: 12px;
+        }
+
+        .card-header h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.5rem;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        /* Contenu textuel */
+        .policy-card p, .policy-card ul {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.8;
+        }
+
+        .policy-card p + p {
+            margin-top: 15px;
+        }
+
+        .policy-card ul {
+            margin-top: 20px;
+            margin-left: 5px;
+            list-style-type: none;
+        }
+
+        .policy-card li {
+            position: relative;
+            margin-bottom: 12px;
+            padding-left: 25px;
+        }
+
+        .policy-card li::before {
+            content: '✓';
+            color: var(--accent-solid);
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .highlight-box {
+            background: rgba(255, 0, 60, 0.05);
+            border: 1px solid rgba(255, 0, 60, 0.2);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        /* --- Footer --- */
+        .page-footer {
+            margin-top: 80px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            padding-top: 30px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .contact-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: rgba(255, 0, 60, 0.1);
+            border: 1px solid var(--accent-solid);
+            color: var(--text-main);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .contact-link:hover {
+            background: var(--accent-solid);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 0, 60, 0.3);
+        }
+
+        /* --- Bouton Back to Top --- */
+        #backToTop {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: var(--accent-gradient);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            z-index: 99;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        
+        #backToTop:hover {
+            transform: scale(1.1);
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 1100px) {
+            .dmca-main-container {
+                padding: 30px 20px;
+                gap: 30px;
+            }
+            .page-header h1 {
+                font-size: 2.4rem;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .dmca-layout-cols {
+                flex-direction: column;
+            }
+            .dmca-sidebar {
+                width: 100%;
+                position: relative;
+                top: 0;
+                margin-bottom: 30px;
+            }
+            .dmca-nav {
+                padding: 20px;
+            }
+            .dmca-nav ul {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 10px 20px;
+            }
+            .dmca-nav a.active {
+                border-left: none;
+                border-bottom: 2px solid var(--accent-solid);
+                padding-left: 0;
+                padding-bottom: 2px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            :root {
+                --header-height: 70px;
+            }
+            .page-header h1 {
+                font-size: 2rem;
+            }
+            .policy-card {
+                padding: 30px 20px;
+            }
+            .card-header h2 {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-light light-red-1"></div>
+    <div class="ambient-light light-red-2"></div>
+
+    <div class="dmca-main-container">
+        <a href="/" class="back-home">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            Retour à l'accueil
+        </a>
+        <div class="dmca-layout-cols">
+            <aside class="dmca-sidebar">
+                <nav class="dmca-nav">
+                    <h3>Sommaire</h3>
+                    <ul>
+                        <li><a href="#section1">1. Non-hébergement</a></li>
+                        <li><a href="#section2">2. Requête DMCA</a></li>
+                        <li><a href="#section3">3. Contre-notification</a></li>
+                        <li><a href="#section4">4. Traitement & Contact</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="dmca-content-main">
+                <header class="page-header">
+                    <i class="fa-solid fa-scale-balanced icon-scale"></i>
+                    <h1>Politique DMCA</h1>
+                    <p>MOVIEVERSE respecte la propriété intellectuelle. Découvrez notre politique de gestion des droits d'auteur et la marche à suivre pour toute réclamation légale.</p>
+                </header>
+
+                <div class="policy-container">
+                    
+                    <section id="section1" class="policy-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-server"></i>
+                            <h2>1. Clause de non-hébergement</h2>
+                        </div>
+                        <p><strong>MOVIEVERSE agit exclusivement comme un moteur de recherche et un agrégateur de liens.</strong></p>
+                        <p>Nous n'hébergeons, ne stockons et ne transmettons aucun fichier vidéo, film, série, ou flux multimédia sur nos propres serveurs. L'intégralité du contenu visuel rendu accessible via notre interface provient de plateformes d'hébergement tierces non affiliées à MOVIEVERSE.</p>
+                        <p>Par conséquent, MOVIEVERSE ne peut être tenu responsable du contenu hébergé sur des sites externes. Pour toute demande de suppression de fichier source, vous devez contacter directement les services d'hébergement concernés (ex: Netu, Uqload, MyStream, etc.).</p>
+                    </section>
+
+                    <section id="section2" class="policy-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-file-signature"></i>
+                            <h2>2. Soumettre une requête DMCA</h2>
+                        </div>
+                        <p>Bien que nous ne contrôlions pas les serveurs distants, nous acceptons de désindexer les liens de notre interface en conformité avec le Digital Millennium Copyright Act (DMCA). Si vous êtes le titulaire légal des droits d'une œuvre référencée sur MOVIEVERSE, vous pouvez soumettre une requête de retrait (Takedown Notice).</p>
+                        
+                        <div class="highlight-box">
+                            <p style="margin-top: 0;">Votre requête doit impérativement inclure :</p>
+                            <ul>
+                                <li>L'URL exacte (lien) de la page MOVIEVERSE pointant vers votre contenu protégé.</li>
+                                <li>Une description détaillée de l'œuvre protégée par le droit d'auteur.</li>
+                                <li>Vos coordonnées complètes (Nom, adresse, numéro de téléphone, email professionnel).</li>
+                                <li>Une déclaration sur l'honneur certifiant que vous croyez de bonne foi que l'utilisation du matériel n'est pas autorisée par le propriétaire, son agent ou la loi.</li>
+                                <li>Votre signature physique ou électronique.</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section id="section3" class="policy-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-reply-all"></i>
+                            <h2>3. Contre-notification</h2>
+                        </div>
+                        <p>Si vous estimez qu'une page ou un lien que vous avez soumis a été désindexé par erreur ou à la suite d'une fausse identification, vous pouvez soumettre une contre-notification.</p>
+                        <p>Cette contre-notification doit inclure vos coordonnées, l'identification du matériel supprimé, et une déclaration sous peine de parjure attestant que la suppression est due à une erreur de jugement. MOVIEVERSE se réserve le droit de restaurer l'indexation du lien dans un délai de 10 à 14 jours ouvrables après réception d'une contre-notification valide.</p>
+                    </section>
+
+                    <section id="section4" class="policy-card">
+                        <div class="card-header">
+                            <i class="fa-solid fa-clock"></i>
+                            <h2>4. Délais de traitement & Contact</h2>
+                        </div>
+                        <p>Nous nous engageons à traiter les requêtes valides et complètes dans un délai de <strong>48 à 72 heures</strong> (jours ouvrés).</p>
+                        <p>Toute réclamation automatisée, incomplète, ou ne respectant pas les conditions mentionnées ci-dessus sera ignorée par nos services.</p>
+                    </section>
+
+                </div>
+
+                <footer class="page-footer">
+                    <p>Dernière mise à jour : 24 Mai 2026</p>
+                    <a href="mailto:dmca@movieverse.fr" class="contact-link">
+                        <i class="fa-solid fa-envelope"></i> Soumettre une requête (dmca@movieverse.fr)
+                    </a>
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <button id="backToTop" title="Retour en haut">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
+
+    <script>
+        // --- Back to Top ---
+        const backToTopBtn = document.getElementById('backToTop');
+        const overlay = document.getElementById('dmca-overlay');
+
+        function setupScrollBehavior(scrollContainer) {
+            scrollContainer.onscroll = function() {
+                const scrollTop = scrollContainer.scrollTop || scrollContainer.pageYOffset || 0;
+                if (scrollTop > 300) {
+                    backToTopBtn.style.display = "block";
+                } else {
+                    backToTopBtn.style.display = "none";
+                }
+                scrollSpy(scrollContainer);
+            };
+
+            backToTopBtn.onclick = function() {
+                scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+        }
+
+        // --- ScrollSpy ---
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.dmca-nav a');
+
+        function scrollSpy(scrollContainer) {
+            let currentSectionId = '';
+            const containerScrollTop = scrollContainer.scrollTop || window.scrollY || 0;
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (containerScrollTop >= (sectionTop - 150)) {
+                    currentSectionId = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${currentSectionId}`) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        // Detect if loaded inside an overlay or standalone
+        window.addEventListener('load', () => {
+            if (overlay && overlay.style.display !== 'none') {
+                setupScrollBehavior(overlay);
+                scrollSpy(overlay);
+            } else {
+                setupScrollBehavior(window);
+                scrollSpy(window);
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -3108,7 +3108,150 @@ function closePrivacyOverlay() {
 
 (window as any).closePrivacyOverlay = closePrivacyOverlay;
 
-// Intercepte les clics sur les liens du projet, de contact, des CGU et de confidentialité
+// Cache global pour le contenu HTML de dmca.html
+let dmcaPageCache: string | null = null;
+
+async function openDmcaOverlay() {
+    const overlay = document.getElementById('dmca-overlay');
+    if (!overlay) return;
+
+    // Affiche l'overlay
+    overlay.style.display = 'block';
+    overlay.offsetHeight; // Force reflow
+    overlay.style.opacity = '1';
+    document.body.style.overflow = 'hidden';
+
+    // Change l'URL de l'historique sans recharger la page
+    history.pushState({ page: 'dmca' }, '', '/dmca');
+
+    if (dmcaPageCache) {
+        overlay.innerHTML = dmcaPageCache;
+        setupDmcaOverlayEvents(overlay);
+    } else {
+        overlay.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
+                <div style="width: 48px; height: 48px; border: 4px solid #ff003c; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="color: #a39ca0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Chargement...</p>
+            </div>
+        `;
+        try {
+            const response = await fetch('/dmca.html');
+            if (!response.ok) throw new Error('Failed to load DMCA page');
+            const html = await response.text();
+
+            // Extrait les styles du <head> et le contenu du <body> pour conserver la mise en page
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
+                .map(el => {
+                    if (el.tagName.toLowerCase() === 'style') {
+                        let css = el.innerHTML;
+                        // Remplace le sélecteur body pour le cibler dans l'overlay et ne pas polluer l'index
+                        css = css.replace(/\bbody\b/g, '#dmca-overlay');
+                        return `<style>${css}</style>`;
+                    }
+                    return el.outerHTML;
+                })
+                .join('\n');
+            const bodyContent = styles + doc.body.innerHTML;
+
+            dmcaPageCache = bodyContent;
+            overlay.innerHTML = bodyContent;
+            setupDmcaOverlayEvents(overlay);
+        } catch (err) {
+            console.error("Impossible de charger la page DMCA:", err);
+            overlay.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
+                    <p>Erreur lors du chargement de la page.</p>
+                    <button onclick="window.closeDmcaOverlay()" style="background: #ff003c; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Retour</button>
+                </div>
+            `;
+        }
+    }
+}
+
+function setupDmcaOverlayEvents(overlay: HTMLElement) {
+    const backButtons = overlay.querySelectorAll('.back-home');
+    backButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeDmcaOverlay();
+        });
+    });
+
+    // --- Back to Top ---
+    const backToTopBtn = overlay.querySelector('#backToTop') as HTMLElement | null;
+    if (backToTopBtn) {
+        overlay.addEventListener('scroll', () => {
+            if (overlay.scrollTop > 300) {
+                backToTopBtn.style.display = 'block';
+            } else {
+                backToTopBtn.style.display = 'none';
+            }
+        });
+        backToTopBtn.addEventListener('click', () => {
+            overlay.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
+    // --- ScrollSpy avec IntersectionObserver ---
+    const sections = overlay.querySelectorAll('section[id]');
+    const navLinks = overlay.querySelectorAll('.dmca-nav a');
+
+    if (sections.length > 0 && navLinks.length > 0) {
+        // Clic sur un lien de navigation pour défiler de manière fluide
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href')?.substring(1);
+                const targetSection = overlay.querySelector(`#${targetId}`);
+                if (targetSection) {
+                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        const observerOptions = {
+            root: overlay,
+            rootMargin: '-30% 0px -50% 0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const currentSectionId = entry.target.getAttribute('id');
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${currentSectionId}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => observer.observe(section));
+    }
+}
+
+function closeDmcaOverlay() {
+    const overlay = document.getElementById('dmca-overlay');
+    if (!overlay) return;
+
+    overlay.style.opacity = '0';
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        document.body.style.overflow = ''; // Rétablit le défilement
+    }, 300);
+
+    // Rétablit l'URL racine
+    history.pushState({ page: 'home' }, '', '/');
+}
+
+(window as any).closeDmcaOverlay = closeDmcaOverlay;
+
+// Intercepte les clics sur les liens du projet, de contact, des CGU, de confidentialité et du DMCA
 document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
     
@@ -3137,6 +3280,13 @@ document.addEventListener('click', (e) => {
     if (privacyLink) {
         e.preventDefault();
         openPrivacyOverlay();
+        return;
+    }
+
+    const dmcaLink = target.closest('a[href="/dmca.html"]');
+    if (dmcaLink) {
+        e.preventDefault();
+        openDmcaOverlay();
     }
 });
 
@@ -3148,32 +3298,44 @@ window.addEventListener('popstate', (e) => {
             closeContactOverlay();
             closeCguOverlay();
             closePrivacyOverlay();
+            closeDmcaOverlay();
         } else if (e.state.page === 'contact') {
             openContactOverlay();
             closeProjectOverlay();
             closeCguOverlay();
             closePrivacyOverlay();
+            closeDmcaOverlay();
         } else if (e.state.page === 'cgu') {
             openCguOverlay();
             closeProjectOverlay();
             closeContactOverlay();
             closePrivacyOverlay();
+            closeDmcaOverlay();
         } else if (e.state.page === 'privacy') {
             openPrivacyOverlay();
             closeProjectOverlay();
             closeContactOverlay();
             closeCguOverlay();
+            closeDmcaOverlay();
+        } else if (e.state.page === 'dmca') {
+            openDmcaOverlay();
+            closeProjectOverlay();
+            closeContactOverlay();
+            closeCguOverlay();
+            closePrivacyOverlay();
         } else {
             closeProjectOverlay();
             closeContactOverlay();
             closeCguOverlay();
             closePrivacyOverlay();
+            closeDmcaOverlay();
         }
     } else {
         closeProjectOverlay();
         closeContactOverlay();
         closeCguOverlay();
         closePrivacyOverlay();
+        closeDmcaOverlay();
     }
 });
 
