@@ -4392,7 +4392,7 @@ html.low-perf .carousel-timer {
 .tech-pill.tech-node:hover   { color: #22c55e; border-color: #22c55e; background: rgba(34,197,94,0.08);  transform: translateY(-2px); }
 .tech-pill.tech-vite:hover   { color: #a78bfa; border-color: #a78bfa; background: rgba(167,139,250,0.08); transform: translateY(-2px); }
 .tech-pill.tech-tailwind:hover { color: #06b6d4; border-color: #06b6d4; background: rgba(6,182,212,0.08); transform: translateY(-2px); }
-.tech-pill.tech-redis:hover  { color: #ef4444; border-color: #ef4444; background: rgba(239,68,68,0.08);  transform: translateY(-2px); }
+.tech-pill.tech-upstash:hover { color: #00e3c0; border-color: #00e3c0; background: rgba(0, 227, 192, 0.08); transform: translateY(-2px); }
 .tech-pill.tech-vercel:hover { color: #ffffff; border-color: #ffffff; background: rgba(255,255,255,0.06); transform: translateY(-2px); }
 .tech-pill.tech-tmdb:hover   { color: #01d277; border-color: #01d277; background: rgba(1,210,119,0.08);  transform: translateY(-2px); }
 
