@@ -2647,8 +2647,6 @@ async function openProjectOverlay() {
                         let css = el.innerHTML;
                         // Remplace le sélecteur body pour le cibler dans l'overlay et ne pas polluer l'index
                         css = css.replace(/\bbody\b/g, '#project-overlay');
-                        // Remplace la réinitialisation globale * par une réinitialisation spécifique à l'overlay
-                        css = css.replace(/\*\s*\{/g, '#project-overlay * {');
                         return `<style>${css}</style>`;
                     }
                     return el.outerHTML;
