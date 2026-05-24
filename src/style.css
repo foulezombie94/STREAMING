@@ -4284,20 +4284,38 @@ html.low-perf .carousel-timer {
     grid-row: span 2;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 1.5rem;
+    justify-content: flex-start;
+    gap: 1.2rem;
 }
 
 .card-nav .card-title {
-    margin-bottom: 0;
+    margin-bottom: 0.2rem;
 }
 
-.nav-grid {
+.card-nav .nav-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 0.35rem;
+    gap: 0.75rem; /* Plus d'espace entre les liens */
 }
 
+/* Liens d'exploration plus grands pour occuper tout le bloc bento */
+.card-nav .nav-item {
+    font-size: 1.12rem !important; /* Texte plus grand */
+    padding: 1.15rem 1.3rem !important; /* Plus de rembourrage vertical */
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.card-nav .nav-item .arrow {
+    width: 16px;
+    height: 16px;
+}
+
+.card-nav .nav-item:hover {
+    background: rgba(255, 255, 255, 0.045) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+}
 .bento-footer .nav-item {
     display: flex;
     justify-content: space-between;
