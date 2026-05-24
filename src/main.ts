@@ -2735,22 +2735,127 @@ function closeProjectOverlay() {
 // Exposer globalement pour le bouton d'erreur
 (window as any).closeProjectOverlay = closeProjectOverlay;
 
-// Intercepte les clics sur les liens du projet dans le site
+// Cache global pour le contenu HTML de contact.html
+let contactPageCache: string | null = null;
+
+async function openContactOverlay() {
+    const overlay = document.getElementById('contact-overlay');
+    if (!overlay) return;
+
+    // Affiche l'overlay
+    overlay.style.display = 'block';
+    overlay.offsetHeight; // Force reflow
+    overlay.style.opacity = '1';
+    document.body.style.overflow = 'hidden';
+
+    // Change l'URL de l'historique sans recharger la page
+    history.pushState({ page: 'contact' }, '', '/contact');
+
+    if (contactPageCache) {
+        overlay.innerHTML = contactPageCache;
+        setupContactOverlayEvents(overlay);
+    } else {
+        overlay.innerHTML = `
+            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
+                <div style="width: 48px; height: 48px; border: 4px solid #ef4444; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="color: #a0a0a0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Chargement du contact...</p>
+            </div>
+        `;
+        try {
+            const response = await fetch('/contact.html');
+            if (!response.ok) throw new Error('Failed to load contact page');
+            const html = await response.text();
+
+            // Extrait les styles du <head> et le contenu du <body> pour conserver la mise en page
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
+                .map(el => {
+                    if (el.tagName.toLowerCase() === 'style') {
+                        let css = el.innerHTML;
+                        // Remplace le sélecteur body pour le cibler dans l'overlay et ne pas polluer l'index
+                        css = css.replace(/\bbody\b/g, '#contact-overlay');
+                        return `<style>${css}</style>`;
+                    }
+                    return el.outerHTML;
+                })
+                .join('\n');
+            const bodyContent = styles + doc.body.innerHTML;
+
+            contactPageCache = bodyContent;
+            overlay.innerHTML = bodyContent;
+            setupContactOverlayEvents(overlay);
+        } catch (err) {
+            console.error("Impossible de charger le contact:", err);
+            overlay.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
+                    <p>Erreur lors du chargement de la page contact.</p>
+                    <button onclick="window.closeContactOverlay()" style="background: #ef4444; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Retour</button>
+                </div>
+            `;
+        }
+    }
+}
+
+function setupContactOverlayEvents(overlay: HTMLElement) {
+    const backButtons = overlay.querySelectorAll('.back-home');
+    backButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeContactOverlay();
+        });
+    });
+}
+
+function closeContactOverlay() {
+    const overlay = document.getElementById('contact-overlay');
+    if (!overlay) return;
+
+    overlay.style.opacity = '0';
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        document.body.style.overflow = '';
+    }, 300);
+
+    history.pushState({ page: 'home' }, '', '/');
+}
+
+(window as any).closeContactOverlay = closeContactOverlay;
+
+// Intercepte les clics sur les liens du projet et de contact
 document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
+    
     const projectLink = target.closest('a[href="/project.html"]');
     if (projectLink) {
         e.preventDefault();
         openProjectOverlay();
+        return;
+    }
+
+    const contactLink = target.closest('a[href="/contact.html"]');
+    if (contactLink) {
+        e.preventDefault();
+        openContactOverlay();
     }
 });
 
 // Écoute le bouton retour/suivant du navigateur
 window.addEventListener('popstate', (e) => {
-    if (e.state && e.state.page === 'project') {
-        openProjectOverlay();
+    if (e.state) {
+        if (e.state.page === 'project') {
+            openProjectOverlay();
+            closeContactOverlay();
+        } else if (e.state.page === 'contact') {
+            openContactOverlay();
+            closeProjectOverlay();
+        } else {
+            closeProjectOverlay();
+            closeContactOverlay();
+        }
     } else {
         closeProjectOverlay();
+        closeContactOverlay();
     }
 });
 

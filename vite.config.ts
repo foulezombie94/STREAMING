@@ -12,6 +12,7 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
         details: resolve(__dirname, 'details.html'),
         project: resolve(__dirname, 'project.html'),
+        contact: resolve(__dirname, 'contact.html'),
       },
       output: {
         manualChunks(id) {

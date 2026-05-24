@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contactez MOVIEVERSE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Variables globales synchronisées avec le thème */
+        :root {
+            --bg-color: #050505;
+            --text-main: #f1f1f1;
+            --text-muted: #9ca3af;
+            
+            --accent-gradient: linear-gradient(135deg, #8e44ad, #ef4444);
+            --accent-solid: #ef4444;
+            
+            --glass-bg: rgba(20, 20, 25, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.05);
+            --card-bg: rgba(255, 255, 255, 0.025);
+            --card-border: rgba(255, 255, 255, 0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Effets de lumière en arrière-plan */
+        .ambient-light {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            animation: float 10s infinite alternate ease-in-out;
+        }
+
+        .light-purple {
+            top: 5%;
+            left: 15%;
+            width: 500px;
+            height: 500px;
+            background: rgba(142, 68, 173, 0.15);
+        }
+
+        .light-pink {
+            bottom: 5%;
+            right: 15%;
+            width: 600px;
+            height: 600px;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(40px, -40px); }
+        }
+
+        /* Conteneur principal */
+        .contact-wrapper {
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+            z-index: 1;
+            margin: 0 auto;
+        }
+
+        /* Boîte centrale (Glassmorphism) */
+        .contact-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+            padding: 80px 40px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Bouton Retour */
+        .back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.3s, transform 0.3s;
+            margin-bottom: 40px;
+            align-self: flex-start;
+        }
+        
+        .back-home:hover {
+            color: #ef4444;
+            transform: translateX(-4px);
+        }
+
+        /* En-tête */
+        .info-header {
+            margin-bottom: 60px;
+        }
+
+        .info-header h2 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .info-header p {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Grille des liens communautaires */
+        .community-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        /* Carte individuelle */
+        .comm-link {
+            flex: 1;
+            min-width: 280px;
+            max-width: 350px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: var(--text-main);
+            padding: 40px 30px;
+            border-radius: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Effet de brillance au survol */
+        .comm-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.05), transparent);
+            transform: skewX(-20deg);
+            transition: all 0.7s ease;
+        }
+
+        .comm-link:hover::before {
+            left: 150%;
+        }
+
+        .comm-link:hover {
+            transform: translateY(-10px);
+            border-color: rgba(239, 68, 68, 0.4);
+            background: rgba(239, 68, 68, 0.05);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(239, 68, 68, 0.1);
+        }
+
+        .comm-link i {
+            font-size: 3.5rem;
+            color: var(--accent-solid);
+            margin-bottom: 25px;
+            transition: transform 0.3s ease;
+        }
+
+        .comm-link:hover i {
+            transform: scale(1.1);
+        }
+
+        .comm-link h4 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .comm-link span {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .contact-box {
+                padding: 50px 20px;
+            }
+            .info-header h2 {
+                font-size: 2.5rem;
+            }
+            .info-header p {
+                font-size: 1rem;
+            }
+            .community-links {
+                flex-direction: column;
+                align-items: center;
+            }
+            .comm-link {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-light light-purple"></div>
+    <div class="ambient-light light-pink"></div>
+
+    <div class="contact-wrapper">
+        <div class="contact-box">
+            
+            <a href="/" class="back-home">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Retour à l'accueil
+            </a>
+
+            <div class="info-header">
+                <h2>Écrivez-nous.</h2>
+                <p>Un bug ? Une suggestion de fonctionnalité ? Ou juste pour dire bonjour.<br>La communauté MOVIEVERSE se construit avec vous.</p>
+            </div>
+            
+            <div class="community-links">
+                <a href="#" class="comm-link">
+                    <i class="fa-brands fa-discord"></i>
+                    <h4>Rejoindre le Discord</h4>
+                    <span>La communauté active</span>
+                </a>
+                
+                <a href="https://t.me/+xtY0ZqrKgUIyNDlk" class="comm-link" target="_blank" rel="noopener">
+                    <i class="fa-brands fa-telegram"></i>
+                    <h4>Groupe Telegram</h4>
+                    <span>Annonces & Mises à jour</span>
+                </a>
+
+                <a href="mailto:contact@movieverse.fr" class="comm-link">
+                    <i class="fa-solid fa-envelope"></i>
+                    <h4>contact@movieverse.fr</h4>
+                    <span>Pour les requêtes formelles</span>
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>
