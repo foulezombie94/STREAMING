@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conditions Générales d'Utilisation | MOVIEVERSE</title>
+    <title>Confidentialité | MOVIEVERSE</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -61,7 +61,7 @@
 
         .light-red-1 {
             top: -10%;
-            right: 10%;
+            left: 0%;
             width: 500px;
             height: 500px;
             background: rgba(255, 0, 60, 0.15);
@@ -69,7 +69,7 @@
 
         .light-red-2 {
             bottom: -10%;
-            left: 10%;
+            right: 0%;
             width: 600px;
             height: 600px;
             background: rgba(255, 51, 51, 0.12);
@@ -77,7 +77,7 @@
 
         @keyframes float {
             0% { transform: translate(0, 0); }
-            100% { transform: translate(-40px, 40px); }
+            100% { transform: translate(50px, 30px); }
         }
 
         /* --- Header --- */
@@ -113,7 +113,7 @@
         }
 
         /* --- Layout Principal --- */
-        .cgu-main-container {
+        .privacy-main-container {
             display: flex;
             max-width: 1400px;
             margin: var(--header-height) auto 0;
@@ -122,7 +122,7 @@
         }
 
         /* Sommaire (Sidebar) */
-        .cgu-sidebar {
+        .privacy-sidebar {
             width: var(--nav-width);
             flex-shrink: 0;
             position: sticky;
@@ -130,7 +130,7 @@
             height: fit-content;
         }
 
-        .cgu-nav {
+        .privacy-nav {
             background: var(--glass-bg);
             backdrop-filter: blur(16px);
             border: 1px solid var(--glass-border);
@@ -138,21 +138,21 @@
             padding: 30px;
         }
 
-        .cgu-nav h3 {
+        .privacy-nav h3 {
             font-family: 'Montserrat', sans-serif;
             font-size: 1.1rem;
             margin-bottom: 20px;
             color: var(--text-main);
         }
 
-        .cgu-nav ul {
+        .privacy-nav ul {
             list-style: none;
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
 
-        .cgu-nav a {
+        .privacy-nav a {
             text-decoration: none;
             color: var(--text-muted);
             font-size: 0.95rem;
@@ -161,13 +161,12 @@
             line-height: 1.4;
         }
 
-        .cgu-nav a:hover {
+        .privacy-nav a:hover {
             color: var(--accent-solid);
             padding-left: 5px;
         }
 
-        /* Style pour Scrollspy */
-        .cgu-nav a.active {
+        .privacy-nav a.active {
             color: var(--accent-solid);
             font-weight: 500;
             padding-left: 10px;
@@ -175,7 +174,7 @@
         }
 
         /* Zone de contenu principale */
-        .cgu-content-main {
+        .privacy-content-main {
             flex-grow: 1;
         }
 
@@ -184,7 +183,7 @@
             margin-bottom: 50px;
         }
 
-        .icon-gavel {
+        .icon-shield {
             font-size: 2.5rem;
             color: var(--accent-solid);
             margin-bottom: 15px;
@@ -208,27 +207,45 @@
             max-width: 700px;
         }
 
-        /* Conteneur des clauses */
-        .cgu-container {
+        /* Conteneur des politiques */
+        .policy-container {
             display: flex;
             flex-direction: column;
             gap: 30px;
         }
 
         /* Cartes de sections */
-        .cgu-card {
+        .policy-card {
             background: var(--glass-bg);
             backdrop-filter: blur(16px);
             border: 1px solid var(--glass-border);
             border-radius: 20px;
             padding: 40px;
+            position: relative;
+            overflow: hidden;
             transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
-        .cgu-card:hover {
-            transform: translateY(-5px); /* Soulevé légèrement plus */
+        .policy-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 4px;
+            background: var(--accent-gradient);
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+
+        .policy-card:hover {
+            transform: translateY(-5px);
             border-color: rgba(255, 0, 60, 0.3);
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 0, 60, 0.03);
+        }
+
+        .policy-card:hover::before {
+            opacity: 1;
         }
 
         /* En-tête de la carte */
@@ -257,30 +274,30 @@
         }
 
         /* Contenu textuel */
-        .cgu-card p, .cgu-card ul {
+        .policy-card p, .policy-card ul {
             color: var(--text-muted);
             font-size: 1rem;
-            line-height: 1.8; /* Espacement amélioré */
+            line-height: 1.8;
         }
 
-        .cgu-card p + p {
+        .policy-card p + p {
             margin-top: 15px;
         }
 
-        .cgu-card ul {
+        .policy-card ul {
             margin-top: 20px;
             margin-left: 5px;
             list-style-type: none;
         }
 
-        .cgu-card li {
+        .policy-card li {
             position: relative;
             margin-bottom: 12px;
             padding-left: 25px;
         }
 
-        .cgu-card li::before {
-            content: '✓'; /* Symbole plus professionnel */
+        .policy-card li::before {
+            content: '✓';
             color: var(--accent-solid);
             position: absolute;
             left: 0;
@@ -297,6 +314,25 @@
             border-top: 1px solid var(--glass-border);
         }
 
+        .contact-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: rgba(255, 0, 60, 0.1);
+            border: 1px solid var(--accent-solid);
+            color: var(--text-main);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .contact-link:hover {
+            background: var(--accent-solid);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 0, 60, 0.3);
+        }
+
         .discord-link {
             display: inline-block;
             margin-top: 15px;
@@ -308,8 +344,10 @@
             font-weight: 500;
             transition: background-color 0.3s ease;
         }
+
         .discord-link:hover {
             background-color: #4752c4;
+            box-shadow: 0 5px 15px rgba(88, 101, 242, 0.3);
         }
 
         /* --- Bouton Back to Top --- */
@@ -324,18 +362,19 @@
             border: none;
             border-radius: 50%;
             cursor: pointer;
-            display: none; /* Caché par défaut */
+            display: none;
             z-index: 99;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             transition: transform 0.3s ease, opacity 0.3s ease;
         }
+        
         #backToTop:hover {
             transform: scale(1.1);
         }
 
         /* --- Responsive --- */
         @media (max-width: 1100px) {
-            .cgu-main-container {
+            .privacy-main-container {
                 padding: 30px 20px;
                 gap: 30px;
             }
@@ -348,24 +387,24 @@
             .main-header {
                 padding: 0 20px;
             }
-            .cgu-main-container {
-                flex-direction: column; /* Le sommaire passe au-dessus */
+            .privacy-main-container {
+                flex-direction: column;
             }
-            .cgu-sidebar {
+            .privacy-sidebar {
                 width: 100%;
                 position: relative;
                 top: 0;
                 margin-bottom: 30px;
             }
-            .cgu-nav {
+            .privacy-nav {
                 padding: 20px;
             }
-            .cgu-nav ul {
+            .privacy-nav ul {
                 flex-direction: row;
                 flex-wrap: wrap;
                 gap: 10px 20px;
             }
-            .cgu-nav a.active {
+            .privacy-nav a.active {
                 border-left: none;
                 border-bottom: 2px solid var(--accent-solid);
                 padding-left: 0;
@@ -380,7 +419,7 @@
             .page-header h1 {
                 font-size: 2rem;
             }
-            .cgu-card {
+            .policy-card {
                 padding: 30px 20px;
             }
             .card-header h2 {
@@ -401,96 +440,87 @@
     <div class="ambient-light light-red-1"></div>
     <div class="ambient-light light-red-2"></div>
 
-    <div class="cgu-main-container">
+    <div class="privacy-main-container">
         
-        <aside class="cgu-sidebar">
-            <nav class="cgu-nav">
+        <aside class="privacy-sidebar">
+            <nav class="privacy-nav">
                 <h3>Sommaire</h3>
                 <ul>
-                    <li><a href="#section1">1. Acceptation</a></li>
-                    <li><a href="#section2">2. Services</a></li>
-                    <li><a href="#section3">3. Comportement</a></li>
-                    <li><a href="#section4">4. Responsabilité</a></li>
-                    <li><a href="#section5">5. Modifications</a></li>
+                    <li><a href="#section1">1. Données collectées</a></li>
+                    <li><a href="#section2">2. Utilisation des données</a></li>
+                    <li><a href="#section3">3. Cookies et Traceurs</a></li>
+                    <li><a href="#section4">4. Vos droits</a></li>
                 </ul>
             </nav>
         </aside>
 
-        <main class="cgu-content-main">
+        <main class="privacy-content-main">
             <header class="page-header">
-                <i class="fa-solid fa-gavel icon-gavel"></i>
-                <h1>Conditions Générales</h1>
-                <p>Bienvenue sur MOVIEVERSE. En utilisant notre plateforme, vous acceptez de respecter les règles suivantes. Veuillez les lire attentivement.</p>
-             <div class="cgu-container">
+                <i class="fa-solid fa-shield-halved icon-shield"></i>
+                <h1>Confidentialité</h1>
+                <p>Chez MOVIEVERSE, nous prenons la sécurité et le respect de vos données très au sérieux. Voici comment nous les protégeons au quotidien.</p>
+            </header>
+
+            <div class="policy-container">
                 
-                <section id="section1" class="cgu-card">
+                <section id="section1" class="policy-card">
                     <div class="card-header">
-                        <i class="fa-solid fa-circle-check"></i>
-                        <h2>1. Acceptation des conditions</h2>
+                        <i class="fa-solid fa-database"></i>
+                        <h2>1. Données collectées</h2>
                     </div>
-                    <p>L’accès et l’utilisation de la plateforme MOVIEVERSE sont soumis à l’acceptation pleine et entière des présentes Conditions Générales d’Utilisation. En naviguant sur le site, en utilisant le lecteur multimédia ou en accédant aux chaînes en direct, vous reconnaissez avoir pris connaissance de ces règles et vous engagez à les respecter.</p>
-                    <p>Si vous n'acceptez pas tout ou partie de ces conditions, vous devez cesser immédiatement d'utiliser nos services.</p>
-                </section>
-
-                <section id="section2" class="cgu-card">
-                    <div class="card-header">
-                        <i class="fa-solid fa-photo-film"></i>
-                        <h2>2. Description des services</h2>
-                    </div>
-                    <p>MOVIEVERSE met à disposition un portail gratuit d'indexation, de recherche et d'organisation de contenus multimédias liés au cinéma, aux séries et à la télévision en direct. Les services incluent, sans s'y limiter :</p>
+                    <p>Chez MOVIEVERSE, la protection de votre vie privée est une priorité absolue. Nous n'imposons aucune création de compte ni inscription. Vos données d'utilisation restent sous votre contrôle exclusif :</p>
                     <ul>
-                        <li>L'accès à un catalogue de films et séries indexés à partir de sources publiques.</li>
-                        <li>Un lecteur multimédia intégré pour visionner les flux vidéo externes.</li>
-                        <li>Un service de télévision en direct (IPTV) compatible avec les abonnements Xtream Codes.</li>
-                        <li>La reprise de lecture automatique (sauvegardée localement dans votre navigateur).</li>
+                        <li><strong>Stockage local</strong> : Votre historique de lecture (Reprendre) et vos préférences d'affichage sont enregistrés uniquement en local dans votre propre navigateur (via LocalStorage). Aucune information de profil n'est stockée sur nos serveurs.</li>
+                        <li><strong>Données techniques anonymisées</strong> : Des données techniques strictement nécessaires (type de navigateur, résolution d'écran) peuvent être analysées de manière anonyme pour optimiser l'affichage de notre plateforme.</li>
                     </ul>
                 </section>
 
-                <section id="section3" class="cgu-card">
+                <section id="section2" class="policy-card">
                     <div class="card-header">
-                        <i class="fa-solid fa-users-gear"></i>
-                        <h2>3. Comportement des utilisateurs</h2>
+                        <i class="fa-solid fa-user-lock"></i>
+                        <h2>2. Utilisation de vos données</h2>
                     </div>
-                    <p>En rejoignant la communauté MOVIEVERSE ou ses espaces associés (Discord, Telegram), vous vous engagez à adopter une attitude respectueuse. Sont strictement interdits :</p>
+                    <p>MOVIEVERSE s'engage fermement à ne jamais collecter, stocker ou revendre vos données personnelles. Vos informations locales sont exploitées exclusivement pour :</p>
                     <ul>
-                        <li>Les contenus injurieux, haineux, diffamatoires, racistes ou discriminatoires.</li>
-                        <li>Le harcèlement envers d'autres membres ou l'équipe de modération.</li>
-                        <li>Toute tentative d'attaque, de reverse-engineering ou de perturbation des serveurs et infrastructures de MOVIEVERSE.</li>
-                        <li>L'utilisation de scripts automatisés, robots ou outils de scraping sans autorisation préalable.</li>
-                    </ul>
-                    <p>Tout manquement à ces règles pourra entraîner un bannissement temporaire ou définitif de la plateforme et de ses canaux associés.</p>
-                </section>
-
-                <section id="section4" class="cgu-card">
-                    <div class="card-header">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                        <h2>4. Limitation de responsabilité et hébergement</h2>
-                    </div>
-                    <p>MOVIEVERSE fonctionne exclusivement comme un moteur de recherche et d'indexation automatisé. En conséquence :</p>
-                    <ul>
-                        <li>Aucun fichier vidéo ou flux de diffusion n'est hébergé, stocké ou téléchargé sur nos serveurs. L'ensemble des contenus est hébergé par des tiers indépendants.</li>
-                        <li>Le service est fourni gratuitement « en l'état », sans garantie absolue de disponibilité.</li>
-                        <li>Nous ne sommes pas responsables de la perte potentielle d'historiques locaux ou de listes de lecture stockés dans votre navigateur.</li>
-                        <li>Les liens de lecture relèvent de la responsabilité exclusive des hébergeurs de fichiers vidéo correspondants.</li>
+                        <li>Vous permettre de reprendre vos lectures à l'endroit exact où vous vous êtes arrêté.</li>
+                        <li>Mémoriser vos préférences d'affichage (thème sombre, réglages du lecteur vidéo).</li>
+                        <li>Améliorer et optimiser les performances de chargement de la plateforme.</li>
                     </ul>
                 </section>
 
-                <section id="section5" class="cgu-card">
+                <section id="section3" class="policy-card">
                     <div class="card-header">
-                        <i class="fa-solid fa-sliders"></i>
-                        <h2>5. Modifications des conditions</h2>
+                        <i class="fa-solid fa-cookie-bite"></i>
+                        <h2>3. Cookies et Traceurs</h2>
                     </div>
-                    <p>MOVIEVERSE évolue en permanence pour vous proposer la meilleure expérience de streaming possible. Nous nous réservons le droit de modifier les présentes CGU à tout moment afin de les adapter aux nouvelles fonctionnalités du site ou aux évolutions légales.</p>
-                    <p>Les modifications prennent effet dès leur publication. Nous vous encourageons à consulter régulièrement cette page.</p>
+                    <p>Nous n'utilisons aucun cookie publicitaire ou traceur tiers sur la plateforme.</p>
+                    <p>Les seules données temporaires stockées sont strictement essentielles et servent au bon fonctionnement technique de la plateforme (session de lecture, préférences du thème sombre).</p>
+                </section>
+
+                <section id="section4" class="policy-card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-scale-balanced"></i>
+                        <h2>4. Vos droits</h2>
+                    </div>
+                    <p>Puisque nous ne stockons aucune donnée personnelle sur des serveurs distants, vous gardez un contrôle total sur vos informations locales :</p>
+                    <ul>
+                        <li>Vous pouvez vider votre historique et vos préférences à tout moment en effaçant simplement le cache ou les données locales de votre navigateur.</li>
+                        <li>Vos données de visionnage locales ne sont associées à aucune identité réelle.</li>
+                    </ul>
                 </section>
 
             </div>
 
             <footer class="page-footer">
                 <p>Dernière mise à jour : 24 Mai 2026</p>
-                <a href="https://discord.gg/movieverse" target="_blank" rel="noopener" class="discord-link">
-                    <i class="fa-brands fa-discord"></i> Une question ? Rejoignez notre Discord
-                </a>
+                <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
+                    <a href="mailto:contact@movieverse.fr" class="contact-link" style="margin-top: 0;">
+                        <i class="fa-solid fa-envelope"></i> Nous contacter par email
+                    </a>
+                    <a href="https://discord.gg/movieverse" target="_blank" rel="noopener" class="discord-link" style="margin-top: 0; display: inline-flex; align-items: center; gap: 8px;">
+                        <i class="fa-brands fa-discord"></i> Rejoindre notre Discord
+                    </a>
+                </div>
             </footer>
         </main>
     </div>
@@ -502,7 +532,7 @@
     <script>
         // --- Back to Top ---
         const backToTopBtn = document.getElementById('backToTop');
-        const overlay = document.getElementById('cgu-overlay');
+        const overlay = document.getElementById('privacy-overlay');
 
         function setupScrollBehavior(scrollContainer) {
             scrollContainer.onscroll = function() {
@@ -522,7 +552,7 @@
 
         // --- ScrollSpy ---
         const sections = document.querySelectorAll('section[id]');
-        const navLinks = document.querySelectorAll('.cgu-nav a');
+        const navLinks = document.querySelectorAll('.privacy-nav a');
 
         function scrollSpy(scrollContainer) {
             let currentSectionId = '';
