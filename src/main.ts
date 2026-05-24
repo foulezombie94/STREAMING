@@ -2642,7 +2642,17 @@ async function openProjectOverlay() {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
-                .map(el => el.outerHTML)
+                .map(el => {
+                    if (el.tagName.toLowerCase() === 'style') {
+                        let css = el.innerHTML;
+                        // Remplace le sélecteur body pour le cibler dans l'overlay et ne pas polluer l'index
+                        css = css.replace(/\bbody\b/g, '#project-overlay');
+                        // Remplace la réinitialisation globale * par une réinitialisation spécifique à l'overlay
+                        css = css.replace(/\*\s*\{/g, '#project-overlay * {');
+                        return `<style>${css}</style>`;
+                    }
+                    return el.outerHTML;
+                })
                 .join('\n');
             const bodyContent = styles + doc.body.innerHTML;
             
@@ -2670,6 +2680,48 @@ function setupProjectOverlayEvents(overlay: HTMLElement) {
             closeProjectOverlay();
         });
     });
+
+    // Gestion de l'indicateur de progression (les 5 points)
+    const dots = overlay.querySelectorAll('.progress-indicator .dot');
+    const items = overlay.querySelectorAll('.timeline-item');
+
+    if (dots.length > 0 && items.length > 0) {
+        // 1. Clic sur un point pour défiler vers l'étape correspondante
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                const targetItem = items[index];
+                if (targetItem) {
+                    targetItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        });
+
+        // 2. IntersectionObserver pour changer automatiquement le point actif lors du défilement (ScrollSpy)
+        const observerOptions = {
+            root: overlay, // Défilement de l'overlay lui-même
+            rootMargin: '-30% 0px -50% 0px', // Zone centrale de détection
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const index = Array.from(items).indexOf(entry.target);
+                    if (index !== -1) {
+                        dots.forEach((dot, dotIdx) => {
+                            if (dotIdx === index) {
+                                dot.classList.add('active');
+                            } else {
+                                dot.classList.remove('active');
+                            }
+                        });
+                    }
+                }
+            });
+        }, observerOptions);
+
+        items.forEach(item => observer.observe(item));
+    }
 }
 
 function closeProjectOverlay() {
