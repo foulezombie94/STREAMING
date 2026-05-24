@@ -80,44 +80,15 @@
             100% { transform: translate(50px, 30px); }
         }
 
-        /* --- Header --- */
-        .main-header {
-            height: var(--header-height);
-            background-color: var(--header-bg);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--glass-border);
-            position: fixed;
-            top: 0;
-            width: 100%;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            padding: 0 50px;
-        }
-
-        .logo {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--text-main);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .logo span {
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
         /* --- Layout Principal --- */
         .privacy-main-container {
-            display: flex;
             max-width: 1400px;
-            margin: var(--header-height) auto 0;
+            margin: 40px auto 0;
             padding: 40px 50px 80px;
+        }
+
+        .privacy-layout-cols {
+            display: flex;
             gap: 50px;
         }
 
@@ -126,7 +97,7 @@
             width: var(--nav-width);
             flex-shrink: 0;
             position: sticky;
-            top: calc(var(--header-height) + 40px);
+            top: 40px;
             height: fit-content;
         }
 
@@ -384,10 +355,7 @@
         }
 
         @media (max-width: 900px) {
-            .main-header {
-                padding: 0 20px;
-            }
-            .privacy-main-container {
+            .privacy-layout-cols {
                 flex-direction: column;
             }
             .privacy-sidebar {
@@ -430,19 +398,16 @@
 </head>
 <body>
 
-    <header class="main-header">
-        <a href="/" class="logo back-home">
-            <i class="fa-solid fa-play"></i>
-            MOVIEVERSE
-        </a>
-    </header>
-
     <div class="ambient-light light-red-1"></div>
     <div class="ambient-light light-red-2"></div>
 
     <div class="privacy-main-container">
-        
-        <aside class="privacy-sidebar">
+        <a href="/" class="back-home">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            Retour à l'accueil
+        </a>
+        <div class="privacy-layout-cols">
+            <aside class="privacy-sidebar">
             <nav class="privacy-nav">
                 <h3>Sommaire</h3>
                 <ul>
@@ -523,6 +488,7 @@
                 </div>
             </footer>
         </main>
+        </div>
     </div>
 
     <button id="backToTop" title="Retour en haut">
