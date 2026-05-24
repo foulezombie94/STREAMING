@@ -4444,3 +4444,22 @@ html.low-perf .carousel-timer {
         font-size: 1.9rem;
     }
 }
+
+/* Responsive skeleton heights to minimize Layout Shift (CLS) on lazy loaded carousels */
+.section-shimmer-placeholder {
+    width: 100%;
+    border-radius: 16px;
+    height: 400px; /* Optimal on Desktop */
+}
+
+@media (max-width: 1024px) {
+    .section-shimmer-placeholder {
+        height: 320px;
+    }
+}
+
+@media (max-width: 768px) {
+    .section-shimmer-placeholder {
+        height: 380px; /* Optimal for 3-column mobile grid layout */
+    }
+}

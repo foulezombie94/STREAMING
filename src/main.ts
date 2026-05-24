@@ -710,7 +710,7 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
         section.innerHTML = `
             <h2 class="section-title">Résultats filtrés</h2>
             <div class="carousel-container" id="carousel-filtered">
-                <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
+                <div class="loading-shimmer section-shimmer-placeholder"></div>
             </div>
         `;
         mainContent.appendChild(section);
@@ -744,16 +744,12 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                     ${conf.title}
                 </h2>
                 <div class="carousel-container" id="carousel-${conf.id}">
-                    <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
+                    <div class="loading-shimmer section-shimmer-placeholder"></div>
                 </div>
             `;
             mainContent.appendChild(section);
             return;
         }
-
-
-
-
 
         section.innerHTML = `
             <h2 class="section-title">
@@ -761,7 +757,7 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                 ${conf.title}
             </h2>
             <div class="carousel-container" id="carousel-${conf.id}">
-                <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
+                <div class="loading-shimmer section-shimmer-placeholder"></div>
             </div>
         `;
         mainContent.appendChild(section);
