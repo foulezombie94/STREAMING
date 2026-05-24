@@ -264,18 +264,15 @@ export class CoflixScraper {
         return finalPlayers;
     }
 
-    /**
-     * Resolve episode page for series
-     */
-    async resolveEpisode(seriesUrl: string, season: string, episode: string): Promise<PlayerInfo[]> {
-        console.log(`[Coflix] Resolving S${season}E${episode} for ${seriesUrl}`);
+    async resolveEpisode(seriesUrl: string, season: string, episode: string, isAnime: boolean = false): Promise<PlayerInfo[]> {
+        console.log(`[Coflix] Resolving S${season}E${episode} for ${seriesUrl} (anime: ${isAnime})`);
         const seriesSlug = seriesUrl.split('/').filter(Boolean).pop();
         
         try {
             const seriesPageHtml = await this.engine.get(seriesUrl);
             const $main = cheerio.load(seriesPageHtml);
 
-            // Priority 1: WP-JSON API (Modern Coflix)
+            // Priority 1: WP-JSON API (Modern Coflix) — Direct lookup
             const apiUrl = `/wp-json/apiflix/v1/series/${seriesSlug}/seasons/${season}/episodes/${episode}`;
             try {
                 const apiRes: any = await this.engine.get(apiUrl);
@@ -284,6 +281,40 @@ export class CoflixScraper {
                     return await this.extractPlayers(apiRes.url);
                 }
             } catch (e: any) {}
+
+            // Priority 1b: For anime with high episode numbers, scan ALL seasons
+            if (isAnime && parseInt(episode) > 25) {
+                console.log(`[Coflix] Direct API miss for E${episode}. Scanning all seasons...`);
+                
+                // Discover seasons from the page
+                const seasonNumbers: number[] = [];
+                $main('[data-season], .season-item, .seasons a, #seasons li, .se-q a').each((_, el) => {
+                    const num = parseInt($main(el).attr('data-season') || $main(el).text().replace(/\D/g, '') || '0');
+                    if (num > 0 && !seasonNumbers.includes(num)) seasonNumbers.push(num);
+                });
+                
+                if (seasonNumbers.length === 0) {
+                    for (let i = 1; i <= 30; i++) seasonNumbers.push(i);
+                }
+                
+                seasonNumbers.sort((a, b) => a - b);
+                const targetEpNum = parseInt(episode);
+                
+                for (const sNum of seasonNumbers) {
+                    try {
+                        const sApiUrl = `/wp-json/apiflix/v1/series/${seriesSlug}/seasons/${sNum}`;
+                        const sRes: any = await this.engine.get(sApiUrl);
+                        if (sRes && Array.isArray(sRes.episodes)) {
+                            const match = sRes.episodes.find((ep: any) => parseInt(ep.number) === targetEpNum);
+                            if (match && match.url) {
+                                console.log(`[Coflix] ✅ Found E${episode} in Season ${sNum}: ${match.url}`);
+                                return await this.extractPlayers(match.url);
+                            }
+                        }
+                    } catch (e) {}
+                }
+                console.warn(`[Coflix] ❌ Episode ${episode} not found across seasons`);
+            }
 
             // Priority 2: AJAX fallback (Legacy Coflix)
             try {
@@ -314,12 +345,12 @@ export class CoflixScraper {
 
             // Priority 3: HTML Fallback (Direct selectors)
             try {
-                // Try multiple selector patterns for "The Boys" style pages
                 let episodeLink = $main(`.episode:contains("T${season}-E${episode}") a`).attr('href')
                                || $main(`.episode:contains("${season}x${episode}") a`).attr('href')
                                || $main(`[data-season="${season}"]`).find(`[data-episode="${episode}"] a`).attr('href') 
                                || $main(`li[data-episode="${episode}"] a`).attr('href')
-                               || $main(`a:contains("Épisode ${episode}")`).attr('href');
+                               || $main(`a:contains("Épisode ${episode}")`).attr('href')
+                               || $main(`a:contains("Episode ${episode}")`).attr('href');
                 
                 if (episodeLink) {
                     console.log(`[Coflix] Found episode via HTML parsing: ${episodeLink}`);

@@ -386,18 +386,94 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const seriesId = target.ID;
             const seriesSlug = target.url.split('/').filter(Boolean).pop();
 
-            // Tier 1: WP-JSON API
+            // Tier 1: WP-JSON API — Smart Season Scanning for long anime
             try {
+                // First, try the direct season/episode combo
                 const apiPath = `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${seriesId}/${season}`;
                 const apiRes = await fetchTLS(apiPath, { headers: { "Cookie": cookies } });
                 if (apiRes.data && Array.isArray(apiRes.data.episodes)) {
                     const targetEp = apiRes.data.episodes.find((ep: any) => parseInt(ep.number) === parseInt(episode));
                     if (targetEp && targetEp.links) {
                         pageUrl = targetEp.links[0]?.url || pageUrl;
+                        console.log(`[Coflix Prod] Found episode via direct API S${season}: ${pageUrl}`);
                     }
                 }
-            } catch (e) {}
 
+                // If direct lookup failed AND this is an anime with a high episode number,
+                // scan ALL Coflix seasons to find the right one
+                if (pageUrl === target.url && isAnime && parseInt(episode) > 25) {
+                    console.log(`[Coflix Prod] Direct API miss for E${episode}. Scanning all seasons...`);
+                    
+                    // Fetch the series page to discover how many seasons exist
+                    const seriesPage = await fetchTLS(target.url, { headers: { "Cookie": cookies } });
+                    const $series = cheerio.load(seriesPage.data);
+                    
+                    // Extract season count from the page (look for season tabs/buttons/links)
+                    const seasonNumbers: number[] = [];
+                    $series('[data-season], .season-item, .seasons a, #seasons li, .se-q a, .episodios a[data-season]').each((_, el) => {
+                        const num = parseInt($series(el).attr('data-season') || $series(el).text().replace(/\D/g, '') || '0');
+                        if (num > 0 && !seasonNumbers.includes(num)) seasonNumbers.push(num);
+                    });
+                    
+                    // If no seasons found from HTML, try scanning sequentially (up to 30 seasons)
+                    if (seasonNumbers.length === 0) {
+                        for (let i = 1; i <= 30; i++) seasonNumbers.push(i);
+                    }
+                    
+                    seasonNumbers.sort((a, b) => a - b);
+                    console.log(`[Coflix Prod] Discovered ${seasonNumbers.length} potential seasons to scan`);
+                    
+                    // Scan seasons in parallel batches of 5 for speed
+                    const targetEpNum = parseInt(episode);
+                    let found = false;
+                    
+                    for (let batchStart = 0; batchStart < seasonNumbers.length && !found; batchStart += 5) {
+                        const batch = seasonNumbers.slice(batchStart, batchStart + 5);
+                        const batchResults = await Promise.all(batch.map(async (sNum) => {
+                            try {
+                                const sApiPath = `${COFLIX_BASE_URL}/wp-json/apiflix/v1/series/${seriesId}/${sNum}`;
+                                const sRes = await fetchTLS(sApiPath, { headers: { "Cookie": cookies } });
+                                if (sRes.data && Array.isArray(sRes.data.episodes) && sRes.data.episodes.length > 0) {
+                                    // Strategy 1: Match by episode number directly
+                                    const byNumber = sRes.data.episodes.find((ep: any) => parseInt(ep.number) === targetEpNum);
+                                    if (byNumber && byNumber.links && byNumber.links.length > 0) {
+                                        return { season: sNum, url: byNumber.links[0]?.url, method: 'number_match' };
+                                    }
+                                    
+                                    // Strategy 2: Check if episode falls within range (for sequential numbering)
+                                    const epNumbers = sRes.data.episodes.map((ep: any) => parseInt(ep.number)).filter((n: number) => !isNaN(n)).sort((a: number, b: number) => a - b);
+                                    if (epNumbers.length > 0) {
+                                        const minEp = epNumbers[0];
+                                        const maxEp = epNumbers[epNumbers.length - 1];
+                                        if (targetEpNum >= minEp && targetEpNum <= maxEp) {
+                                            const match = sRes.data.episodes.find((ep: any) => parseInt(ep.number) === targetEpNum);
+                                            if (match && match.links && match.links.length > 0) {
+                                                return { season: sNum, url: match.links[0]?.url, method: 'range_match' };
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (e) {}
+                            return null;
+                        }));
+                        
+                        const match = batchResults.find(r => r !== null);
+                        if (match) {
+                            pageUrl = match.url;
+                            found = true;
+                            console.log(`[Coflix Prod] ✅ Found E${episode} in Coflix Season ${match.season} via ${match.method}: ${pageUrl}`);
+                        }
+                    }
+                    
+                    if (!found) {
+                        console.warn(`[Coflix Prod] ❌ Episode ${episode} not found across ${seasonNumbers.length} seasons`);
+                    }
+                }
+            } catch (e: any) {
+                console.warn(`[Coflix Prod] WP-JSON scan failed: ${e.message}`);
+            }
+
+            // Tier 2: HTML Fallback (if WP-JSON didn't resolve)
             if (pageUrl === target.url) {
                 try {
                     const seriesPage = await fetchTLS(target.url, { headers: { "Cookie": cookies } });
@@ -406,7 +482,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                    || $main(`.episode:contains("${season}x${episode}") a`).attr('href')
                                    || $main(`[data-season="${season}"]`).find(`[data-episode="${episode}"] a`).attr('href') 
                                    || $main(`li[data-episode="${episode}"] a`).attr('href')
-                                   || $main(`a:contains("Épisode ${episode}")`).attr('href');
+                                   || $main(`a:contains("Épisode ${episode}")`).attr('href')
+                                   || $main(`a:contains("Episode ${episode}")`).attr('href');
                     
                     if (episodeLink) {
                         pageUrl = episodeLink.startsWith('http') ? episodeLink : (COFLIX_BASE_URL + episodeLink);
