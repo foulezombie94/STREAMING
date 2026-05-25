@@ -685,25 +685,111 @@ function renderResumePage() {
 
     const history = ProgressManager.getHistory();
 
+    // 1. Calculer le temps total de visionnage
+    const totalSeconds = history.reduce((sum, item) => sum + (item.time || 0), 0);
+    let formattedWatchTime = '0m';
+    if (totalSeconds >= 3600) {
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.round((totalSeconds % 3600) / 60);
+        formattedWatchTime = `${hours}h ${minutes}m`;
+    } else if (totalSeconds >= 60) {
+        formattedWatchTime = `${Math.round(totalSeconds / 60)}m`;
+    } else if (totalSeconds > 0) {
+        formattedWatchTime = `< 1m`;
+    }
+
+    // 2. Calculer le nombre de médias complétés (plus de 80% de visionnage)
+    const completedCount = history.filter(item => {
+        if (item.duration > 0) {
+            return (item.time / item.duration) >= 0.8;
+        }
+        return false;
+    }).length;
+
+    // 3. Calculer les genres préférés (top 3)
+    const genreCounts: { [key: string]: number } = {};
+    let totalGenrePoints = 0;
+    history.forEach(item => {
+        const genres = item.genres || [];
+        genres.forEach(g => {
+            genreCounts[g] = (genreCounts[g] || 0) + 1;
+            totalGenrePoints++;
+        });
+    });
+
+    const sortedGenres = Object.entries(genreCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+        
+    const favoriteGenreText = sortedGenres.length > 0 ? sortedGenres[0][0] : 'N/A';
+
     const section = document.createElement('section');
     section.className = 'popular';
     section.innerHTML = `
-        <h2 class="section-title">Continuer la lecture</h2>
-        <div class="carousel-container resume-grid" id="carousel-resume">
+        <h2 class="section-title">
+            <span class="material-symbols-outlined">analytics</span>
+            Tableau de Bord
+        </h2>
+        
+        <div class="stats-dashboard">
+            <div class="stats-card">
+                <div class="stats-icon"><span class="material-symbols-outlined">schedule</span></div>
+                <div class="stats-info">
+                    <span class="stats-label">Temps de visionnage</span>
+                    <span class="stats-value">${formattedWatchTime}</span>
+                </div>
+            </div>
+            <div class="stats-card">
+                <div class="stats-icon"><span class="material-symbols-outlined">task_alt</span></div>
+                <div class="stats-info">
+                    <span class="stats-label">Médias complétés</span>
+                    <span class="stats-value">${completedCount}</span>
+                </div>
+            </div>
+            <div class="stats-card genre-card">
+                <div class="stats-icon"><span class="material-symbols-outlined">favorite</span></div>
+                <div class="stats-info">
+                    <span class="stats-label">Genre préféré</span>
+                    <span class="stats-value">${favoriteGenreText}</span>
+                    ${sortedGenres.length > 0 ? `
+                        <div class="genre-progress-bars">
+                            ${sortedGenres.map(([name, count]) => {
+                                const pct = Math.round((count / totalGenrePoints) * 100);
+                                return `
+                                    <div class="genre-progress-row">
+                                        <span class="genre-name">${name}</span>
+                                        <div class="genre-bar-bg">
+                                            <div class="genre-bar-fill" style="width: ${pct}%"></div>
+                                        </div>
+                                        <span class="genre-pct">${pct}%</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    ` : '<span class="stats-label" style="margin-top: 10px; text-transform: none;">Aucun genre enregistré</span>'}
+                </div>
+            </div>
+        </div>
+
+        <h2 class="section-title" style="margin-top: 40px;">
+            <span class="material-symbols-outlined">history</span>
+            Continuer la lecture
+        </h2>
+        <div class="carousel-container resume-grid" id="carousel-resume" style="padding: 0 4rem;">
             ${history.length > 0 
                 ? history.filter(item => !GLOBAL_BLACKLIST_IDS.includes(item.mediaId.toString())).map(item => {
                     // Mapper VideoProgress vers le format attendu par renderMovieCard
                     const cardItem = {
                         id: item.mediaId,
                         media_type: item.mediaType,
-                        poster_path: item.poster.replace(IMAGE_W500_URL, ''),
+                        poster_path: item.poster ? item.poster.replace(IMAGE_W500_URL, '') : '',
                         vote_average: item.rating,
                         title: item.title,
                         name: item.title
                     };
                     return renderMovieCard(cardItem as any, item.mediaType);
                 }).join('')
-                : '<div class="no-history">Aucun historique de lecture disponible.</div>'
+                : '<div class="no-history" style="grid-column: span 4; text-align: center; color: rgba(255,255,255,0.4); padding: 40px;">Aucun historique de lecture disponible.</div>'
             }
         </div>
     `;

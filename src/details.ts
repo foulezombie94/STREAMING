@@ -662,6 +662,7 @@ function renderSourceButtons() {
                     videoIframe.src = proxiedUrl;
                 }
             }
+            startWatchTimer();
         };
         fragment.appendChild(btn);
     });
@@ -675,6 +676,48 @@ function renderSourceButtons() {
 }
 
 
+
+let watchTimerInterval: ReturnType<typeof setInterval> | null = null;
+let lastTimerTick = 0;
+
+function startWatchTimer() {
+    stopWatchTimer();
+    lastTimerTick = Date.now();
+    watchTimerInterval = setInterval(() => {
+        const now = Date.now();
+        const deltaSeconds = Math.floor((now - lastTimerTick) / 1000);
+        lastTimerTick = now;
+
+        if (deltaSeconds > 0 && currentMediaData) {
+            // Récupérer le progrès actuel
+            const currentProgress = ProgressManager.getProgress(mediaId!, mediaType!);
+            const accumulatedTime = (currentProgress?.time || 0) + deltaSeconds;
+            
+            // Calculer la durée en secondes
+            let durationSeconds = 0;
+            if (mediaType === 'movie') {
+                durationSeconds = (currentMediaData.runtime || 120) * 60;
+            } else {
+                durationSeconds = ((currentMediaData as any).episode_run_time?.[0] || 45) * 60;
+            }
+
+            ProgressManager.saveProgress({
+                mediaId: mediaId!,
+                mediaType: mediaType as any,
+                time: accumulatedTime,
+                duration: durationSeconds,
+                lastUpdated: Date.now()
+            });
+        }
+    }, 5000);
+}
+
+function stopWatchTimer() {
+    if (watchTimerInterval) {
+        clearInterval(watchTimerInterval);
+        watchTimerInterval = null;
+    }
+}
 
 if (watchMovieBtn && playerSection && videoIframe) {
     watchMovieBtn.addEventListener('click', () => {
@@ -698,6 +741,7 @@ if (watchMovieBtn && playerSection && videoIframe) {
                 rating: currentMediaData.vote_average,
                 year: currentMediaData.release_date || currentMediaData.first_air_date,
                 tagline: currentMediaData.tagline,
+                genres: currentMediaData.genres ? currentMediaData.genres.map((g: any) => g.name) : [],
                 lastUpdated: Date.now()
             });
         }
@@ -722,6 +766,15 @@ if (watchMovieBtn && playerSection && videoIframe) {
 
 function updateTvProgress() {
     if (mediaType === 'tv' && currentMediaData) {
+        const lastProgress = ProgressManager.getProgress(mediaId!, 'tv');
+        const nextSeason = parseInt(seasonSelect?.value || '1');
+        const nextEpisode = parseInt(episodeSelect?.value || '1');
+        
+        let resetTime = false;
+        if (lastProgress && (lastProgress.season !== nextSeason || lastProgress.episode !== nextEpisode)) {
+            resetTime = true;
+        }
+
         ProgressManager.saveProgress({
             mediaId: mediaId!,
             mediaType: 'tv',
@@ -732,8 +785,10 @@ function updateTvProgress() {
             rating: currentMediaData.vote_average,
             year: currentMediaData.release_date || currentMediaData.first_air_date,
             tagline: currentMediaData.tagline,
-            season: parseInt(seasonSelect?.value || '1'),
-            episode: parseInt(episodeSelect?.value || '1')
+            genres: currentMediaData.genres ? currentMediaData.genres.map((g: any) => g.name) : [],
+            season: nextSeason,
+            episode: nextEpisode,
+            time: resetTime ? 0 : undefined
         });
     }
 }
@@ -816,6 +871,8 @@ if (closePlayerBtn && playerSection && videoIframe) {
 
         // Scroll back to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        stopWatchTimer();
     });
 }
 
@@ -830,7 +887,21 @@ if (changeServerBtn) {
                 // Optionnel : On peut vider l'iframe pour économiser de la bande passante 
                 if (videoIframe) videoIframe.removeAttribute('src');
             }
+        stopWatchTimer();
     });
 }
+
+window.addEventListener('beforeunload', stopWatchTimer);
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        stopWatchTimer();
+    } else {
+        const playerSec = document.getElementById('player-section');
+        const selector = document.getElementById('server-selector');
+        if (playerSec && playerSec.style.display === 'block' && selector && selector.classList.contains('hidden')) {
+            startWatchTimer();
+        }
+    }
+});
 
 fetchDetails();

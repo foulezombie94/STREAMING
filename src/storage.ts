@@ -17,6 +17,7 @@ interface VideoProgress {
     rating: number;
     year: string;
     tagline: string;
+    genres?: string[];
 }
 
 const STORAGE_KEY = 'movieverse_progress';
@@ -46,6 +47,7 @@ export const ProgressManager = {
             rating: data.rating !== undefined ? data.rating : (allProgress[id]?.rating || 0),
             year: data.year || allProgress[id]?.year || '',
             tagline: data.tagline || allProgress[id]?.tagline || '',
+            genres: data.genres || allProgress[id]?.genres || [],
             lastUpdated: Date.now()
         };
 
