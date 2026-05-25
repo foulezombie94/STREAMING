@@ -1077,9 +1077,30 @@ function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: str
     const releaseDate = item.release_date || item.first_air_date;
     const year = releaseDate ? new Date(releaseDate).getFullYear() : '';
     
+    // Récupérer la progression pour ce média pour afficher une barre de suivi
+    let progressBarHtml = '';
+    let episodeBadgeHtml = '';
+    const progress = ProgressManager.getProgress(item.id.toString(), displayType);
+    if (progress && progress.time > 0 && progress.duration > 0) {
+        const percentage = Math.min(Math.round((progress.time / progress.duration) * 100), 100);
+        
+        progressBarHtml = `
+            <div class="progress-bar-mini">
+                <div class="progress-fill" style="width: ${percentage}%"></div>
+            </div>
+        `;
+
+        if (displayType === 'tv' && progress.season && progress.episode) {
+            episodeBadgeHtml = `
+                <div class="episode-badge">S${progress.season}E${progress.episode}</div>
+            `;
+        }
+    }
+
     return `
         <div class="movie-card" data-id="${item.id}" data-type="${displayType}" data-extra="${extraUrlParams}">
             <div class="card-badge">${badgeText}</div>
+            ${episodeBadgeHtml}
             <img src="${src}" 
                  srcset="${srcset}" 
                  sizes="${sizes}"
@@ -1095,6 +1116,7 @@ function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: str
                     ${year ? `<span class="card-year">${year}</span>` : ''}
                 </div>
             </div>
+            ${progressBarHtml}
             ${extra}
         </div>
     `;

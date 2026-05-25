@@ -758,7 +758,10 @@ if (watchMovieBtn && playerSection && videoIframe) {
             
             // Les sélecteurs devraient déjà être peuplés par fetchDetails
             if (seasonSelect && episodeSelect) {
-                fetchCoflixSources('tv', mediaId!, seasonSelect.value, episodeSelect.value);
+                const lastProgress = ProgressManager.getProgress(mediaId!, 'tv');
+                const sVal = seasonSelect.value || (lastProgress?.season || 1).toString();
+                const eVal = episodeSelect.value || (lastProgress?.episode || 1).toString();
+                fetchCoflixSources('tv', mediaId!, sVal, eVal);
             }
         }
     });
