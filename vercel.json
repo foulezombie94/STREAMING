@@ -12,6 +12,26 @@
     {
       "source": "/api/coflix/(.*)",
       "destination": "/api/coflix?path=$1"
+    },
+    {
+      "source": "/movie",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/tv",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/iptv",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/reprendre",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/sagas",
+      "destination": "/index.html"
     }
   ],
   "headers": [

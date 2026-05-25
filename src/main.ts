@@ -524,11 +524,25 @@ function toggleSearchVisibility(show: boolean) {
 // 4. Navigation Management
 const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
 
-async function handleNavigation(type: any) {
+async function handleNavigation(type: any, isPopState = false) {
     // Direct TV non disponible sur mobile — afficher un toast explicatif (M-7)
     if (type === 'iptv' && isMobileViewport()) {
         showToast('📺 Direct TV est disponible uniquement sur desktop / tablette.');
         return;
+    }
+
+    // Mettre à jour l'historique et l'URL du navigateur si ce n'est pas un popstate
+    if (!isPopState) {
+        let path = '/';
+        if (type === 'movie') path = '/movie';
+        else if (type === 'tv') path = '/tv';
+        else if (type === 'iptv') path = '/iptv';
+        else if (type === 'reprendre') path = '/reprendre';
+        else if (type === 'sagas') path = '/sagas';
+
+        if (window.location.pathname !== path) {
+            history.pushState({ page: type }, '', path);
+        }
     }
 
     if (type === 'movie' || type === 'tv') {
@@ -1350,7 +1364,18 @@ async function initApp() {
         // Nettoyer l'URL pour éviter que le paramètre ne reste affiché
         window.history.replaceState({}, document.title, window.location.pathname);
     } else {
-        handleNavigation('trending'); 
+        const path = window.location.pathname;
+        let initialType: any = 'trending';
+        if (path === '/movie') initialType = 'movie';
+        else if (path === '/tv') initialType = 'tv';
+        else if (path === '/iptv') initialType = 'iptv';
+        else if (path === '/reprendre') initialType = 'reprendre';
+        else if (path === '/sagas') initialType = 'sagas';
+
+        // Configurer l'état initial dans l'historique
+        history.replaceState({ page: initialType }, '', path);
+
+        handleNavigation(initialType, true); 
     }
 }
 
@@ -2718,6 +2743,17 @@ function setupProjectOverlayEvents(overlay: HTMLElement) {
     }
 }
 
+function restoreMainPageUrl() {
+    let path = '/';
+    if (currentType === 'movie') path = '/movie';
+    else if (currentType === 'tv') path = '/tv';
+    else if (currentType === 'iptv') path = '/iptv';
+    else if (currentType === 'reprendre') path = '/reprendre';
+    else if (currentType === 'sagas') path = '/sagas';
+
+    history.pushState({ page: currentType }, '', path);
+}
+
 function closeProjectOverlay() {
     const overlay = document.getElementById('project-overlay');
     if (!overlay) return;
@@ -2728,8 +2764,7 @@ function closeProjectOverlay() {
         document.body.style.overflow = ''; // Rétablit le défilement
     }, 300);
 
-    // Rétablit l'URL racine
-    history.pushState({ page: 'home' }, '', '/');
+    restoreMainPageUrl();
 }
 
 // Exposer globalement pour le bouton d'erreur
@@ -2817,7 +2852,7 @@ function closeContactOverlay() {
         document.body.style.overflow = '';
     }, 300);
 
-    history.pushState({ page: 'home' }, '', '/');
+    restoreMainPageUrl();
 }
 
 (window as any).closeContactOverlay = closeContactOverlay;
@@ -2959,8 +2994,7 @@ function closeCguOverlay() {
         document.body.style.overflow = ''; // Rétablit le défilement
     }, 300);
 
-    // Rétablit l'URL racine
-    history.pushState({ page: 'home' }, '', '/');
+    restoreMainPageUrl();
 }
 
 (window as any).closeCguOverlay = closeCguOverlay;
@@ -3102,8 +3136,7 @@ function closePrivacyOverlay() {
         document.body.style.overflow = ''; // Rétablit le défilement
     }, 300);
 
-    // Rétablit l'URL racine
-    history.pushState({ page: 'home' }, '', '/');
+    restoreMainPageUrl();
 }
 
 (window as any).closePrivacyOverlay = closePrivacyOverlay;
@@ -3245,8 +3278,7 @@ function closeDmcaOverlay() {
         document.body.style.overflow = ''; // Rétablit le défilement
     }, 300);
 
-    // Rétablit l'URL racine
-    history.pushState({ page: 'home' }, '', '/');
+    restoreMainPageUrl();
 }
 
 (window as any).closeDmcaOverlay = closeDmcaOverlay;
@@ -3323,6 +3355,15 @@ window.addEventListener('popstate', (e) => {
             closeContactOverlay();
             closeCguOverlay();
             closePrivacyOverlay();
+        } else if (['trending', 'movie', 'tv', 'iptv', 'reprendre', 'sagas'].includes(e.state.page)) {
+            closeProjectOverlay();
+            closeContactOverlay();
+            closeCguOverlay();
+            closePrivacyOverlay();
+            closeDmcaOverlay();
+            if (currentType !== e.state.page) {
+                handleNavigation(e.state.page, true);
+            }
         } else {
             closeProjectOverlay();
             closeContactOverlay();
@@ -3336,6 +3377,19 @@ window.addEventListener('popstate', (e) => {
         closeCguOverlay();
         closePrivacyOverlay();
         closeDmcaOverlay();
+
+        // Rétablir la page principale correspondante au pathname actuel
+        let type = 'trending';
+        const path = window.location.pathname;
+        if (path === '/movie') type = 'movie';
+        else if (path === '/tv') type = 'tv';
+        else if (path === '/iptv') type = 'iptv';
+        else if (path === '/reprendre') type = 'reprendre';
+        else if (path === '/sagas') type = 'sagas';
+
+        if (currentType !== type) {
+            handleNavigation(type, true);
+        }
     }
 });
 
