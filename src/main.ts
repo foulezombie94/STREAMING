@@ -1379,8 +1379,6 @@ async function initApp() {
     }
 }
 
-initApp();
-
 // 10. Gestion de la Recherche
 let searchTimeout: ReturnType<typeof setTimeout>;
 
@@ -3392,4 +3390,6 @@ window.addEventListener('popstate', (e) => {
         }
     }
 });
+
+initApp();
 
