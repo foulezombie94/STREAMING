@@ -1,5 +1,4 @@
 {
-  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/api/proxy",
@@ -12,6 +11,30 @@
     {
       "source": "/api/coflix/(.*)",
       "destination": "/api/coflix?path=$1"
+    },
+    {
+      "source": "/cgu",
+      "destination": "/cgu.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/dmca",
+      "destination": "/dmca.html"
+    },
+    {
+      "source": "/contact",
+      "destination": "/contact.html"
+    },
+    {
+      "source": "/project",
+      "destination": "/project.html"
+    },
+    {
+      "source": "/details",
+      "destination": "/details.html"
     },
     {
       "source": "/movie",
