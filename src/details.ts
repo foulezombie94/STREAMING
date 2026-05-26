@@ -57,7 +57,7 @@ const heroSection = document.getElementById('details-hero') as HTMLDivElement | 
 const titleEl = document.getElementById('details-title') as HTMLHeadingElement | null;
 const metaEl = document.getElementById('details-meta') as HTMLDivElement | null;
 const genresEl = document.getElementById('details-genres') as HTMLDivElement | null;
-const taglineEl = document.getElementById('details-tagline') as HTMLDivElement | null;
+const taglineEl = document.getElementById('details-tagline') as HTMLHeadingElement | null;
 const synopsisEl = document.getElementById('details-synopsis') as HTMLParagraphElement | null;
 const posterEl = document.getElementById('details-poster') as HTMLImageElement | null;
 const castListEl = document.getElementById('cast-list') as HTMLDivElement | null;
@@ -417,8 +417,7 @@ async function fetchDetails() {
         // Animer l'entrée
         document.querySelector('.info-container')?.classList.add('loaded');
 
-        // Initialiser le slider de progression
-        updateSliderFromStorage();
+
 
     } catch (error) {
         console.error('Erreur', error);
@@ -532,65 +531,11 @@ const episodeSelect = document.getElementById('episode-select') as HTMLSelectEle
 const videoIframe = document.getElementById('video-iframe') as HTMLIFrameElement | null;
 const closePlayerBtn = document.getElementById('close-player-btn');
 
-// Sélecteurs pour l'ajustement de progression manuelle
-const progressSlider = document.getElementById('progress-slider') as HTMLInputElement | null;
-const progressTimeDisplay = document.getElementById('progress-time-display') as HTMLSpanElement | null;
 
-/**
- * Formate un nombre de secondes en format lisible (ex: 1h 45m ou 45m ou 30s)
- */
-function formatProgressTime(seconds: number): string {
-    if (isNaN(seconds) || seconds < 0) return '0m';
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    
-    if (h > 0) {
-        return `${h}h ${m}m`;
-    }
-    if (m > 0) {
-        return `${m}m`;
-    }
-    return `${s}s`;
-}
 
-/**
- * Met à jour la position du slider et le texte affiché en se basant sur le LocalStorage
- */
-function updateSliderFromStorage() {
-    if (!progressSlider || !progressTimeDisplay || !currentMediaData || !mediaId || !mediaType) return;
 
-    // Calculer la durée totale en secondes
-    let durationSeconds = 0;
-    if (mediaType === 'movie') {
-        durationSeconds = (currentMediaData.runtime || 120) * 60;
-    } else {
-        durationSeconds = ((currentMediaData as any).episode_run_time?.[0] || 45) * 60;
-    }
 
-    const currentProgress = ProgressManager.getProgress(mediaId, mediaType);
-    let currentTime = 0;
 
-    // Pour les séries, on vérifie que la saison et l'épisode correspondent
-    if (mediaType === 'tv') {
-        const nextSeason = parseInt(seasonSelect?.value || '1');
-        const nextEpisode = parseInt(episodeSelect?.value || '1');
-        if (currentProgress && currentProgress.season === nextSeason && currentProgress.episode === nextEpisode) {
-            currentTime = currentProgress.time || 0;
-        }
-    } else {
-        if (currentProgress) {
-            currentTime = currentProgress.time || 0;
-        }
-    }
-
-    // Configurer les valeurs du slider
-    progressSlider.max = durationSeconds.toString();
-    progressSlider.value = currentTime.toString();
-
-    // Mettre à jour l'affichage
-    progressTimeDisplay.textContent = `${formatProgressTime(currentTime)} / ${formatProgressTime(durationSeconds)}`;
-}
 
 // Dynamic Sources logic
 const serverButtonsContainer = document.querySelector('.server-buttons') as HTMLElement | null;
@@ -772,8 +717,7 @@ function startWatchTimer() {
                 lastUpdated: Date.now()
             });
 
-            // Synchroniser le slider de progression
-            updateSliderFromStorage();
+
         }
     }, 5000);
 }
@@ -830,9 +774,6 @@ if (watchMovieBtn && playerSection && videoIframe) {
                 fetchCoflixSources('tv', mediaId!, sVal, eVal);
             }
         }
-
-        // Mettre à jour le slider de progression
-        updateSliderFromStorage();
     });
 }
 
@@ -862,9 +803,6 @@ function updateTvProgress() {
             episode: nextEpisode,
             time: resetTime ? 0 : undefined
         });
-
-        // Mettre à jour la position du slider pour le nouvel épisode
-        updateSliderFromStorage();
     }
 }
 
@@ -979,58 +917,6 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-// Événements du slider de progression manuelle (Bypass CORS)
-if (progressSlider) {
-    // Mise à jour de l'affichage du temps en temps réel pendant le glissement
-    progressSlider.addEventListener('input', () => {
-        if (!progressTimeDisplay || !currentMediaData) return;
-        const val = parseInt(progressSlider.value);
-        
-        let durationSeconds = 0;
-        if (mediaType === 'movie') {
-            durationSeconds = (currentMediaData.runtime || 120) * 60;
-        } else {
-            durationSeconds = ((currentMediaData as any).episode_run_time?.[0] || 45) * 60;
-        }
-        
-        progressTimeDisplay.textContent = `${formatProgressTime(val)} / ${formatProgressTime(durationSeconds)}`;
-    });
 
-    // Enregistrement immédiat dans le stockage local quand l'utilisateur relâche le curseur
-    progressSlider.addEventListener('change', () => {
-        if (!currentMediaData || !mediaId || !mediaType) return;
-        const val = parseInt(progressSlider.value);
-
-        let durationSeconds = 0;
-        if (mediaType === 'movie') {
-            durationSeconds = (currentMediaData.runtime || 120) * 60;
-        } else {
-            durationSeconds = ((currentMediaData as any).episode_run_time?.[0] || 45) * 60;
-        }
-
-        const nextSeason = mediaType === 'tv' ? parseInt(seasonSelect?.value || '1') : undefined;
-        const nextEpisode = mediaType === 'tv' ? parseInt(episodeSelect?.value || '1') : undefined;
-
-        ProgressManager.saveProgress({
-            mediaId: mediaId!,
-            mediaType: mediaType as any,
-            title: currentMediaData.title || currentMediaData.name,
-            poster: currentMediaData.poster_path,
-            backdrop: currentMediaData.backdrop_path,
-            overview: currentMediaData.overview,
-            rating: currentMediaData.vote_average,
-            year: currentMediaData.release_date || currentMediaData.first_air_date,
-            tagline: currentMediaData.tagline,
-            genres: currentMediaData.genres ? currentMediaData.genres.map((g: any) => g.name) : [],
-            season: nextSeason,
-            episode: nextEpisode,
-            time: val,
-            duration: durationSeconds,
-            lastUpdated: Date.now()
-        });
-
-        console.log(`[Manual Progress Saved] ${val}s / ${durationSeconds}s`);
-    });
-}
 
 fetchDetails();

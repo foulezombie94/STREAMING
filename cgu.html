@@ -489,16 +489,18 @@
         const backToTopBtn = document.getElementById('backToTop');
         const overlay = document.getElementById('cgu-overlay');
 
+        let isBackToTopVisible = false;
         function setupScrollBehavior(scrollContainer) {
-            scrollContainer.onscroll = function() {
-                const scrollTop = scrollContainer.scrollTop || scrollContainer.pageYOffset || 0;
-                if (scrollTop > 300) {
-                    backToTopBtn.style.display = "block";
-                } else {
-                    backToTopBtn.style.display = "none";
+            const scrollTarget = scrollContainer === window ? window : scrollContainer;
+            scrollTarget.addEventListener('scroll', () => {
+                const scrollTop = scrollContainer.scrollTop || window.scrollY || window.pageYOffset || 0;
+                const shouldShow = scrollTop > 300;
+                if (shouldShow !== isBackToTopVisible) {
+                    isBackToTopVisible = shouldShow;
+                    backToTopBtn.style.display = isBackToTopVisible ? "block" : "none";
                 }
                 scrollSpy(scrollContainer);
-            };
+            }, { passive: true });
 
             backToTopBtn.onclick = function() {
                 scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });

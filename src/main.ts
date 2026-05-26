@@ -3033,13 +3033,14 @@ function setupCguOverlayEvents(overlay: HTMLElement) {
     // --- Back to Top ---
     const backToTopBtn = overlay.querySelector('#backToTop') as HTMLElement | null;
     if (backToTopBtn) {
+        let isBackToTopVisible = false;
         overlay.addEventListener('scroll', () => {
-            if (overlay.scrollTop > 300) {
-                backToTopBtn.style.display = 'block';
-            } else {
-                backToTopBtn.style.display = 'none';
+            const shouldShow = overlay.scrollTop > 300;
+            if (shouldShow !== isBackToTopVisible) {
+                isBackToTopVisible = shouldShow;
+                backToTopBtn.style.display = isBackToTopVisible ? 'block' : 'none';
             }
-        });
+        }, { passive: true });
         backToTopBtn.addEventListener('click', () => {
             overlay.scrollTo({ top: 0, behavior: 'smooth' });
         });
@@ -3175,13 +3176,14 @@ function setupPrivacyOverlayEvents(overlay: HTMLElement) {
     // --- Back to Top ---
     const backToTopBtn = overlay.querySelector('#backToTop') as HTMLElement | null;
     if (backToTopBtn) {
+        let isBackToTopVisible = false;
         overlay.addEventListener('scroll', () => {
-            if (overlay.scrollTop > 300) {
-                backToTopBtn.style.display = 'block';
-            } else {
-                backToTopBtn.style.display = 'none';
+            const shouldShow = overlay.scrollTop > 300;
+            if (shouldShow !== isBackToTopVisible) {
+                isBackToTopVisible = shouldShow;
+                backToTopBtn.style.display = isBackToTopVisible ? 'block' : 'none';
             }
-        });
+        }, { passive: true });
         backToTopBtn.addEventListener('click', () => {
             overlay.scrollTo({ top: 0, behavior: 'smooth' });
         });
@@ -3317,13 +3319,14 @@ function setupDmcaOverlayEvents(overlay: HTMLElement) {
     // --- Back to Top ---
     const backToTopBtn = overlay.querySelector('#backToTop') as HTMLElement | null;
     if (backToTopBtn) {
+        let isBackToTopVisible = false;
         overlay.addEventListener('scroll', () => {
-            if (overlay.scrollTop > 300) {
-                backToTopBtn.style.display = 'block';
-            } else {
-                backToTopBtn.style.display = 'none';
+            const shouldShow = overlay.scrollTop > 300;
+            if (shouldShow !== isBackToTopVisible) {
+                isBackToTopVisible = shouldShow;
+                backToTopBtn.style.display = isBackToTopVisible ? 'block' : 'none';
             }
-        });
+        }, { passive: true });
         backToTopBtn.addEventListener('click', () => {
             overlay.scrollTo({ top: 0, behavior: 'smooth' });
         });
