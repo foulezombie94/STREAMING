@@ -4634,3 +4634,109 @@ html.low-perf .carousel-timer {
         font-size: 20px;
     }
 }
+
+/* --- PROGRESS ADJUSTER (CORS Bypass) --- */
+.manual-progress-adjuster {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 15px 0 25px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    width: 100%;
+}
+
+.adjuster-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+}
+
+#progress-slider {
+    flex-grow: 1;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    outline: none;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+#progress-slider:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Chrome slider thumb */
+#progress-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ef4444;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    transition: transform 0.1s ease, background-color 0.2s ease;
+}
+
+#progress-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.25);
+    background: #ff3333;
+}
+
+/* Firefox slider thumb */
+#progress-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ef4444;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    transition: transform 0.1s ease, background-color 0.2s ease;
+}
+
+#progress-slider::-moz-range-thumb:hover {
+    transform: scale(1.25);
+    background: #ff3333;
+}
+
+#progress-time-display {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ef4444;
+    white-space: nowrap;
+    min-width: 100px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Mobile responsive slider */
+@media (max-width: 768px) {
+    .manual-progress-adjuster {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 12px;
+    }
+    
+    .adjuster-label {
+        font-size: 12px;
+    }
+    
+    #progress-slider {
+        width: 100%;
+    }
+    
+    #progress-time-display {
+        text-align: left;
+        font-size: 12px;
+    }
+}

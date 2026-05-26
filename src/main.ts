@@ -591,9 +591,9 @@ async function handleNavigation(type: any, isPopState = false) {
 
     
     // Fermer le menu mobile si ouvert
-    navbar?.classList.remove('menu-open');
-    const menuIcon = document.querySelector('#menu-toggle .material-symbols-outlined');
-    if (menuIcon) menuIcon.textContent = 'menu';
+    if (navbar?.classList.contains('menu-open')) {
+        toggleMobileMenu();
+    }
 
     [navItems, bottomNavItems].forEach(collection => {
         collection.forEach(i => {
@@ -2642,6 +2642,12 @@ function selectGenre(id: number, type: string) {
 }
 (window as any).selectGenre = selectGenre;
 
+// Fermer le menu mobile si on clique sur le backdrop (H-7)
+const mobileMenuBackdrop = document.createElement('div');
+mobileMenuBackdrop.id = 'mobile-menu-backdrop';
+mobileMenuBackdrop.style.cssText = 'position:fixed;inset:0;z-index:9998;background:transparent;display:none;';
+document.body.appendChild(mobileMenuBackdrop);
+
 // --- Mobile Menu Toggle ---
 export function toggleMobileMenu() {
     console.log("Toggle Menu Clicked");
@@ -2659,23 +2665,13 @@ export function toggleMobileMenu() {
     if (navbar.classList.contains('menu-open')) {
         renderGenres(currentType === 'trending' ? 'movie' : currentType);
     }
+
+    // Synchroniser le backdrop
+    mobileMenuBackdrop.style.display = navbar.classList.contains('menu-open') ? 'block' : 'none';
 }
 (window as any).toggleMobileMenu = toggleMobileMenu;
 
-// Fermer le menu mobile si on clique sur le backdrop (H-7)
-const mobileMenuBackdrop = document.createElement('div');
-mobileMenuBackdrop.id = 'mobile-menu-backdrop';
-mobileMenuBackdrop.style.cssText = 'position:fixed;inset:0;z-index:9998;background:transparent;display:none;';
-document.body.appendChild(mobileMenuBackdrop);
 mobileMenuBackdrop.addEventListener('click', () => toggleMobileMenu());
-
-// Synchroniser le backdrop avec l'état du menu
-const _origToggle = toggleMobileMenu;
-(window as any).toggleMobileMenu = function() {
-    _origToggle();
-    const nav = document.getElementById('navbar');
-    mobileMenuBackdrop.style.display = (nav?.classList.contains('menu-open')) ? 'block' : 'none';
-};
 
 // Update handleNavigation to close menu on mobile
 // Removed redundant override as it's now integrated in the main handleNavigation function.
