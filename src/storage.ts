@@ -22,6 +22,8 @@ interface VideoProgress {
 
 const STORAGE_KEY = 'movieverse_progress';
 
+let progressCache: Record<string, VideoProgress> | null = null;
+
 export const ProgressManager = {
     /**
      * Sauvegarde la progression d'une vidéo
@@ -57,6 +59,7 @@ export const ProgressManager = {
         if (data.lastUpdated !== undefined) progress.lastUpdated = data.lastUpdated;
 
         allProgress[id] = progress;
+        progressCache = allProgress;
         
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(allProgress));
@@ -98,7 +101,12 @@ export const ProgressManager = {
         
         if (allProgress[id]) {
             delete allProgress[id];
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(allProgress));
+            progressCache = allProgress;
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(allProgress));
+            } catch (e) {
+                console.warn("LocalStorage bloqué ou plein", e);
+            }
         }
     },
 
@@ -113,11 +121,16 @@ export const ProgressManager = {
      * Helper pour lire le stockage
      */
     getAllProgress(): Record<string, VideoProgress> {
+        if (progressCache !== null) {
+            return progressCache;
+        }
         try {
             const data = localStorage.getItem(STORAGE_KEY);
-            return data ? JSON.parse(data) : {};
+            progressCache = data ? JSON.parse(data) : {};
+            return progressCache!;
         } catch (e) {
-            return {};
+            progressCache = {};
+            return progressCache;
         }
     }
 };

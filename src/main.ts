@@ -492,15 +492,22 @@ const heroCarouselManager = new HeroCarouselManager();
 
 // 3. Navbar Glassmorphism
 let isNavbarScrolled = false;
+let scrollTicking = false;
 window.addEventListener('scroll', () => {
-    const shouldScroll = window.scrollY > 50 || currentType === 'iptv';
-    if (shouldScroll !== isNavbarScrolled) {
-        isNavbarScrolled = shouldScroll;
-        if (isNavbarScrolled) {
-            navbar?.classList.add('scrolled');
-        } else {
-            navbar?.classList.remove('scrolled');
-        }
+    if (!scrollTicking) {
+        window.requestAnimationFrame(() => {
+            const shouldScroll = window.scrollY > 50 || currentType === 'iptv';
+            if (shouldScroll !== isNavbarScrolled) {
+                isNavbarScrolled = shouldScroll;
+                if (isNavbarScrolled) {
+                    navbar?.classList.add('scrolled');
+                } else {
+                    navbar?.classList.remove('scrolled');
+                }
+            }
+            scrollTicking = false;
+        });
+        scrollTicking = true;
     }
 }, { passive: true });
 

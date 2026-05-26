@@ -1,4 +1,5 @@
-import './style.css';
+import './base.css';
+import './details.css';
 import { ProgressManager } from './storage';
 import { 
     TMDBMedia, TMDBCastMember, TMDBActorDetail, 
@@ -74,15 +75,22 @@ let currentSeasonsCount = 0;
 
 // Gestion Navbar
 let isNavbarScrolled = false;
+let scrollTicking = false;
 window.addEventListener('scroll', () => {
-    const shouldScroll = window.scrollY > 50;
-    if (shouldScroll !== isNavbarScrolled) {
-        isNavbarScrolled = shouldScroll;
-        if (isNavbarScrolled) {
-            navbar?.classList.add('scrolled');
-        } else {
-            navbar?.classList.remove('scrolled');
-        }
+    if (!scrollTicking) {
+        window.requestAnimationFrame(() => {
+            const shouldScroll = window.scrollY > 50;
+            if (shouldScroll !== isNavbarScrolled) {
+                isNavbarScrolled = shouldScroll;
+                if (isNavbarScrolled) {
+                    navbar?.classList.add('scrolled');
+                } else {
+                    navbar?.classList.remove('scrolled');
+                }
+            }
+            scrollTicking = false;
+        });
+        scrollTicking = true;
     }
 }, { passive: true });
 
