@@ -147,8 +147,13 @@ let movieGenres: TMDBGenre[] = [];
 let tvGenres: TMDBGenre[] = [];
 let activeGenreId: number | null = null;
 
-// Détection viewport dynamique pour éviter le Layout Thrashing au startup (réajustements de mise en page forcés)
-const isMobileViewport = () => window.innerWidth <= 768;
+// Détection viewport dynamique optimisée avec cache pour éviter le Layout Thrashing (réajustements de mise en page forcés)
+let cachedInnerWidth = window.innerWidth;
+window.addEventListener('resize', () => {
+    cachedInnerWidth = window.innerWidth;
+}, { passive: true });
+
+const isMobileViewport = () => cachedInnerWidth <= 768;
 
 // Cache de requêtes de haut niveau avec déduplication des promesses en cours
 const apiPromises: Record<string, Promise<any>> = {};
@@ -318,7 +323,7 @@ class HeroCarouselManager {
         if (placeholder) placeholder.remove();
 
         // Poids réseau optimisé de manière granulaire sur mobile (M-2 : w300 pour mobile <480px, w780 pour tablette, w1280 pour desktop)
-        const width = window.innerWidth;
+        const width = cachedInnerWidth;
         const backdropSize = width <= 480 ? 'w300' : (width <= 768 ? 'w780' : 'w1280');
         const IMAGE_HERO_URL = `https://image.tmdb.org/t/p/${backdropSize}`;
 
@@ -1057,7 +1062,7 @@ function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: str
     const posterPath = item.poster_path;
     const placeholder = 'https://via.placeholder.com/185x278?text=No+Image';
     
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = cachedInnerWidth <= 768;
     let src: string;
     let srcset: string;
     let sizes: string;
@@ -1066,7 +1071,7 @@ function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: str
         if (isMobile) {
             const mobileUrl = isLowEndActive ? 'https://image.tmdb.org/t/p/w154' : 'https://image.tmdb.org/t/p/w185';
             src = `${mobileUrl}${posterPath}`;
-            srcset = `${mobileUrl}${posterPath} 185w`;
+            srcset = `${mobileUrl}${posterPath} 185w, https://image.tmdb.org/t/p/w342${posterPath} 342w`;
             sizes = "185px";
         } else {
             src = `${IMAGE_W342_URL}${posterPath}`;
