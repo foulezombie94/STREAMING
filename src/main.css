@@ -2518,12 +2518,12 @@ html.low-perf .carousel-timer {
 }
 
 /* Branding side */
-#xtream-login .lg\\:flex {
+#xtream-login .lg\:flex {
     display: none;
 }
 
 @media (min-width: 1024px) {
-    #xtream-login .lg\\:flex {
+    #xtream-login .lg\:flex {
         display: flex;
         flex-direction: column;
         gap: 24px;
