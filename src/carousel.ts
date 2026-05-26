@@ -10,7 +10,7 @@ import {
     getHeroSlidesContainer, 
     getHeroDotsContainer 
 } from './globals';
-import { loadSagasData, SAGAS_DATA } from './sagas';
+// sagas est importé dynamiquement dans setSagaSlides() uniquement
 
 export class HeroCarouselManager {
     private slides: TMDBMedia[] = [];
@@ -276,6 +276,8 @@ export class HeroCarouselManager {
     }
 
     public async setSagaSlides() {
+        // Chargement dynamique : sagas.ts + sagas_data.ts ne sont téléchargés que si on navigue sur la page Sagas
+        const { loadSagasData, SAGAS_DATA } = await import('./sagas');
         await loadSagasData();
         // Prendre les 50 premières sagas (les plus connues)
         const topSagas = SAGAS_DATA.slice(0, 50);

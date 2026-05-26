@@ -20,22 +20,36 @@ import {
 } from './globals';
 
 import { HeroCarouselManager } from './carousel';
-import { initLiveTV, stopLiveTV } from './iptv';
-import { loadSagasData, renderSagasPage, renderSagaDetailsPage, SAGAS_DATA } from './sagas';
-import {
-    openProjectOverlay,
-    openContactOverlay,
-    openCguOverlay,
-    openPrivacyOverlay,
-    openDmcaOverlay
-} from './overlays';
+// iptv.ts est chargé dynamiquement uniquement quand l'utilisateur navigue vers "TV Direct"
+// Cela crée un chunk JS séparé et économise ~30 Kio au démarrage
+let iptvModule: typeof import('./iptv') | null = null;
+async function getIPTVModule() {
+    if (!iptvModule) {
+        iptvModule = await import('./iptv');
+    }
+    return iptvModule;
+}
+// sagas.ts : chunk séparé — chargé uniquement quand l'utilisateur navigue vers Sagas
+let sagasModule: typeof import('./sagas') | null = null;
+async function getSagasModule() {
+    if (!sagasModule) sagasModule = await import('./sagas');
+    return sagasModule;
+}
 
-// Expose overlays globally
-(window as any).openProjectOverlay = openProjectOverlay;
-(window as any).openContactOverlay = openContactOverlay;
-(window as any).openCguOverlay = openCguOverlay;
-(window as any).openPrivacyOverlay = openPrivacyOverlay;
-(window as any).openDmcaOverlay = openDmcaOverlay;
+// overlays.ts : chunk séparé — chargé uniquement au 1er clic sur un lien footer
+let overlaysModule: typeof import('./overlays') | null = null;
+async function getOverlaysModule() {
+    if (!overlaysModule) overlaysModule = await import('./overlays');
+    return overlaysModule;
+}
+
+// Wrappers paresseux : exposent les fonctions globalement, charge le chunk au 1er appel
+(window as any).openProjectOverlay = () => getOverlaysModule().then(m => m.openProjectOverlay());
+(window as any).openContactOverlay = () => getOverlaysModule().then(m => m.openContactOverlay());
+(window as any).openCguOverlay = () => getOverlaysModule().then(m => m.openCguOverlay());
+(window as any).openPrivacyOverlay = () => getOverlaysModule().then(m => m.openPrivacyOverlay());
+(window as any).openDmcaOverlay = () => getOverlaysModule().then(m => m.openDmcaOverlay());
+(window as any).renderSagaDetailsPage = (id: string) => getSagasModule().then(m => m.renderSagaDetailsPage(id));
 
 export let heroCarouselManager: HeroCarouselManager;
 
@@ -204,7 +218,10 @@ async function handleNavigation(type: any, isPopState = false) {
     activeGenreId = null; 
 
     if (currentType !== 'iptv') {
-        stopLiveTV();
+        // stopLiveTV uniquement si le module est déjà chargé (évite de charger le chunk pour rien)
+        if (iptvModule) {
+            iptvModule.stopLiveTV();
+        }
         const liveContent = document.getElementById('live-tv-content');
         const loginForm = document.getElementById('xtream-login');
         if (liveContent) liveContent.style.display = 'none';
@@ -236,7 +253,8 @@ async function handleNavigation(type: any, isPopState = false) {
         if (navbar) navbar.style.display = 'flex';
         if (genreFiltersContainer) genreFiltersContainer.style.display = 'none';
         toggleSearchVisibility(false);
-        initLiveTV();
+        // Chargement dynamique du module IPTV (première fois uniquement)
+        getIPTVModule().then(mod => mod.initLiveTV());
     } else {
         if (navbar) navbar.style.display = 'flex';
         // Afficher la recherche sauf pour les sagas
@@ -245,7 +263,8 @@ async function handleNavigation(type: any, isPopState = false) {
         if (currentType === 'reprendre') {
             renderResumePage();
         } else if (currentType === 'sagas') {
-            await renderSagasPage();
+            const sagasMod = await getSagasModule();
+            await sagasMod.renderSagasPage();
         } else {
             renderGenres(currentType as any);
             await renderHomeSections(currentType as any);
@@ -488,10 +507,12 @@ async function fetchSectionData(conf: SectionConfig) {
 
     if (conf.id === 'sagas') {
         try {
-            await loadSagasData(); // Charge dynamiquement le morceau JS asynchrone des sagas
+            // Chargement dynamique du module sagas (inclut sagas_data via son propre import)
+            const sagasMod = await getSagasModule();
+            await sagasMod.loadSagasData();
             const isMobile = isMobileViewport();
             const maxItems = isMobile ? 8 : 6;
-            const sagasToDisplay = SAGAS_DATA.slice(0, maxItems);
+            const sagasToDisplay = sagasMod.SAGAS_DATA.slice(0, maxItems);
 
             container.innerHTML = sagasToDisplay.map((saga: any, index: number) => {
                 const isLast = index === sagasToDisplay.length - 1;
@@ -523,7 +544,7 @@ async function fetchSectionData(conf: SectionConfig) {
             container.querySelectorAll('.saga-card').forEach(card => {
                 card.addEventListener('click', () => {
                     const id = card.getAttribute('data-id');
-                    if (id) renderSagaDetailsPage(id);
+                    if (id) sagasMod.renderSagaDetailsPage(id);
                 });
             });
 
@@ -965,7 +986,7 @@ function setupEventListeners() {
                 if (currentType === 'reprendre') {
                     renderResumePage();
                 } else if (currentType === 'iptv') {
-                    initLiveTV();
+                    getIPTVModule().then(mod => mod.initLiveTV());
                 } else {
                     renderHomeSections(currentType as any);
                 }
@@ -1105,7 +1126,7 @@ async function initApp() {
                 }
             });
             
-        renderSagaDetailsPage(sagaId);
+        getSagasModule().then(m => m.renderSagaDetailsPage(sagaId));
         // Nettoyer l'URL pour éviter que le paramètre ne reste affiché
         window.history.replaceState({}, document.title, window.location.pathname);
     } else {
