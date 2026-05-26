@@ -1,499 +1,82 @@
 import './style.css';
 import { ProgressManager } from './storage';
+import { TMDBMedia, TMDBGenre, SectionConfig } from './types';
 
-// Tri des sagas par "popularité" réelle (basé sur une liste de priorité manuelle)
-const SAGA_PRIORITY: { [key: string]: number } = {
-    'mcu': 100,            // Marvel
-    'starwars': 95,        // Star Wars
-    'harrypotter': 90,     // Harry Potter
-    'leseigneurdesan': 85, // Seigneur des Anneaux
-    'avatarsaga': 80,      // Avatar
-    'spidermanavenge': 78, // Spider-Man MCU
-    'deadpoolsaga': 75,    // Deadpool
-    'jurassicparksag': 72, // Jurassic Park
-    'fastandfuriouss': 70, // Fast & Furious
-    'johnwick': 68,        // John Wick
-    'missionimpossib': 65, // Mission Impossible
-    'dunesaga': 62,        // Dune
-    'toystory': 60,        // Toy Story
-    'shrek': 58,           // Shrek
-    'despicable': 56,      // Moi, Moche et Méchant
-    'conjuringsaga': 54,   // Conjuring
-    'screamsaga': 52,      // Scream
-    'iceage': 50           // L'Age de Glace
-};
+// Import our new split modules
+import {
+    TMDB_API_KEY,
+    BASE_URL,
+    isLowEndActive,
+    IMAGE_W500_URL,
+    IMAGE_W342_URL,
+    IMAGE_W185_URL,
+    GLOBAL_BLACKLIST_IDS,
+    GENRE_ICONS,
+    cachedInnerWidth,
+    isMobileViewport,
+    fetchWithCache,
+    showToast,
+    SECTIONS_CONFIG
+} from './globals';
 
-let SAGAS_DATA: any[] = [];
-let sagasLoadingPromise: Promise<any[]> | null = null;
+import { HeroCarouselManager } from './carousel';
+import { initLiveTV, stopLiveTV } from './iptv';
+import { loadSagasData, renderSagasPage, renderSagaDetailsPage, SAGAS_DATA } from './sagas';
+import {
+    openProjectOverlay,
+    openContactOverlay,
+    openCguOverlay,
+    openPrivacyOverlay,
+    openDmcaOverlay
+} from './overlays';
 
-async function loadSagasData(): Promise<any[]> {
-    if (SAGAS_DATA.length > 0) return SAGAS_DATA;
-    if (sagasLoadingPromise) return sagasLoadingPromise;
+// Expose overlays globally
+(window as any).openProjectOverlay = openProjectOverlay;
+(window as any).openContactOverlay = openContactOverlay;
+(window as any).openCguOverlay = openCguOverlay;
+(window as any).openPrivacyOverlay = openPrivacyOverlay;
+(window as any).openDmcaOverlay = openDmcaOverlay;
 
-    sagasLoadingPromise = (async () => {
-        const module = await import('./sagas_data');
-        const loadedSagas = [...module.SAGAS_DATA];
-        loadedSagas.sort((a, b) => {
-            const prioA = SAGA_PRIORITY[a.id] || 0;
-            const prioB = SAGA_PRIORITY[b.id] || 0;
-            if (prioA !== prioB) return prioB - prioA;
-            return (b.items?.length || 0) - (a.items?.length || 0);
-        });
-        SAGAS_DATA = loadedSagas;
-        return SAGAS_DATA;
-    })();
+export let heroCarouselManager: HeroCarouselManager;
 
-    return sagasLoadingPromise;
+let navbar: HTMLElement | null = null;
+let heroSection: HTMLElement | null = null;
+let navItems: NodeListOf<Element> | null = null;
+let sectionTitle: Element | null = null;
+let searchTrigger: HTMLElement | null = null;
+let searchOverlay: HTMLElement | null = null;
+let closeSearch: HTMLElement | null = null;
+let searchInput: HTMLInputElement | null = null;
+let mainContent: HTMLElement | null = null;
+let iptvSection: HTMLElement | null = null;
+let genreFiltersContainer: HTMLElement | null = null;
+let bottomNavItems: NodeListOf<Element> | null = null;
+
+function initSelectors() {
+    navbar = document.getElementById('navbar');
+    heroSection = document.getElementById('hero-carousel');
+    navItems = document.querySelectorAll('.nav-item');
+    sectionTitle = document.querySelector('.section-title');
+    searchTrigger = document.getElementById('search-trigger');
+    searchOverlay = document.getElementById('search-overlay');
+    closeSearch = document.getElementById('close-search');
+    searchInput = document.getElementById('search-input-premium') as HTMLInputElement | null;
+    mainContent = document.getElementById('main-content');
+    iptvSection = document.getElementById('iptv-section');
+    genreFiltersContainer = document.getElementById('genre-filters-container');
+    bottomNavItems = document.querySelectorAll('.bottom-nav-item');
 }
 
-
-import { TMDBMedia, TMDBGenre } from './types';
-
-interface SectionConfig {
-    id: string;
-    title: string;
-    icon: string;
-    endpoint: string;
-    params?: string;
-    mediaType: string;
-}
-
-// Détection Android Chrome: ajoute classe sur <html> pour cibler en CSS
-// iOS Safari ne match pas car sa UA contient "iPhone"/"iPad" mais pas "Android"
-if (/Android/i.test(navigator.userAgent) && /Chrome/i.test(navigator.userAgent)) {
-    document.documentElement.classList.add('android-chrome');
-}
-
-// Détection automatique de matériel limité
-function detectLowEndDevice(): boolean {
-    // 1. Nombre de cœurs CPU (concurrency)
-    if (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4) {
-        return true;
-    }
-    // 2. Mémoire vive (RAM) disponible en GB (Chromium uniquement)
-    if ((navigator as any).deviceMemory && (navigator as any).deviceMemory < 6) {
-        return true;
-    }
-    // 3. Option "Économie de données" ou connexion lente
-    const conn = (navigator as any).connection;
-    if (conn) {
-        if (conn.saveData) return true;
-        if (['slow-2g', '2g', '3g'].includes(conn.effectiveType)) return true;
-    }
-    return false;
-}
-
-// Initialisation précoce du mode performance
-const savedPerfMode = localStorage.getItem('perf_mode');
-const isLowEnd = detectLowEndDevice();
-console.log(`[Performance Mode] Hardware Auto-Detection: ${isLowEnd ? 'Low-end device' : 'Standard device'}. Active: ${savedPerfMode === 'low' || (!savedPerfMode && isLowEnd)}`);
-if (savedPerfMode === 'low' || (!savedPerfMode && isLowEnd)) {
-    document.documentElement.classList.add('low-perf');
-}
-
-// Mode basse performance actif
-const isLowEndActive = savedPerfMode === 'low' || (!savedPerfMode && isLowEnd);
-
-// 1. Constantes TMDB
-const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
-const BASE_URL = 'https://api.themoviedb.org/3';
-const IMAGE_W500_URL = isLowEndActive ? 'https://image.tmdb.org/t/p/w342' : 'https://image.tmdb.org/t/p/w500';
-const IMAGE_W342_URL = isLowEndActive ? 'https://image.tmdb.org/t/p/w185' : 'https://image.tmdb.org/t/p/w342';
-const IMAGE_W185_URL = isLowEndActive ? 'https://image.tmdb.org/t/p/w154' : 'https://image.tmdb.org/t/p/w185';
-
-// Global Blacklist for specific movies/series
-const GLOBAL_BLACKLIST_IDS = ['36659', '927306', '212502', '77150', '77151', '1017007', '1025539', '1013441', '1439930']; 
-
-// Cache pour la pagination des sections
-const sectionDataStore: { [key: string]: { items: TMDBMedia[], conf: SectionConfig } } = {};
-const sagaCache: { [key: string]: TMDBMedia[] } = {};
-
-const GENRE_ICONS: { [key: string]: string } = {
-    'Action': 'bolt',
-    'Aventure': 'explore',
-    'Animation': 'animation',
-    'Comédie': 'sentiment_very_satisfied',
-    'Crime': 'policy',
-    'Documentaire': 'description',
-    'Drame': 'theater_comedy',
-    'Familial': 'family_restroom',
-    'Fantastique': 'magic_button',
-    'Histoire': 'history_edu',
-    'Horreur': 'skull',
-    'Musique': 'music_note',
-    'Mystère': 'mystery',
-    'Romance': 'favorite',
-    'Science-Fiction': 'rocket_launch',
-    'Téléfilm': 'tv',
-    'Thriller': 'warning',
-    'Guerre': 'military_tech',
-    'Western': 'directions_run',
-    'Action & Adventure': 'bolt',
-    'Kids': 'child_care',
-    'News': 'newspaper',
-    'Reality': 'visibility',
-    'Sci-Fi & Fantasy': 'rocket_launch',
-    'Soap': 'wash',
-    'Talk': 'forum',
-    'War & Politics': 'military_tech'
-};
-
-// 2. DOM Elements & State
 let currentData: TMDBMedia[] = []; 
 let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' | 'sagas' = 'trending';
-
-// Genre globals
 let movieGenres: TMDBGenre[] = [];
 let tvGenres: TMDBGenre[] = [];
 let activeGenreId: number | null = null;
+let searchTimeout: ReturnType<typeof setTimeout>;
+const sectionDataStore: { [key: string]: { items: TMDBMedia[], conf: SectionConfig } } = {};
 
-// Détection viewport dynamique optimisée avec cache pour éviter le Layout Thrashing (réajustements de mise en page forcés)
-let cachedInnerWidth = window.innerWidth;
-window.addEventListener('resize', () => {
-    cachedInnerWidth = window.innerWidth;
-}, { passive: true });
-
-const isMobileViewport = () => cachedInnerWidth <= 768;
-
-// Cache de requêtes de haut niveau avec déduplication des promesses en cours
-const apiPromises: Record<string, Promise<any>> = {};
-function fetchWithCache(url: string): Promise<any> {
-    if (!apiPromises[url]) {
-        apiPromises[url] = fetch(url)
-            .then(res => {
-                if (!res.ok) {
-                    delete apiPromises[url];
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                return res.json();
-            })
-            .catch(err => {
-                delete apiPromises[url];
-                throw err;
-            });
-    }
-    return apiPromises[url];
-}
-
-
-// DOM Selectors
-const navbar = document.getElementById('navbar');
-const heroSection = document.getElementById('hero-carousel');
-const heroSlidesContainer = document.getElementById('hero-slides');
-const heroDotsContainer = document.getElementById('carousel-dots');
-const heroProgress = document.getElementById('carousel-progress');
-const heroPauseBtn = document.getElementById('carousel-pause');
-const heroPrevBtn = document.getElementById('carousel-prev');
-const heroNextBtn = document.getElementById('carousel-next');
-
-const navItems = document.querySelectorAll('.nav-item');
-const sectionTitle = document.querySelector('.section-title');
-const searchTrigger = document.getElementById('search-trigger');
-const searchOverlay = document.getElementById('search-overlay');
-const closeSearch = document.getElementById('close-search');
-const searchInput = document.getElementById('search-input-premium') as HTMLInputElement | null;
-
-const mainContent = document.getElementById('main-content');
-const iptvSection = document.getElementById('iptv-section');
-
-// Configuration des sections Movix
-const SECTIONS_CONFIG: SectionConfig[] = [
-    { id: 'trending-day', title: 'Tendances du jour', icon: 'local_fire_department', endpoint: '/trending/all/day', mediaType: 'trending' },
-    { id: 'trending-week', title: 'Tendances', icon: 'trending_up', endpoint: '/trending/all/week', mediaType: 'trending' },
-    { id: 'sagas', title: 'Les sagas incontournables', icon: 'auto_awesome', endpoint: '/movie/top_rated', mediaType: 'movie' },
-    { id: 'pop-movies', title: 'Films populaires', icon: 'movie', endpoint: '/movie/popular', mediaType: 'movie' },
-    { id: 'pop-tv', title: 'Séries populaires', icon: 'tv', endpoint: '/tv/popular', mediaType: 'tv' },
-    { id: 'recent-tv', title: 'Séries récentes', icon: 'live_tv', endpoint: '/tv/on_the_air', mediaType: 'tv' },
-    { id: 'recent-movies', title: 'Films récents', icon: 'new_releases', endpoint: '/movie/now_playing', mediaType: 'movie' },
-    { id: 'top-tv', title: 'Séries les mieux notées', icon: 'star', endpoint: '/tv/top_rated', mediaType: 'tv' },
-    { id: 'genre-adventure', title: 'Aventure', icon: 'explore', endpoint: '/discover/movie', params: '&with_genres=12', mediaType: 'movie' },
-    { id: 'genre-fantasy', title: 'Fantastique', icon: 'magic_button', endpoint: '/discover/movie', params: '&with_genres=14', mediaType: 'movie' },
-    { id: 'genre-animation', title: 'Animé', icon: 'animation', endpoint: '/discover/movie', params: '&with_genres=16', mediaType: 'movie' },
-    { id: 'genre-drama', title: 'Drame', icon: 'theater_comedy', endpoint: '/discover/movie', params: '&with_genres=18', mediaType: 'movie' },
-    { id: 'genre-action', title: 'Action', icon: 'sports_martial_arts', endpoint: '/discover/movie', params: '&with_genres=28', mediaType: 'movie' },
-    { id: 'genre-comedy', title: 'Comédie', icon: 'sentiment_very_satisfied', endpoint: '/discover/movie', params: '&with_genres=35', mediaType: 'movie' },
-    { id: 'genre-crime', title: 'Crime', icon: 'policy', endpoint: '/discover/movie', params: '&with_genres=80', mediaType: 'movie' },
-    { id: 'tv-action', title: 'Séries d\'Action', icon: 'bolt', endpoint: '/discover/tv', params: '&with_genres=10759', mediaType: 'tv' },
-    { id: 'tv-animation', title: 'Animé', icon: 'animation', endpoint: '/discover/tv', params: '&with_genres=16', mediaType: 'tv' }
-];
-
-// --- Carousel Manager (Movix Style) ---
-class HeroCarouselManager {
-    private slides: TMDBMedia[] = [];
-    private currentIndex: number = 0;
-    private rafId: number = 0;
-    private lastTimestamp: number = 0;
-    private progress: number = 0;
-    private isPaused: boolean = false;
-    private isIntersecting: boolean = true;
-    private readonly DURATION: number = 8000;
-
-    constructor() {
-        this.initEventListeners();
-        this.initSwipe();
-        // Pause le carousel quand l'onglet est en arrière-plan (économie CPU/batterie)
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                this.stop();
-            } else if (this.slides.length > 0 && !this.isPaused) {
-                this.start();
-            }
-        });
-
-        // Désactive le carrousel lorsqu'il n'est pas affiché à l'écran (économie CPU/batterie)
-        const heroSection = document.getElementById('hero-carousel');
-        if (heroSection && 'IntersectionObserver' in window) {
-            const observer = new IntersectionObserver((entries) => {
-                const entry = entries[0];
-                this.isIntersecting = entry.isIntersecting;
-                if (!entry.isIntersecting) {
-                    this.stop();
-                } else if (this.slides.length > 0 && !this.isPaused) {
-                    this.start();
-                }
-            }, { threshold: 0.05 });
-            observer.observe(heroSection);
-        }
-    }
-
-    private initEventListeners() {
-        heroPauseBtn?.addEventListener('click', () => this.togglePause());
-        heroPrevBtn?.addEventListener('click', () => this.prevSlide());
-        heroNextBtn?.addEventListener('click', () => this.nextSlide());
-
-        // Event Delegation for slides
-        heroSlidesContainer?.addEventListener('click', (e) => {
-            const target = e.target as HTMLElement;
-            const btn = target.closest('button');
-            if (btn) {
-                const id = btn.getAttribute('data-id');
-                const type = btn.getAttribute('data-type');
-                if (id && type) {
-                    if (type === 'saga') {
-                        (window as any).renderSagaDetailsPage(id);
-                    } else {
-                        // Trouver le media dans les slides du carousel pour l'aperçu instantané
-                        const foundMedia = this.slides.find(s => s.id.toString() === id);
-                        if (foundMedia) {
-                            sessionStorage.setItem('current_media_preview', JSON.stringify(foundMedia));
-                        } else {
-                            sessionStorage.removeItem('current_media_preview');
-                        }
-                        window.location.href = `/details.html?id=${id}&type=${type}`;
-                    }
-                }
-            }
-        });
-    }
-
-    // Swipe tactile natif sur le hero carousel (H-1)
-    private initSwipe() {
-        let touchStartX = 0;
-        let touchStartY = 0;
-        heroSlidesContainer?.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        }, { passive: true });
-        heroSlidesContainer?.addEventListener('touchend', (e) => {
-            const dx = touchStartX - e.changedTouches[0].clientX;
-            const dy = Math.abs(touchStartY - e.changedTouches[0].clientY);
-            // Swipe horizontal uniquement (évite conflit avec scroll vertical)
-            if (Math.abs(dx) > 50 && Math.abs(dx) > dy) {
-                dx > 0 ? this.nextSlide() : this.prevSlide();
-            }
-        }, { passive: true });
-    }
-
-    public setSlides(data: TMDBMedia[]) {
-        // Filtrer les IDs blacklistés
-        const filtered = data.filter(item => !GLOBAL_BLACKLIST_IDS.includes(item.id.toString()));
-        // Mélanger les données au hasard entre films et séries tendances
-        const shuffled = [...filtered].sort(() => 0.5 - Math.random());
-        this.slides = shuffled.slice(0, 6); 
-        this.renderSlides();
-        this.renderDots();
-        this.goToSlide(0);
-        this.start();
-    }
-
-    private renderSlides() {
-        if (!heroSlidesContainer) return;
-        // Retirer le placeholder LCP statique avant d'injecter les vraies slides
-        const placeholder = document.getElementById('hero-lcp-placeholder');
-        if (placeholder) placeholder.remove();
-
-        // Poids réseau optimisé de manière granulaire sur mobile (M-2 : w300 pour mobile <480px, w780 pour tablette, w1280 pour desktop)
-        const width = cachedInnerWidth;
-        const backdropSize = width <= 480 ? 'w300' : (width <= 768 ? 'w780' : 'w1280');
-        const IMAGE_HERO_URL = `https://image.tmdb.org/t/p/${backdropSize}`;
-
-
-        heroSlidesContainer.innerHTML = this.slides.map((item, index) => {
-            const isSaga = !!(item as any).isSaga;
-            const displayType = isSaga ? 'saga' : (item.media_type || (currentType === 'tv' ? 'tv' : 'movie'));
-            const title = isSaga ? (item as any).title : (displayType === 'tv' ? (item.name || item.original_name) : (item.title || item.original_title));
-            const releaseDate = isSaga ? null : (displayType === 'tv' ? item.first_air_date : item.release_date);
-            const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : (isSaga ? 'SAGA' : 'N/A');
-            const rating = isSaga ? 'N/A' : (item.vote_average ? item.vote_average.toFixed(1) : '0.0');
-            
-            // Pour les sagas, on utilise l'image des icônes (poster) comme demandé par l'utilisateur
-            let backdropUrl = isSaga ? item.poster : (item.backdrop || (item.backdrop_path ? `${IMAGE_HERO_URL}${item.backdrop_path}` : ''));
-            
-            // Si l'image est manquante ou cassée
-            if (!backdropUrl || backdropUrl.includes('86Yp1S669SFWFWFW') || backdropUrl === '') {
-                backdropUrl = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop';
-            }
-
-            const overview = (item as any).description || item.overview || "Aucun synopsis disponible.";
-
-            const isLongTitle = title && title.length > 18;
-            
-
-            return `
-                <div class="hero-slide ${index === 0 ? 'active' : ''} ${isLongTitle ? 'long-title' : ''}" style="${index === 0 ? '' : `background-image: url('${backdropUrl}')`}" data-index="${index}">
-                    ${index === 0
-                        ? `<img src="${backdropUrl}"
-                               alt=""
-                               fetchpriority="high"
-                               loading="eager"
-                               decoding="async"
-                               style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:0;pointer-events:none;"
-                               onerror="this.parentElement.style.backgroundImage='url(https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1400&auto=format&fit=crop)';">`
-                        : ''
-                    }
-                    <div class="slide-content">
-                        <div class="slide-info">
-                            <span class="type-tag">${isSaga ? 'COLLECTION' : (item.genre_ids?.includes(16) ? 'ANIMÉ' : (displayType === 'tv' ? 'SÉRIE' : 'FILM'))}</span>
-                            <span class="year-tag">
-                                <span class="material-symbols-outlined">calendar_today</span>
-                                ${releaseYear}
-                            </span>
-                            <span class="rating-tag" style="${isSaga ? 'display:none' : ''}">
-                                <span class="material-symbols-outlined">star</span>
-                                ${rating}
-                            </span>
-                        </div>
-                        <h1>${title}</h1>
-                        <p class="slide-synopsis">${overview}</p>
-                        <div class="slide-actions">
-                            <button class="hero-btn-play" data-id="${item.id}" data-type="${displayType}"><span class="material-symbols-outlined">${isSaga ? 'visibility' : 'play_arrow'}</span><span>${isSaga ? 'Découvrir' : 'Lecture'}</span></button>
-                            <button class="hero-btn-info" data-id="${item.id}" data-type="${displayType}"><span class="material-symbols-outlined">info</span><span>Plus d'infos</span></button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    private renderDots() {
-        if (!heroDotsContainer) return;
-        heroDotsContainer.innerHTML = this.slides.map((_, index) => `
-            <div class="dot ${index === 0 ? 'active' : ''}" data-index="${index}"></div>
-        `).join('');
-
-        heroDotsContainer.querySelectorAll('.dot').forEach(dot => {
-            dot.addEventListener('click', () => {
-                const index = parseInt(dot.getAttribute('data-index') || '0');
-                this.goToSlide(index);
-            });
-        });
-    }
-
-    private goToSlide(index: number) {
-        this.currentIndex = index;
-        this.progress = 0;
-        this.updateDOM();
-    }
-
-    private updateDOM() {
-        const slides = document.querySelectorAll('.hero-slide');
-        const dots = document.querySelectorAll('.dot');
-        
-        slides.forEach(s => s.classList.remove('active'));
-        dots.forEach(d => d.classList.remove('active'));
-
-        if (slides[this.currentIndex]) slides[this.currentIndex].classList.add('active');
-        if (dots[this.currentIndex]) dots[this.currentIndex].classList.add('active');
-
-        if (heroProgress) heroProgress.style.width = '0%';
-    }
-
-    public nextSlide() {
-        this.currentIndex = (this.currentIndex + 1) % this.slides.length;
-        this.goToSlide(this.currentIndex);
-    }
-
-    public prevSlide() {
-        this.currentIndex = (this.currentIndex - 1 + this.slides.length) % this.slides.length;
-        this.goToSlide(this.currentIndex);
-    }
-
-    private togglePause() {
-        this.isPaused = !this.isPaused;
-        const icon = heroPauseBtn?.querySelector('.material-symbols-outlined');
-        if (icon) icon.textContent = this.isPaused ? 'play_arrow' : 'pause';
-        if (this.isPaused) {
-            this.stop();
-        } else {
-            this.start();
-        }
-    }
-
-    public start() {
-        this.stop();
-        if (this.isPaused || !this.isIntersecting || document.documentElement.classList.contains('low-perf')) return;
-        this.lastTimestamp = 0;
-        const tick = (timestamp: number) => {
-            if (this.isPaused || !this.isIntersecting || document.documentElement.classList.contains('low-perf')) {
-                this.stop();
-                return;
-            }
-            if (this.lastTimestamp === 0) this.lastTimestamp = timestamp;
-            const elapsed = timestamp - this.lastTimestamp;
-            this.lastTimestamp = timestamp;
-            this.progress += (elapsed / this.DURATION) * 100;
-            if (heroProgress) heroProgress.style.width = `${Math.min(this.progress, 100)}%`;
-            if (this.progress >= 100) {
-                this.nextSlide();
-                this.lastTimestamp = timestamp;
-            }
-            this.rafId = requestAnimationFrame(tick);
-        };
-        this.rafId = requestAnimationFrame(tick);
-    }
-
-    public stop() {
-        if (this.rafId) cancelAnimationFrame(this.rafId);
-        this.rafId = 0;
-    }
-
-    public getSlidesCount(): number {
-        return this.slides.length;
-    }
-
-    public getCurrentIndex(): number {
-        return this.currentIndex;
-    }
-
-    public refresh() {
-        this.updateDOM();
-    }
-
-    public async setSagaSlides() {
-        await loadSagasData();
-        // Prendre les 50 premières sagas (les plus connues)
-        const topSagas = SAGAS_DATA.slice(0, 50);
-        // En choisir 6 au hasard
-        const shuffled = [...topSagas].sort(() => 0.5 - Math.random());
-        this.slides = shuffled.slice(0, 6).map(s => ({ ...s, isSaga: true }));
-        this.renderSlides();
-        this.renderDots();
-        this.goToSlide(0);
-        this.start();
-    }
-}
-
-const heroCarouselManager = new HeroCarouselManager();
+export const getCurrentType = () => currentType;
+export const setCurrentType = (type: any) => { currentType = type; };
 
 // 3. Navbar Glassmorphism
 let isNavbarScrolled = false;
@@ -525,7 +108,8 @@ window.addEventListener('keydown', (e) => {
 });
 
 // Utilitaire pour basculer la visibilité de la recherche
-function toggleSearchVisibility(show: boolean) {
+
+export function toggleSearchVisibility(show: boolean) {
     const trigger = document.getElementById('search-trigger');
     if (trigger) {
         trigger.style.display = show ? 'flex' : 'none';
@@ -534,7 +118,7 @@ function toggleSearchVisibility(show: boolean) {
 
 
 // 4. Navigation Management
-const bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+
 
 async function handleNavigation(type: any, isPopState = false) {
     // Direct TV non disponible sur mobile — afficher un toast explicatif (M-7)
@@ -608,10 +192,12 @@ async function handleNavigation(type: any, isPopState = false) {
     }
 
     [navItems, bottomNavItems].forEach(collection => {
-        collection.forEach(i => {
-            if (i.getAttribute('data-type') === type) i.classList.add('active');
-            else i.classList.remove('active');
-        });
+        if (collection) {
+            collection.forEach(i => {
+                if (i.getAttribute('data-type') === type) i.classList.add('active');
+                else i.classList.remove('active');
+            });
+        }
     });
 
     currentType = type as any;
@@ -673,15 +259,7 @@ async function handleNavigation(type: any, isPopState = false) {
 (window as any).handleNavigation = handleNavigation;
 
 
-// 4b. Search Overlay Logic
-searchTrigger?.addEventListener('click', () => {
-    searchOverlay?.classList.add('active');
-    searchInput?.focus();
-});
-
-closeSearch?.addEventListener('click', () => {
-    searchOverlay?.classList.remove('active');
-});
+// 4b. Search Overlay Logic (Moved to setupEventListeners)
 
 // Fermer avec Échap
 window.addEventListener('keydown', (e) => {
@@ -805,7 +383,7 @@ function renderResumePage() {
             }
         </div>
     `;
-    mainContent.appendChild(section);
+    mainContent?.appendChild(section);
 }
 
 async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: number | null = null) {
@@ -825,7 +403,7 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                 <div class="loading-shimmer section-shimmer-placeholder"></div>
             </div>
         `;
-        mainContent.appendChild(section);
+        mainContent?.appendChild(section);
         
         const endpoint = `/discover/${type}`;
         const params = `&with_genres=${genreId}&sort_by=popularity.desc`;
@@ -859,7 +437,7 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                     <div class="loading-shimmer section-shimmer-placeholder"></div>
                 </div>
             `;
-            mainContent.appendChild(section);
+            mainContent?.appendChild(section);
             return;
         }
 
@@ -872,7 +450,7 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                 <div class="loading-shimmer section-shimmer-placeholder"></div>
             </div>
         `;
-        mainContent.appendChild(section);
+        mainContent?.appendChild(section);
     });
 
     // --- Chargement progressif des sections (batching) ---
@@ -915,7 +493,7 @@ async function fetchSectionData(conf: SectionConfig) {
             const maxItems = isMobile ? 8 : 6;
             const sagasToDisplay = SAGAS_DATA.slice(0, maxItems);
 
-            container.innerHTML = sagasToDisplay.map((saga, index) => {
+            container.innerHTML = sagasToDisplay.map((saga: any, index: number) => {
                 const isLast = index === sagasToDisplay.length - 1;
                 const extra = isLast ? `
                     <div class="see-more-overlay" data-nav="sagas">
@@ -1054,7 +632,7 @@ function renderCarouselPage(sectionId: string, startIndex: number) {
 // Exposer au scope global pour les onclick
 (window as any).renderCarouselPage = renderCarouselPage;
 
-function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: string = '', extraUrlParams: string = '', loading: 'lazy' | 'eager' = 'lazy') {
+export function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: string = '', extraUrlParams: string = '', loading: 'lazy' | 'eager' = 'lazy') {
     let displayType = item.media_type || forceType;
     if (displayType === 'auto') displayType = item.title ? 'movie' : 'tv';
  
@@ -1134,95 +712,9 @@ function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', extra: str
     `;
 }
 
-[navItems, bottomNavItems].forEach(collection => {
-    collection.forEach(item => {
-        // Ajouter le data-type="reprendre" si c'est le bouton reprendre
-        if (item.textContent?.trim() === 'Reprendre') {
-            item.setAttribute('data-type', 'reprendre');
-        }
+// Centralized Event Delegation (Moved to setupEventListeners)
 
-        item.addEventListener('click', (e) => {
-            const type = item.getAttribute('data-type');
-            if (type) {
-                e.preventDefault();
-                handleNavigation(type);
-            }
-        });
-    });
-});
-
-// Centralized Event Delegation for Main Content
-if (mainContent) {
-    mainContent.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement;
-        
-        // 1. See More Overlay & Back Button Saga
-        const seeMore = target.closest('.see-more-overlay, .back-btn-saga') as HTMLElement | null;
-        if (seeMore) {
-            e.stopPropagation();
-            const sectionId = seeMore.dataset.section;
-            const nextIdx = seeMore.dataset.next;
-            const navType = seeMore.dataset.nav;
-
-            if (sectionId && nextIdx) {
-                renderCarouselPage(sectionId, parseInt(nextIdx));
-            } else if (navType) {
-                handleNavigation(navType);
-            }
-            return;
-        }
-
-        // 2. Movie Card
-        const card = target.closest('.movie-card') as HTMLElement | null;
-        if (card) {
-            const id = card.dataset.id;
-            const type = card.dataset.type;
-            const extra = card.dataset.extra || '';
-            if (id && type) {
-                // Trouver le média dans notre cache local
-                let foundMedia: TMDBMedia | null = null;
-                
-                // Chercher dans les sections du home
-                for (const sectionId in sectionDataStore) {
-                    const item = sectionDataStore[sectionId].items.find(i => i.id.toString() === id);
-                    if (item) {
-                        foundMedia = item;
-                        break;
-                    }
-                }
-                
-                // Chercher dans currentData (résultats de recherche)
-                if (!foundMedia && currentData) {
-                    foundMedia = currentData.find(i => i.id.toString() === id) || null;
-                }
-                
-                // Chercher dans le carousel
-                if (!foundMedia && (heroCarouselManager as any).slides) {
-                    foundMedia = (heroCarouselManager as any).slides.find((s: any) => s.id.toString() === id) || null;
-                }
-                
-                if (foundMedia) {
-                    sessionStorage.setItem('current_media_preview', JSON.stringify(foundMedia));
-                } else {
-                    sessionStorage.removeItem('current_media_preview');
-                }
-                
-                window.location.href = `/details.html?id=${id}&type=${type}${extra}`;
-            }
-            return;
-        }
-
-        // 3. Saga Card
-        const saga = target.closest('.saga-card') as HTMLElement | null;
-        if (saga) {
-            const id = saga.dataset.id;
-            if (id) (window as any).renderSagaDetailsPage(id);
-            return;
-        }
-    });
-}
-
-const genreFiltersContainer = document.getElementById('genre-filters-container');
+// genreFiltersContainer is declared at module level
 const desktopGenres = document.getElementById('desktop-genres');
 const mobileNavGenres = document.getElementById('mobile-nav-genres');
 
@@ -1442,7 +934,140 @@ function ensureGenresLoaded(): Promise<void> {
     return genresPromise;
 }
 
+
+function setupEventListeners() {
+    searchTrigger?.addEventListener('click', () => {
+        searchOverlay?.classList.add('active');
+        searchInput?.focus();
+    });
+
+    closeSearch?.addEventListener('click', () => {
+        searchOverlay?.classList.remove('active');
+    });
+
+    if (searchInput) {
+        searchInput.addEventListener('input', (e: Event) => {
+            const query = (e.target as HTMLInputElement).value.trim();
+            
+            clearTimeout(searchTimeout);
+            
+            if (query.length > 2) {
+                searchTimeout = setTimeout(() => {
+                    performSearch(query);
+                }, 500); // Délai de 500ms pour éviter de spammer l'API à chaque frappe
+            } else if (query.length === 0) {
+                // Revenir à la liste populaire si la barre de recherche est vidée
+                if (sectionTitle) {
+                    if (currentType === 'trending') sectionTitle.textContent = 'Tendances Actuelles';
+                    else if (currentType === 'tv') sectionTitle.textContent = 'Séries Populaires';
+                    else sectionTitle.textContent = 'Films Populaires';
+                }
+                if (currentType === 'reprendre') {
+                    renderResumePage();
+                } else if (currentType === 'iptv') {
+                    initLiveTV();
+                } else {
+                    renderHomeSections(currentType as any);
+                }
+            }
+        });
+    }
+
+    [navItems, bottomNavItems].forEach((collection: NodeListOf<Element> | null) => {
+        if (collection) {
+            collection.forEach((item: Element) => {
+                // Ajouter le data-type="reprendre" si c'est le bouton reprendre
+                if (item.textContent?.trim() === 'Reprendre') {
+                    item.setAttribute('data-type', 'reprendre');
+                }
+
+                item.addEventListener('click', (e: Event) => {
+                    const type = item.getAttribute('data-type');
+                    if (type) {
+                        e.preventDefault();
+                        handleNavigation(type);
+                    }
+                });
+            });
+        }
+    });
+
+    if (mainContent) {
+        mainContent.addEventListener('click', (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            
+            // 1. See More Overlay & Back Button Saga
+            const seeMore = target.closest('.see-more-overlay, .back-btn-saga') as HTMLElement | null;
+            if (seeMore) {
+                e.stopPropagation();
+                const sectionId = seeMore.dataset.section;
+                const nextIdx = seeMore.dataset.next;
+                const navType = seeMore.dataset.nav;
+
+                if (sectionId && nextIdx) {
+                    renderCarouselPage(sectionId, parseInt(nextIdx));
+                } else if (navType) {
+                    handleNavigation(navType);
+                }
+                return;
+            }
+
+            // 2. Movie Card
+            const card = target.closest('.movie-card') as HTMLElement | null;
+            if (card) {
+                const id = card.dataset.id;
+                const type = card.dataset.type;
+                const extra = card.dataset.extra || '';
+                if (id && type) {
+                    // Trouver le média dans notre cache local
+                    let foundMedia: TMDBMedia | null = null;
+                    
+                    // Chercher dans les sections du home
+                    for (const sectionId in sectionDataStore) {
+                        const item = sectionDataStore[sectionId].items.find(i => i.id.toString() === id);
+                        if (item) {
+                            foundMedia = item;
+                            break;
+                        }
+                    }
+                    
+                    // Chercher dans currentData (résultats de recherche)
+                    if (!foundMedia && currentData) {
+                        foundMedia = currentData.find(i => i.id.toString() === id) || null;
+                    }
+                    
+                    // Chercher dans le carousel
+                    if (!foundMedia && heroCarouselManager) {
+                        foundMedia = (heroCarouselManager as any).slides?.find((s: any) => s.id.toString() === id) || null;
+                    }
+                    
+                    if (foundMedia) {
+                        sessionStorage.setItem('current_media_preview', JSON.stringify(foundMedia));
+                    } else {
+                        sessionStorage.removeItem('current_media_preview');
+                    }
+                    
+                    window.location.href = `/details.html?id=${id}&type=${type}${extra}`;
+                }
+                return;
+            }
+
+            // 3. Saga Card
+            const saga = target.closest('.saga-card') as HTMLElement | null;
+            if (saga) {
+                const id = saga.dataset.id;
+                if (id) (window as any).renderSagaDetailsPage(id);
+                return;
+            }
+        });
+    }
+}
+
+
 async function initApp() {
+    initSelectors();
+    heroCarouselManager = new HeroCarouselManager();
+    setupEventListeners();
     // Déclencher immédiatement la requête TMDB pour les tendances en parallèle (évite le waterfall réseau)
     const trendingUrl = `${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`;
     fetchWithCache(trendingUrl);
@@ -1499,36 +1124,7 @@ async function initApp() {
     }
 }
 
-// 10. Gestion de la Recherche
-let searchTimeout: ReturnType<typeof setTimeout>;
-
-if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-        const query = (e.target as HTMLInputElement).value.trim();
-        
-        clearTimeout(searchTimeout);
-        
-        if (query.length > 2) {
-            searchTimeout = setTimeout(() => {
-                performSearch(query);
-            }, 500); // Délai de 500ms pour éviter de spammer l'API à chaque frappe
-        } else if (query.length === 0) {
-            // Revenir à la liste populaire si la barre de recherche est vidée
-            if (sectionTitle) {
-                if (currentType === 'trending') sectionTitle.textContent = 'Tendances Actuelles';
-                else if (currentType === 'tv') sectionTitle.textContent = 'Séries Populaires';
-                else sectionTitle.textContent = 'Films Populaires';
-            }
-            if (currentType === 'reprendre') {
-                renderResumePage();
-            } else if (currentType === 'iptv') {
-                initLiveTV();
-            } else {
-                renderHomeSections(currentType as any);
-            }
-        }
-    });
-}
+// 10. Gestion de la Recherche (Moved to setupEventListeners)
 
 async function performSearch(query: string) {
     if (!query || !mainContent) return;
@@ -1556,7 +1152,7 @@ async function performSearch(query: string) {
                         ${filteredResults.map((item: any) => renderMovieCard(item)).join('')}
                     </div>
                 `;
-                mainContent.appendChild(section);
+                mainContent?.appendChild(section);
             }
 
             heroCarouselManager.setSlides(currentData);
@@ -1571,1081 +1167,7 @@ async function performSearch(query: string) {
 }
 
 
-// --- LIVE TV SECTION (Xtream Codes API) ---
-let liveTVInitialized = false;
-let allLiveChannels: any[] = [];
-let liveCategories: any[] = [];
-let iptvCurrentPage = 1;
-const iptvItemsPerPage = 48;
-let xtreamConfig = {
-    host: localStorage.getItem('xtream_host') || '',
-    user: localStorage.getItem('xtream_user') || '',
-    pass: localStorage.getItem('xtream_pass') || ''
-};
 
-// HLS.js et MPEG-TS sont chargés dynamiquement uniquement quand nécessaire (voir playLiveChannel)
-let HlsLib: any = null;
-let mpegtsLib: any = null;
-
-async function loadHlsLib(): Promise<any> {
-    if (HlsLib) return HlsLib;
-    const mod = await import('https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.mjs' as any);
-    HlsLib = (mod as any).default ?? mod;
-    return HlsLib;
-}
-
-async function loadMpegtsLib(): Promise<any> {
-    if (mpegtsLib) return mpegtsLib;
-    const mod = await import('https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/+esm' as any);
-    mpegtsLib = (mod as any).default ?? mod;
-    return mpegtsLib;
-}
-
-async function initLiveTV() {
-    console.log("[IPTV] Initialisation de l'onglet TV...");
-    const liveContent = document.getElementById('live-tv-content');
-    const loginForm = document.getElementById('xtream-login');
-    const liveGrid = document.getElementById('live-grid');
-    const categoriesContainer = document.getElementById('live-categories');
-    
-    if (!liveContent || !loginForm || !liveGrid || !categoriesContainer) {
-        console.error("[IPTV] Éléments DOM manquants pour l'IPTV", { liveContent, loginForm, liveGrid, categoriesContainer });
-        return;
-    }
-
-    // Si on a déjà des identifiants, on tente de charger
-    if (xtreamConfig.host && xtreamConfig.user && xtreamConfig.pass) {
-        console.log("[IPTV] Identifiants trouvés, chargement des données...");
-        if (navbar) navbar.style.display = 'none'; // Cacher le header global en mode TV active
-        loginForm.style.display = 'none';
-        liveContent.style.display = 'flex';
-        if (!liveTVInitialized) await loadXtreamData();
-        else console.log("[IPTV] Données déjà initialisées.");
-    } else {
-        console.log("[IPTV] Aucun identifiant trouvé, affichage du formulaire de login.");
-        if (navbar) {
-            navbar.style.display = 'flex'; // Garder le header sur la page de login
-            navbar.classList.add('scrolled'); // Force background for visibility
-        }
-        loginForm.style.display = 'flex';
-        liveContent.style.display = 'none';
-    }
-}
-
-// Listeners pour fermer la TV (Retour aux films)
-document.getElementById('close-live-tv-back')?.addEventListener('click', () => {
-    document.getElementById('live-tv-content')!.style.display = 'none';
-    if (navbar) navbar.style.display = 'flex';
-});
-document.getElementById('close-live-tv-x')?.addEventListener('click', () => {
-    document.getElementById('live-tv-content')!.style.display = 'none';
-    handleNavigation('trending');
-});
-document.getElementById('close-live-tv')?.addEventListener('click', () => {
-    document.getElementById('live-tv-content')!.style.display = 'none';
-    handleNavigation('trending');
-});
-
-// Gestionnaire de Login
-document.getElementById('xtream-submit')?.addEventListener('click', async () => {
-    const hostInput = document.getElementById('xtream-host') as HTMLInputElement;
-    const userInput = document.getElementById('xtream-user') as HTMLInputElement;
-    const passInput = document.getElementById('xtream-pass') as HTMLInputElement;
-    const errorMsg = document.getElementById('login-error');
-
-    const host = hostInput.value.trim().replace(/\/$/, ""); // Enlever le slash final
-    const user = userInput.value.trim();
-    const pass = passInput.value.trim();
-
-    if (!host || !user || !pass) return;
-
-    if (errorMsg) errorMsg.style.display = 'none';
-    const btn = document.getElementById('xtream-submit');
-    if (btn) btn.textContent = "CONNEXION EN COURS...";
-
-    try {
-        // Test de connexion via l'API player_api.php
-        const rawTestUrl = `${host}/player_api.php?username=${user}&password=${pass}`;
-        const proxyVercel = `/api/proxy?url=${encodeURIComponent(rawTestUrl)}`;
-        
-        let response;
-        try {
-            response = await fetch(proxyVercel);
-            if (!response.ok) throw new Error();
-        } catch (e) {
-            // SÉCURITÉ : Pas de fallback vers corsproxy.io ou allorigins.win pour les identifiants
-            throw new Error("Impossible de contacter le serveur TV sécurisé.");
-        }
-        
-        if (!response || !response.ok) throw new Error(`Impossible de contacter le serveur TV (Status: ${response?.status || 'Unknown'})`);
-
-        console.log("[IPTV] Test de connexion réussi, lecture de la réponse...");
-        const text = await response.text();
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch (e) {
-            console.error("[IPTV] Erreur parsing JSON:", text);
-            throw new Error("Réponse serveur invalide (Pas du JSON).");
-        }
-
-        if (data && data.user_info && data.user_info.auth === 1) {
-            console.log("[IPTV] Authentification réussie !");
-            // Success ! Sauvegarde
-            localStorage.setItem('xtream_host', host);
-            localStorage.setItem('xtream_user', user);
-            localStorage.setItem('xtream_pass', pass);
-            xtreamConfig = { host, user, pass };
-            
-            initLiveTV(); // Recharger l'UI
-        } else {
-            console.warn("[IPTV] Échec Auth:", data);
-            throw new Error("Authentification échouée (Login/Pass incorrect)");
-        }
-    } catch (err: any) {
-        console.error("[IPTV] Erreur lors du Login:", err);
-        if (errorMsg) {
-            errorMsg.textContent = err.message || "Erreur de connexion";
-            errorMsg.style.display = 'block';
-        }
-    } finally {
-        if (btn) btn.textContent = "SE CONNECTER";
-    }
-});
-
-// Logout Logic
-document.getElementById('xtream-logout')?.addEventListener('click', () => {
-    if (confirm("Voulez-vous vous déconnecter de la TV ?")) {
-        console.log("[IPTV] Déconnexion demandée...");
-        localStorage.removeItem('xtream_host');
-        localStorage.removeItem('xtream_user');
-        localStorage.removeItem('xtream_pass');
-        xtreamConfig = { host: '', user: '', pass: '' };
-        liveTVInitialized = false;
-        allLiveChannels = [];
-        liveCategories = [];
-        // Clear IndexedDB
-        clearXtreamCache();
-        initLiveTV(); // Revenir au login
-    }
-});
-
-// --- PRO CACHING : IndexedDB (Unlimited storage for massive playlists) ---
-const DB_NAME = 'XtreamDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'cache';
-
-async function openDB(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = () => {
-            const db = request.result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-                db.createObjectStore(STORE_NAME);
-            }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-    });
-}
-
-async function getFromCache(key: string): Promise<any> {
-    try {
-        const db = await openDB();
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction(STORE_NAME, 'readonly');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.get(key);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
-    } catch(e) { return null; }
-}
-
-async function saveToCache(key: string, value: any): Promise<void> {
-    try {
-        const db = await openDB();
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction(STORE_NAME, 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.put(value, key);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
-    } catch(e) { console.warn("[DB] Error saving:", e); }
-}
-
-async function clearXtreamCache() {
-    try {
-        const db = await openDB();
-        const transaction = db.transaction(STORE_NAME, 'readwrite');
-        transaction.objectStore(STORE_NAME).clear();
-    } catch(e){}
-}
-
-async function loadXtreamData() {
-    console.log("[IPTV] loadXtreamData démarré...");
-    const liveGrid = document.getElementById('live-grid');
-    const catsContainer = document.getElementById('live-categories');
-    const initLoader = document.getElementById('live-init-loader');
-    const loaderStatus = document.getElementById('live-loader-status');
-    const loaderBar = document.getElementById('live-loader-progress');
-
-    if (!liveGrid || !catsContainer || !initLoader || !loaderBar || !loaderStatus) return;
-
-    // 1. Tenter de charger depuis IndexedDB (Capacité illimitée)
-    if (!liveTVInitialized) {
-        const cachedCats = await getFromCache('xtream_cats');
-        const cachedChannels = await getFromCache('xtream_channels');
-
-        if (cachedCats && cachedChannels) {
-            console.log("[IPTV] Chargement depuis IndexedDB...");
-            liveCategories = cachedCats;
-            allLiveChannels = cachedChannels;
-            renderCategories();
-            renderLiveTV();
-            liveTVInitialized = true;
-            loaderStatus.textContent = "Vérification des mises à jour...";
-        }
-    }
-
-    // 2. Synchronisation en arrière-plan
-    if (!liveTVInitialized) {
-        initLoader.style.display = 'flex';
-        loaderBar.style.width = '10%';
-        loaderStatus.textContent = "Authentification serveur...";
-    }
-
-    const { host, user, pass } = xtreamConfig;
-
-    try {
-        const fetchWithProxy = async (target: string) => {
-            // SÉCURITÉ : Uniquement le proxy Vercel pour les identifiants IPTV
-            return fetch(`/api/proxy?url=${encodeURIComponent(target)}`);
-        };
-
-        // Step 1: Categories
-        if (!liveTVInitialized) loaderBar.style.width = '30%';
-        const rawCatUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_categories`;
-        let catRes = await fetchWithProxy(rawCatUrl);
-        if (!catRes.ok) throw new Error("Serveur indisponible");
-        const newCats = await catRes.json();
-        
-        // Step 2: Streams
-        if (!liveTVInitialized) loaderBar.style.width = '60%';
-        const rawStreamUrl = `${host}/player_api.php?username=${user}&password=${pass}&action=get_live_streams`;
-        let streamRes = await fetchWithProxy(rawStreamUrl);
-        if (!streamRes.ok) throw new Error("Erreur flux");
-        const newChannels = await streamRes.json();
-
-        // Update Global State
-        liveCategories = newCats;
-        allLiveChannels = newChannels;
-
-        // Save to IndexedDB (Capacité quasi illimitée)
-        await saveToCache('xtream_cats', newCats);
-        await saveToCache('xtream_channels', newChannels);
-
-        // Finalize UI
-        if (!liveTVInitialized) {
-            loaderBar.style.width = '100%';
-            loaderStatus.textContent = "Terminé !";
-            setTimeout(() => {
-                initLoader.style.display = 'none';
-                renderCategories();
-                renderLiveTV();
-                liveTVInitialized = true;
-            }, 600);
-        } else {
-            // Mise à jour silencieuse si déjà chargé depuis le cache
-            renderCategories();
-            renderLiveTV();
-            console.log("[IPTV] Mise à jour du cache terminée.");
-        }
-
-    } catch (err: any) {
-        console.error("[IPTV] Erreur Sync:", err);
-        if (!liveTVInitialized) {
-            loaderStatus.textContent = "Erreur de connexion.";
-            loaderStatus.classList.add('text-error');
-            loaderBar.classList.add('bg-error');
-        }
-    }
-}
-
-function renderCategories() {
-    const container = document.getElementById('live-categories');
-    if (!container) return;
-
-    const allChannelsCount = allLiveChannels.length;
-
-    // Styles inline directs - pas de dépendance Tailwind
-    const applyBase = (el: Element) => {
-        const e = el as HTMLElement;
-        e.style.cssText = `
-            width: 100%;
-            padding: 16px 32px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            border-left: 3px solid transparent;
-            background: transparent;
-            color: rgba(255,255,255,0.35);
-            transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-            box-sizing: border-box;
-        `;
-    };
-
-    const applyActive = (el: Element) => {
-        const e = el as HTMLElement;
-        e.style.cssText = `
-            width: 100%;
-            padding: 16px 32px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            border-left: 3px solid #ef4444;
-            background: rgba(239,68,68,0.1);
-            color: #ef4444;
-            transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-            box-sizing: border-box;
-        `;
-    };
-
-    const html = `
-        <div data-id="all">
-            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;">All Channels</span>
-            <span style="font-size:11px;font-weight:700;opacity:0.6;">${allChannelsCount}</span>
-        </div>
-        ${liveCategories.map(cat => {
-            const count = allLiveChannels.filter(c => c.category_id === cat.category_id).length;
-            return `
-                <div data-id="${cat.category_id}">
-                    <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;">${cat.category_name}</span>
-                    <span style="font-size:11px;font-weight:700;opacity:0.4;">${count}</span>
-                </div>
-            `;
-        }).join('')}
-    `;
-    container.innerHTML = html;
-
-    // Appliquer style de base à tous
-    container.querySelectorAll('[data-id]').forEach(btn => {
-        applyBase(btn);
-    });
-
-    // Activer le premier par défaut
-    const firstBtn = container.querySelector('[data-id="all"]');
-    if (firstBtn) applyActive(firstBtn);
-
-    // Hover effect
-    container.querySelectorAll('[data-id]').forEach(btn => {
-        btn.addEventListener('mouseenter', () => {
-            if (!(btn as HTMLElement).dataset.active) {
-                (btn as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
-                (btn as HTMLElement).style.color = 'rgba(255,255,255,0.85)';
-            }
-        });
-        btn.addEventListener('mouseleave', () => {
-            if (!(btn as HTMLElement).dataset.active) {
-                (btn as HTMLElement).style.background = 'transparent';
-                (btn as HTMLElement).style.color = 'rgba(255,255,255,0.35)';
-            }
-        });
-    });
-
-    // Clic : sélection avec flash visuel
-    container.querySelectorAll('[data-id]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            stopLiveTV();
-
-            // Retirer l'actif de tous
-            container.querySelectorAll('[data-id]').forEach(b => {
-                delete (b as HTMLElement).dataset.active;
-                applyBase(b);
-            });
-
-            // Flash rouge immédiat puis état actif stable
-            const el = btn as HTMLElement;
-            el.style.background = 'rgba(239,68,68,0.25)';
-            el.style.borderLeftColor = '#ef4444';
-            el.style.color = '#ffffff';
-
-            setTimeout(() => {
-                el.dataset.active = '1';
-                applyActive(el);
-            }, 150);
-
-            const catId = el.getAttribute('data-id') || 'all';
-            iptvCurrentPage = 1;
-            renderLiveTV('', catId);
-        });
-    });
-}
-
-function renderLiveTV(filter: string = '', categoryId: string = 'all') {
-    const liveGrid = document.getElementById('live-grid');
-    if (!liveGrid) return;
-
-    let filtered = allLiveChannels;
-
-    // Filtre par catégorie
-    if (categoryId !== 'all') {
-        filtered = filtered.filter(c => c.category_id === categoryId);
-    }
-
-    // Filtre par recherche
-    if (filter) {
-        const f = filter.toLowerCase();
-        filtered = filtered.filter(c => c.name.toLowerCase().includes(f));
-    }
-
-    if (filtered.length === 0) {
-        liveGrid.innerHTML = '<div class="md:col-span-12 py-20 text-center text-white/30 font-medium italic">Aucune chaîne trouvée.</div>';
-        return;
-    }
-
-    // Calcul de la pagination
-    const totalPages = Math.ceil(filtered.length / iptvItemsPerPage);
-    if (iptvCurrentPage > totalPages) {
-        iptvCurrentPage = totalPages || 1;
-    }
-    if (iptvCurrentPage < 1) {
-        iptvCurrentPage = 1;
-    }
-
-    const startIdx = (iptvCurrentPage - 1) * iptvItemsPerPage;
-    const pageItems = filtered.slice(startIdx, startIdx + iptvItemsPerPage);
-
-    // 1. Initial State
-    liveGrid.innerHTML = '';
-
-    const fragment = document.createDocumentFragment();
-
-    pageItems.forEach((c, index) => {
-        const streamUrl = `${xtreamConfig.host}/live/${xtreamConfig.user}/${xtreamConfig.pass}/${c.stream_id}.ts`;
-        const div = document.createElement('div');
-        div.style.cssText = `
-            position: relative;
-            aspect-ratio: 2/3;
-            overflow: hidden;
-            cursor: pointer;
-            border: 2px solid rgba(255,255,255,0.05);
-            background: #111;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-            border-radius: 6px;
-        `;
-        div.style.animationDelay = `${(index % iptvItemsPerPage) * 15}ms`;
-        div.className = 'fade-in-progressive live-channel-card';
-        div.setAttribute('data-url', streamUrl);
-        
-        div.innerHTML = `
-            <!-- Logo/Poster -->
-            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#1a1a1a;">
-                 <img src="${c.stream_icon || ''}" loading="lazy" style="width:100%;height:100%;object-fit:cover;opacity:0.8;transition:opacity 0.3s,transform 0.5s;" onerror="this.src='https://images.unsplash.com/photo-1594909122845-11baa439b7bf?auto=format&fit=crop&q=80&w=400';"/>
-            </div>
-
-            <!-- Overlay Gradient -->
-            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.15) 60%,transparent 100%);transition:opacity 0.3s;"></div>
-
-            <!-- Channel Name -->
-            <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:12px 8px;text-align:center;">
-                <h3 style="font-size:11px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:-0.02em;line-height:1.3;text-shadow:0 2px 6px rgba(0,0,0,0.9);margin:0;">
-                    ${c.name}
-                </h3>
-            </div>
-
-            <!-- Play Icon (hover) -->
-            <div class="play-icon-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;z-index:20;">
-                <div style="width:44px;height:44px;border-radius:50%;background:rgba(239,68,68,0.25);backdrop-filter:blur(8px);border:2px solid rgba(239,68,68,0.6);display:flex;align-items:center;justify-content:center;">
-                    <span class="material-symbols-outlined" style="color:#ef4444;font-size:28px;">play_arrow</span>
-                </div>
-            </div>
-        `;
-
-        // Hover
-        div.addEventListener('mouseenter', () => {
-            if (!div.dataset.playing) {
-                div.style.borderColor = 'rgba(239,68,68,0.4)';
-                div.style.transform = 'scale(1.03)';
-            }
-            const overlay = div.querySelector('.play-icon-overlay') as HTMLElement;
-            if (overlay) overlay.style.opacity = '1';
-        });
-        div.addEventListener('mouseleave', () => {
-            if (!div.dataset.playing) {
-                div.style.borderColor = 'rgba(255,255,255,0.05)';
-                div.style.transform = 'scale(1)';
-            }
-            const overlay = div.querySelector('.play-icon-overlay') as HTMLElement;
-            if (overlay) overlay.style.opacity = '0';
-        });
-
-        div.addEventListener('click', () => {
-            const url = div.getAttribute('data-url');
-            const name = div.querySelector('h3')?.textContent?.trim() || 'Chaîne';
-
-            // Retirer le contour rouge de toutes les cartes
-            document.querySelectorAll('.live-channel-card').forEach(card => {
-                const c = card as HTMLElement;
-                delete c.dataset.playing;
-                c.style.borderColor = 'rgba(255,255,255,0.05)';
-                c.style.boxShadow = 'none';
-                c.style.transform = 'scale(1)';
-            });
-
-            // Flash immédiat blanc → rouge persistant
-            div.style.borderColor = '#ffffff';
-            div.style.boxShadow = '0 0 0 2px rgba(239,68,68,0.6)';
-            setTimeout(() => {
-                div.dataset.playing = '1';
-                div.style.borderColor = '#ef4444';
-                div.style.boxShadow = '0 0 20px rgba(239,68,68,0.35), 0 0 0 2px #ef4444';
-                div.style.transform = 'scale(1)';
-            }, 120);
-
-            if (url) playLiveChannel(url, name);
-        });
-
-        fragment.appendChild(div);
-    });
-
-    liveGrid.appendChild(fragment);
-
-    // Create / Update pagination UI container at the end of liveGrid
-    const paginationContainerId = 'live-pagination-controls';
-    let paginationContainer = document.getElementById(paginationContainerId);
-    if (paginationContainer) {
-        paginationContainer.remove();
-    }
-
-    paginationContainer = document.createElement('div');
-    paginationContainer.id = paginationContainerId;
-    paginationContainer.className = 'col-span-full flex items-center justify-center gap-4 py-8 mt-4';
-    paginationContainer.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-        padding: 32px 0 16px 0;
-        margin-top: 16px;
-        width: 100%;
-        color: #fff;
-    `;
-
-    // Button Prev
-    const btnPrev = document.createElement('button');
-    btnPrev.className = 'w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10 hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed';
-    btnPrev.disabled = iptvCurrentPage === 1;
-    btnPrev.innerHTML = '<span class="material-symbols-outlined">chevron_left</span>';
-    btnPrev.addEventListener('click', () => {
-        if (iptvCurrentPage > 1) {
-            iptvCurrentPage--;
-            renderLiveTV(filter, categoryId);
-            const gridParent = liveGrid.parentElement;
-            if (gridParent) gridParent.scrollTop = 0;
-        }
-    });
-
-    // Page Info text
-    const pageInfo = document.createElement('span');
-    pageInfo.style.cssText = `
-        font-size: 11px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.25em;
-        opacity: 0.8;
-    `;
-    pageInfo.textContent = `Page ${iptvCurrentPage} / ${totalPages}`;
-
-    // Button Next
-    const btnNext = document.createElement('button');
-    btnNext.className = 'w-10 h-10 rounded-full flex items-center justify-center bg-white/5 border border-white/10 hover:bg-white/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed';
-    btnNext.disabled = iptvCurrentPage === totalPages;
-    btnNext.innerHTML = '<span class="material-symbols-outlined">chevron_right</span>';
-    btnNext.addEventListener('click', () => {
-        if (iptvCurrentPage < totalPages) {
-            iptvCurrentPage++;
-            renderLiveTV(filter, categoryId);
-            const gridParent = liveGrid.parentElement;
-            if (gridParent) gridParent.scrollTop = 0;
-        }
-    });
-
-    paginationContainer.appendChild(btnPrev);
-    paginationContainer.appendChild(pageInfo);
-    paginationContainer.appendChild(btnNext);
-
-    liveGrid.appendChild(paginationContainer);
-}
-
-// Logic for playing a live channel
-
-function playLiveChannel(url: string, name: string) {
-    const playerContainer = document.getElementById('live-player-container');
-    const video = document.getElementById('live-video') as HTMLVideoElement;
-    const nameLabel = document.getElementById('current-channel-name');
-    const errorOverlay = document.getElementById('player-error');
-
-    if (!playerContainer || !video || !nameLabel || !errorOverlay) return;
-
-    // Lire offsetTop AVANT de modifier le DOM → évite le forced reflow (228ms PageSpeed)
-    const scrollTarget = playerContainer.offsetTop - 100;
-
-    playerContainer.style.display = 'block';
-    nameLabel.textContent = name;
-    errorOverlay.style.display = 'none';
-    const msg = errorOverlay.querySelector('p');
-    
-    // Smooth scroll différé au prochain frame pour ne pas bloquer le paint
-    requestAnimationFrame(() => {
-        window.scrollTo({ top: scrollTarget, behavior: 'smooth' });
-    });
-
-
-    // Anti-flood: On attend un court instant pour laisser le serveur fermer la connexion précédente
-    if ((window as any).isSwitching) return;
-    (window as any).isSwitching = true;
-
-    const stopExisting = () => {
-        if ((window as any).hls) {
-            try { (window as any).hls.destroy(); } catch(e){}
-            delete (window as any).hls;
-        }
-        if ((window as any).mpegtsPlayer) {
-            try {
-                const p = (window as any).mpegtsPlayer;
-                p.pause();
-                p.unload();
-                p.detachMediaElement();
-                p.destroy();
-            } catch(e){}
-            delete (window as any).mpegtsPlayer;
-        }
-        video.pause();
-        video.src = "";
-        video.load();
-    };
-
-    stopExisting();
-
-    setTimeout(() => {
-        (window as any).isSwitching = false;
-        startStreamLoad();
-    }, 650);
-
-    function startStreamLoad() {
-    const getProxyUrl = (targetUrl: string, type: 'vercel') => {
-        const encoded = encodeURIComponent(targetUrl);
-        const isHttps = window.location.protocol === 'https:';
-        if (!isHttps && type === 'vercel') return targetUrl;
-        return `/api/proxy?url=${encoded}`;
-    };
-
-    let currentProxyType: 'vercel' = 'vercel';
-    let streamUrl = getProxyUrl(url, currentProxyType);
-
-    const tryNextProxy = () => {
-        // Suppression des proxys publics pour la sécurité des identifiants
-        return false;
-    };
-
-    console.log(`Lecture via ${currentProxyType}: ${streamUrl}`);
-
-    errorOverlay!.style.display = 'flex';
-    if (msg) msg.textContent = "Connexion au flux...";
-    errorOverlay!.querySelector('span')!.textContent = "⏳";
-
-    if (url.includes('.m3u8')) {
-        loadHlsLib().then(Hls => {
-            const loadHls = (target: string) => {
-                if (Hls.isSupported()) {
-                    const hls = new Hls({
-                        debug: false,
-                        manifestLoadingMaxRetry: 6,
-                        manifestLoadingRetryDelay: 1500,
-                        enableWorker: true,
-                        capLevelToPlayerSize: true,
-                        // Buffer court adapté au direct TV pour économiser la RAM
-                        maxBufferLength: 6,
-                        maxMaxBufferLength: 10,
-                        maxBufferSize: 8 * 1024 * 1024,
-                        liveSyncDurationCount: 3,
-                        liveMaxLatencyDurationCount: 5
-                    });
-                    (window as any).hls = hls;
-                    hls.loadSource(target);
-                    hls.attachMedia(video);
-                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                        errorOverlay!.style.display = 'none';
-                        video.play().catch(() => {});
-                    });
-                    hls.on(Hls.Events.ERROR, (_event: any, data: any) => {
-                        if (data.fatal) {
-                            console.warn('HLS Fatal Error:', data.type);
-                            if (tryNextProxy()) {
-                                hls.destroy();
-                                delete (window as any).hls;
-                                loadHls(streamUrl);
-                            } else {
-                                if (msg) msg.textContent = 'Flux indisponible (Erreur HLS).';
-                                errorOverlay!.querySelector('span')!.textContent = '❌';
-                            }
-                        }
-                    });
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    video.src = target;
-                    video.play().catch(() => {});
-                }
-            };
-            loadHls(streamUrl);
-        }).catch(err => {
-            console.error('Impossible de charger HLS.js:', err);
-            if (msg) msg.textContent = 'Erreur de chargement du lecteur HLS.';
-        });
-    } else {
-        loadMpegtsLib().then(mpegts => {
-            const loadTs = (target: string) => {
-                if (mpegts.getFeatureList().mseLivePlayback) {
-                    const player = mpegts.createPlayer({
-                        type: 'mse',
-                        isLive: true,
-                        url: target,
-                        cors: true
-                    }, {
-                        // Limiter la RAM de mpegts.js sur le direct TS
-                        enableStashBuffer: false,
-                        stashInitialSize: 128 * 1024,
-                        lazyLoadMaxKeepBehindDuration: 10,
-                        lazyLoad: true
-                    });
-                    (window as any).mpegtsPlayer = player;
-                    player.attachMediaElement(video);
-                    try {
-                        player.load();
-                        player.play().catch((e: any) => console.warn('MPEGTS Play catch:', e));
-                    } catch (e) {
-                        console.error('MPEGTS Load error:', e);
-                    }
-                    player.on(mpegts.Events.ERROR, (type: any, detail: any, info: any) => {
-                        console.error('MPEGTS Error:', type, detail, info);
-                        const statusCode = info?.code || 0;
-                        const isAuthError = statusCode === 401 || statusCode === 403;
-                        const currentPlayer = (window as any).mpegtsPlayer;
-                        if (currentPlayer) {
-                            if (tryNextProxy()) {
-                                try { currentPlayer.pause(); currentPlayer.unload(); currentPlayer.detachMediaElement(); currentPlayer.destroy(); } catch(e) {}
-                                delete (window as any).mpegtsPlayer;
-                                setTimeout(() => loadTs(streamUrl), 500);
-                            } else if (url.endsWith('.ts')) {
-                                try { currentPlayer.pause(); currentPlayer.unload(); currentPlayer.detachMediaElement(); currentPlayer.destroy(); } catch(e) {}
-                                delete (window as any).mpegtsPlayer;
-                                playLiveChannel(url.replace('.ts', '.m3u8'), name);
-                            } else {
-                                if (msg) msg.textContent = isAuthError ? 'Accès refusé (401/403).' : 'Erreur de lecture.';
-                                errorOverlay!.querySelector('span')!.textContent = '❌';
-                            }
-                        }
-                    });
-                    video.onplaying = () => { errorOverlay!.style.display = 'none'; };
-                } else {
-                    video.src = target;
-                    video.play().catch(() => {});
-                }
-            };
-            loadTs(streamUrl);
-        }).catch(err => {
-            console.error('Impossible de charger mpegts.js:', err);
-            if (msg) msg.textContent = 'Erreur de chargement du lecteur TS.';
-        });
-    }
-}
-}
-
-// Search event synchronized with current active category
-document.getElementById('live-search')?.addEventListener('input', (e) => {
-    const val = (e.target as HTMLInputElement).value;
-    const activeCat = document.querySelector('#live-categories [data-id].active')?.getAttribute('data-id') || 'all';
-    iptvCurrentPage = 1;
-    renderLiveTV(val, activeCat);
-});
-
-export function stopLiveTV() {
-    const playerContainer = document.getElementById('live-player-container');
-    const video = document.getElementById('live-video') as HTMLVideoElement;
-    
-    if ((window as any).hls) {
-        try { (window as any).hls.destroy(); } catch(e){}
-        delete (window as any).hls;
-    }
-
-    if ((window as any).mpegtsPlayer) {
-        try {
-            const p = (window as any).mpegtsPlayer;
-            p.pause();
-            p.unload();
-            p.detachMediaElement();
-            p.destroy();
-        } catch(e){}
-        delete (window as any).mpegtsPlayer;
-    }
-
-    if (playerContainer) playerContainer.style.display = 'none';
-    if (video) {
-        video.pause();
-        video.src = "";
-        video.load();
-    }
-}
-
-document.getElementById('close-player')?.addEventListener('click', () => {
-    stopLiveTV();
-});
-
-document.getElementById('close-live-tv')?.addEventListener('click', () => {
-    handleNavigation('trending');
-});
-
-// --- Sagas System ---
-// Variables pour la pagination des sagas
-let sagasPageSize = 12;
-let sagasVisibleCount = 12;
-
-async function renderSagasPage() {
-    if (!mainContent) return;
-    await loadSagasData();
-    
-    // Titre de la page avec conteneur de grille
-    mainContent.innerHTML = `
-        <section class="popular">
-            <h2 class="section-title" style="margin-bottom: 30px;">
-                <span class="material-symbols-outlined">auto_awesome</span>
-                Sagas Incontournables
-            </h2>
-            <div class="sagas-grid" id="sagas-grid">
-                <!-- Les sagas seront injectées ici par updateSagasGrid() -->
-            </div>
-            <div id="load-more-sagas-container" style="text-align: center; padding: 40px; display: none;">
-                <button class="nav-item" style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #fff; padding: 12px 30px; border-radius: 50px; cursor: pointer; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; transition: all 0.3s ease;">
-                    Voir plus de sagas
-                </button>
-            </div>
-        </section>
-    `;
-    
-    const loadMoreBtn = document.querySelector('#load-more-sagas-container button');
-    loadMoreBtn?.addEventListener('click', () => {
-        sagasVisibleCount += sagasPageSize;
-        updateSagasGrid();
-    });
-
-    sagasVisibleCount = sagasPageSize;
-    updateSagasGrid();
-}
-
-function updateSagasGrid() {
-    const grid = document.getElementById('sagas-grid');
-    const loadMoreContainer = document.getElementById('load-more-sagas-container');
-    if (!grid) return;
-    
-    const visibleSagas = SAGAS_DATA.slice(0, sagasVisibleCount);
-    grid.innerHTML = visibleSagas.map(saga => `
-        <div class="saga-card" data-id="${saga.id}">
-            <img src="${saga.poster}" alt="${saga.title}" width="342" height="513" loading="lazy">
-            <div class="saga-card-overlay">
-                <h3>${saga.title}</h3>
-                <p>${saga.items.length} Films</p>
-            </div>
-        </div>
-    `).join('');
-    
-    if (loadMoreContainer) {
-        loadMoreContainer.style.display = sagasVisibleCount < SAGAS_DATA.length ? 'block' : 'none';
-    }
-}
-
-async function renderSagaDetailsPage(sagaId: string) {
-    await loadSagasData();
-    const saga = SAGAS_DATA.find(s => s.id === sagaId);
-    if (!saga || !mainContent) return;
-
-    // Masquer le hero carousel et la recherche
-    if (heroSection) heroSection.style.display = 'none';
-    toggleSearchVisibility(false);
-    mainContent.classList.add('no-hero');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    mainContent.innerHTML = `
-        <div class="saga-details-hero" style="background-image: url('${saga.backdrop}')">
-            <div class="saga-details-content">
-                <button class="back-btn-saga" data-nav="sagas">
-                    <span class="material-symbols-outlined">arrow_back</span> Retour aux Sagas
-                </button>
-                <div class="saga-header-flex">
-                    <img src="${saga.poster}" class="saga-mini-poster" width="185" height="278" />
-                    <div class="saga-header-text">
-                        <h1>${saga.title}</h1>
-                        <p class="saga-desc">${saga.description}</p>
-                        <div class="saga-stats">
-                            <span class="tag">${saga.items.length} Films</span>
-                            <span class="tag">Collection Complète</span>
-                        </div>
-                    </div>
-                    <div class="saga-global-stats">
-                        <div class="stat-box">
-                            <span class="stat-value" id="total-duration">--</span>
-                            <span class="stat-label">Durée Totale</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="stat-value" id="avg-rating">--</span>
-                            <span class="stat-label">Note Moyenne</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="stat-value" id="total-budget">--</span>
-                            <span class="stat-label">Budget</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="stat-value" id="total-revenue">--</span>
-                            <span class="stat-label">Recettes</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="stat-value" id="saga-years">--</span>
-                            <span class="stat-label">Période</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <section class="popular">
-            <h2 class="section-title">Les films de la collection</h2>
-            <div class="carousel-container" id="saga-movies-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; padding: 20px; overflow: visible;">
-                ${!sagaCache[sagaId] ? `
-                    <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
-                    <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
-                    <div class="loading-shimmer" style="height: 250px; width: 100%; border-radius: 16px;"></div>
-                ` : ''}
-            </div>
-        </section>
-    `;
-
-    const grid = document.getElementById('saga-movies-grid');
-    if (!grid) return;
-
-    // Helper pour formater les devises (conservé de l'original)
-    const formatCurrency = (amount: number) => {
-        const euroAmount = amount * 0.93;
-        if (euroAmount >= 1e9) return `${(euroAmount / 1e9).toFixed(1)} Md €`;
-        if (euroAmount >= 1e6) return `${(euroAmount / 1e6).toFixed(0)} M €`;
-        return `${Math.round(euroAmount).toLocaleString()} €`;
-    };
-
-    // Helper de rendu partagé (Cache + Frais)
-    const displaySagaResults = (movies: TMDBMedia[]) => {
-        grid.innerHTML = movies.map((m, index) => {
-            const loadingMode = index < 4 ? 'eager' : 'lazy';
-            return renderMovieCard(m, m.media_type || 'movie', '', `&fromSaga=${saga.id}`, loadingMode);
-        }).join('');
-
-        let totalMinutes = 0, totalRating = 0, totalBudget = 0, totalRevenue = 0;
-        let years: number[] = [];
-
-        movies.forEach(m => {
-            if (m.runtime) totalMinutes += m.runtime;
-            if (m.vote_average) totalRating += m.vote_average;
-            if (m.budget) totalBudget += m.budget;
-            if (m.revenue) totalRevenue += m.revenue;
-            const date = m.release_date || m.first_air_date;
-            if (date) {
-                const y = new Date(date).getFullYear();
-                if (!isNaN(y)) years.push(y);
-            }
-        });
-
-        const durationEl = document.getElementById('total-duration');
-        const ratingEl = document.getElementById('avg-rating');
-        const budgetEl = document.getElementById('total-budget');
-        const revenueEl = document.getElementById('total-revenue');
-        const yearsEl = document.getElementById('saga-years');
-
-        if (durationEl) {
-            const h = Math.floor(totalMinutes / 60);
-            const min = totalMinutes % 60;
-            durationEl.textContent = `${h}h ${min}m`;
-        }
-        if (ratingEl) ratingEl.textContent = movies.length ? (totalRating / movies.length).toFixed(1) + '/10' : '--';
-        if (budgetEl) budgetEl.textContent = totalBudget > 0 ? formatCurrency(totalBudget) : 'N/A';
-        if (revenueEl) revenueEl.textContent = totalRevenue > 0 ? formatCurrency(totalRevenue) : 'N/A';
-        if (yearsEl && years.length) {
-            const minYear = Math.min(...years), maxYear = Math.max(...years);
-            yearsEl.textContent = minYear === maxYear ? `${minYear}` : `${minYear}-${maxYear}`;
-        }
-    };
-
-    // 1. UTILISATION DU CACHE
-    if (sagaCache[sagaId]) {
-        displaySagaResults(sagaCache[sagaId]);
-        return;
-    }
-
-    // 2. CHARGEMENT FRAIS (Original conservé)
-    const movies: TMDBMedia[] = [];
-    const chunkSize = 5;
-    
-    for (let i = 0; i < saga.items.length; i += chunkSize) {
-        const chunk = saga.items.slice(i, i + chunkSize);
-        const chunkPromises = chunk.map(async (title: string) => {
-            try {
-                if (title.startsWith('id:')) {
-                    const movieId = title.split(':')[1];
-                    if (GLOBAL_BLACKLIST_IDS.includes(movieId)) return null;
-                    const res = await fetch(`${BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
-                    const data = await res.json();
-                    data.media_type = 'movie';
-                    return data;
-                }
-                if (title.startsWith('tv:')) {
-                    const tvId = title.split(':')[1];
-                    if (GLOBAL_BLACKLIST_IDS.includes(tvId)) return null;
-                    const res = await fetch(`${BASE_URL}/tv/${tvId}?api_key=${TMDB_API_KEY}&language=fr-FR`);
-                    const data = await res.json();
-                    data.media_type = 'tv';
-                    return data;
-                }
-                const searchRes = await fetch(`${BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&language=fr-FR&query=${encodeURIComponent(title)}&page=1`);
-                const searchData = await searchRes.json();
-                if (searchData.results && searchData.results.length > 0) {
-                    const detailRes = await fetch(`${BASE_URL}/movie/${searchData.results[0].id}?api_key=${TMDB_API_KEY}&language=fr-FR`);
-                    const data = await detailRes.json();
-                    data.media_type = 'movie';
-                    return data;
-                }
-                return null;
-            } catch (e) { return null; }
-        });
-        
-        const results = await Promise.all(chunkPromises);
-        results.forEach(m => { if (m && m.id) movies.push(m); });
-        if (i + chunkSize < saga.items.length) await new Promise(r => setTimeout(r, 100));
-    }
-    
-    if (movies.length === 0) {
-        grid.innerHTML = '<p style="padding: 20px; color: #aaa;">Aucun contenu disponible pour cette saga.</p>';
-        return;
-    }
-
-    sagaCache[sagaId] = movies;
-    displaySagaResults(movies);
-}
-
-// Exposer au global
-(window as any).renderSagasPage = renderSagasPage;
-(window as any).renderSagaDetailsPage = renderSagaDetailsPage;
-
-// Fonction utilitaire pour sélectionner un genre (utilisée par les tuiles du menu mobile)
 function selectGenre(id: number, type: string) {
     activeGenreId = id;
     toggleMobileMenu(); // Ferme le menu
@@ -2699,816 +1221,4 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-// --- Fonction Toast (M-7 / notifications mobiles) ---
-function showToast(message: string, duration = 3500) {
-    let toast = document.getElementById('mv-toast');
-    if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'mv-toast';
-        toast.style.cssText = [
-            'position:fixed',
-            'bottom:90px',
-            'left:50%',
-            'transform:translateX(-50%) translateY(20px)',
-            'background:rgba(15,15,15,0.95)',
-            'color:#fff',
-            'padding:12px 24px',
-            'border-radius:50px',
-            'font-size:14px',
-            'font-weight:600',
-            'font-family:Inter,sans-serif',
-            'border:1px solid rgba(255,255,255,0.1)',
-            'backdrop-filter:blur(20px)',
-            'box-shadow:0 8px 30px rgba(0,0,0,0.5)',
-            'z-index:99999',
-            'opacity:0',
-            'transition:opacity 0.3s ease,transform 0.3s ease',
-            'pointer-events:none',
-            'white-space:nowrap',
-            'max-width:90vw',
-            'text-align:center',
-        ].join(';');
-        document.body.appendChild(toast);
-    }
-    toast.textContent = message;
-    requestAnimationFrame(() => {
-        toast!.style.opacity = '1';
-        toast!.style.transform = 'translateX(-50%) translateY(0)';
-    });
-    setTimeout(() => {
-        toast!.style.opacity = '0';
-        toast!.style.transform = 'translateX(-50%) translateY(20px)';
-    }, duration);
-}
-
-// Cache global pour le contenu HTML de project.html (pour ne pas recharger à chaque ouverture)
-let projectPageCache: string | null = null;
-
-async function openProjectOverlay() {
-    const overlay = document.getElementById('project-overlay');
-    if (!overlay) return;
-
-    // Affiche l'overlay
-    overlay.style.display = 'block';
-    overlay.offsetHeight; // Force reflow
-    overlay.style.opacity = '1';
-    document.body.style.overflow = 'hidden'; // Bloque le défilement de la page arrière
-
-    // Change l'URL de l'historique sans recharger la page
-    history.pushState({ page: 'project' }, '', '/project');
-
-    // Charge le contenu depuis le cache, ou le télécharge si c'est la première fois
-    if (projectPageCache) {
-        overlay.innerHTML = projectPageCache;
-        setupProjectOverlayEvents(overlay);
-    } else {
-        overlay.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
-                <div style="width: 48px; height: 48px; border: 4px solid #ef4444; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <p style="color: #a0a0a0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Chargement du projet...</p>
-            </div>
-        `;
-        try {
-            const response = await fetch('/project.html');
-            if (!response.ok) throw new Error('Failed to load project page');
-            const html = await response.text();
-            
-            // Extrait les styles du <head> et le contenu du <body> pour conserver toute la mise en page
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
-                .map(el => {
-                    if (el.tagName.toLowerCase() === 'style') {
-                        let css = el.innerHTML;
-                        // Remplace le sélecteur body pour le cibler dans l'overlay et ne pas polluer l'index
-                        css = css.replace(/\bbody\b/g, '#project-overlay');
-                        return `<style>${css}</style>`;
-                    }
-                    return el.outerHTML;
-                })
-                .join('\n');
-            const bodyContent = styles + doc.body.innerHTML;
-            
-            projectPageCache = bodyContent;
-            overlay.innerHTML = bodyContent;
-            setupProjectOverlayEvents(overlay);
-        } catch (err) {
-            console.error("Impossible de charger le projet:", err);
-            overlay.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
-                    <p>Erreur lors du chargement de la page projet.</p>
-                    <button onclick="window.closeProjectOverlay()" style="background: #ef4444; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Retour</button>
-                </div>
-            `;
-        }
-    }
-}
-
-function setupProjectOverlayEvents(overlay: HTMLElement) {
-    // Écouteur pour fermer l'overlay quand on clique sur "Retour"
-    const backButtons = overlay.querySelectorAll('.back-home');
-    backButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeProjectOverlay();
-        });
-    });
-
-    // Gestion de l'indicateur de progression (les 5 points)
-    const dots = overlay.querySelectorAll('.progress-indicator .dot');
-    const items = overlay.querySelectorAll('.timeline-item');
-
-    if (dots.length > 0 && items.length > 0) {
-        // 1. Clic sur un point pour défiler vers l'étape correspondante
-        dots.forEach((dot, index) => {
-            dot.addEventListener('click', () => {
-                const targetItem = items[index];
-                if (targetItem) {
-                    targetItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            });
-        });
-
-        // 2. IntersectionObserver pour changer automatiquement le point actif lors du défilement (ScrollSpy)
-        const observerOptions = {
-            root: overlay, // Défilement de l'overlay lui-même
-            rootMargin: '-30% 0px -50% 0px', // Zone centrale de détection
-            threshold: 0.1
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const index = Array.from(items).indexOf(entry.target);
-                    if (index !== -1) {
-                        dots.forEach((dot, dotIdx) => {
-                            if (dotIdx === index) {
-                                dot.classList.add('active');
-                            } else {
-                                dot.classList.remove('active');
-                            }
-                        });
-                    }
-                }
-            });
-        }, observerOptions);
-
-        items.forEach(item => observer.observe(item));
-    }
-}
-
-function restoreMainPageUrl() {
-    let path = '/';
-    if (currentType === 'movie') path = '/movie';
-    else if (currentType === 'tv') path = '/tv';
-    else if (currentType === 'iptv') path = '/iptv';
-    else if (currentType === 'reprendre') path = '/reprendre';
-    else if (currentType === 'sagas') path = '/sagas';
-
-    history.pushState({ page: currentType }, '', path);
-}
-
-function closeProjectOverlay() {
-    const overlay = document.getElementById('project-overlay');
-    if (!overlay) return;
-
-    overlay.style.opacity = '0';
-    setTimeout(() => {
-        overlay.style.display = 'none';
-        document.body.style.overflow = ''; // Rétablit le défilement
-    }, 300);
-
-    restoreMainPageUrl();
-}
-
-// Exposer globalement pour le bouton d'erreur
-(window as any).closeProjectOverlay = closeProjectOverlay;
-
-// Cache global pour le contenu HTML de contact.html
-let contactPageCache: string | null = null;
-
-async function openContactOverlay() {
-    const overlay = document.getElementById('contact-overlay');
-    if (!overlay) return;
-
-    // Affiche l'overlay
-    overlay.style.display = 'block';
-    overlay.offsetHeight; // Force reflow
-    overlay.style.opacity = '1';
-    document.body.style.overflow = 'hidden';
-
-    // Change l'URL de l'historique sans recharger la page
-    history.pushState({ page: 'contact' }, '', '/contact');
-
-    if (contactPageCache) {
-        overlay.innerHTML = contactPageCache;
-        setupContactOverlayEvents(overlay);
-    } else {
-        overlay.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
-                <div style="width: 48px; height: 48px; border: 4px solid #ef4444; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <p style="color: #a0a0a0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Chargement du contact...</p>
-            </div>
-        `;
-        try {
-            const response = await fetch('/contact.html');
-            if (!response.ok) throw new Error('Failed to load contact page');
-            const html = await response.text();
-
-            // Extrait les styles du <head> et le contenu du <body> pour conserver la mise en page
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
-                .map(el => {
-                    if (el.tagName.toLowerCase() === 'style') {
-                        let css = el.innerHTML;
-                        // Remplace le sélecteur body pour le cibler dans l'overlay et ne pas polluer l'index
-                        css = css.replace(/\bbody\b/g, '#contact-overlay');
-                        return `<style>${css}</style>`;
-                    }
-                    return el.outerHTML;
-                })
-                .join('\n');
-            const bodyContent = styles + doc.body.innerHTML;
-
-            contactPageCache = bodyContent;
-            overlay.innerHTML = bodyContent;
-            setupContactOverlayEvents(overlay);
-        } catch (err) {
-            console.error("Impossible de charger le contact:", err);
-            overlay.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
-                    <p>Erreur lors du chargement de la page contact.</p>
-                    <button onclick="window.closeContactOverlay()" style="background: #ef4444; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Retour</button>
-                </div>
-            `;
-        }
-    }
-}
-
-function setupContactOverlayEvents(overlay: HTMLElement) {
-    const backButtons = overlay.querySelectorAll('.back-home');
-    backButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeContactOverlay();
-        });
-    });
-}
-
-function closeContactOverlay() {
-    const overlay = document.getElementById('contact-overlay');
-    if (!overlay) return;
-
-    overlay.style.opacity = '0';
-    setTimeout(() => {
-        overlay.style.display = 'none';
-        document.body.style.overflow = '';
-    }, 300);
-
-    restoreMainPageUrl();
-}
-
-(window as any).closeContactOverlay = closeContactOverlay;
-
-// Cache global pour le contenu HTML de cgu.html
-let cguPageCache: string | null = null;
-
-async function openCguOverlay() {
-    const overlay = document.getElementById('cgu-overlay');
-    if (!overlay) return;
-
-    // Affiche l'overlay
-    overlay.style.display = 'block';
-    overlay.offsetHeight; // Force reflow
-    overlay.style.opacity = '1';
-    document.body.style.overflow = 'hidden';
-
-    // Change l'URL de l'historique sans recharger la page
-    history.pushState({ page: 'cgu' }, '', '/cgu');
-
-    if (cguPageCache) {
-        overlay.innerHTML = cguPageCache;
-        setupCguOverlayEvents(overlay);
-    } else {
-        overlay.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
-                <div style="width: 48px; height: 48px; border: 4px solid #ff003c; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <p style="color: #a39ca0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Chargement des CGU...</p>
-            </div>
-        `;
-        try {
-            const response = await fetch('/cgu.html');
-            if (!response.ok) throw new Error('Failed to load CGU page');
-            const html = await response.text();
-
-            // Extrait les styles du <head> et le contenu du <body> pour conserver la mise en page
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
-                .map(el => {
-                    if (el.tagName.toLowerCase() === 'style') {
-                        let css = el.innerHTML;
-                        // Remplace le sélecteur body pour le cibler dans l'overlay et ne pas polluer l'index
-                        css = css.replace(/\bbody\b/g, '#cgu-overlay');
-                        return `<style>${css}</style>`;
-                    }
-                    return el.outerHTML;
-                })
-                .join('\n');
-            const bodyContent = styles + doc.body.innerHTML;
-
-            cguPageCache = bodyContent;
-            overlay.innerHTML = bodyContent;
-            setupCguOverlayEvents(overlay);
-        } catch (err) {
-            console.error("Impossible de charger les CGU:", err);
-            overlay.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
-                    <p>Erreur lors du chargement des CGU.</p>
-                    <button onclick="window.closeCguOverlay()" style="background: #ff003c; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Retour</button>
-                </div>
-            `;
-        }
-    }
-}
-
-function setupCguOverlayEvents(overlay: HTMLElement) {
-    const backButtons = overlay.querySelectorAll('.back-home');
-    backButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeCguOverlay();
-        });
-    });
-
-    // --- Back to Top ---
-    const backToTopBtn = overlay.querySelector('#backToTop') as HTMLElement | null;
-    if (backToTopBtn) {
-        let isBackToTopVisible = false;
-        overlay.addEventListener('scroll', () => {
-            const shouldShow = overlay.scrollTop > 300;
-            if (shouldShow !== isBackToTopVisible) {
-                isBackToTopVisible = shouldShow;
-                backToTopBtn.style.display = isBackToTopVisible ? 'block' : 'none';
-            }
-        }, { passive: true });
-        backToTopBtn.addEventListener('click', () => {
-            overlay.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    }
-
-    // --- ScrollSpy avec IntersectionObserver ---
-    const sections = overlay.querySelectorAll('section[id]');
-    const navLinks = overlay.querySelectorAll('.cgu-nav a');
-
-    if (sections.length > 0 && navLinks.length > 0) {
-        // Clic sur un lien de navigation pour défiler de manière fluide
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetId = link.getAttribute('href')?.substring(1);
-                const targetSection = overlay.querySelector(`#${targetId}`);
-                if (targetSection) {
-                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        });
-
-        const observerOptions = {
-            root: overlay,
-            rootMargin: '-30% 0px -50% 0px',
-            threshold: 0.1
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const currentSectionId = entry.target.getAttribute('id');
-                    navLinks.forEach(link => {
-                        link.classList.remove('active');
-                        if (link.getAttribute('href') === `#${currentSectionId}`) {
-                            link.classList.add('active');
-                        }
-                    });
-                }
-            });
-        }, observerOptions);
-
-        sections.forEach(section => observer.observe(section));
-    }
-}
-
-function closeCguOverlay() {
-    const overlay = document.getElementById('cgu-overlay');
-    if (!overlay) return;
-
-    overlay.style.opacity = '0';
-    setTimeout(() => {
-        overlay.style.display = 'none';
-        document.body.style.overflow = ''; // Rétablit le défilement
-    }, 300);
-
-    restoreMainPageUrl();
-}
-
-(window as any).closeCguOverlay = closeCguOverlay;
-
-// Cache global pour le contenu HTML de privacy.html
-let privacyPageCache: string | null = null;
-
-async function openPrivacyOverlay() {
-    const overlay = document.getElementById('privacy-overlay');
-    if (!overlay) return;
-
-    // Affiche l'overlay
-    overlay.style.display = 'block';
-    overlay.offsetHeight; // Force reflow
-    overlay.style.opacity = '1';
-    document.body.style.overflow = 'hidden';
-
-    // Change l'URL de l'historique sans recharger la page
-    history.pushState({ page: 'privacy' }, '', '/privacy');
-
-    if (privacyPageCache) {
-        overlay.innerHTML = privacyPageCache;
-        setupPrivacyOverlayEvents(overlay);
-    } else {
-        overlay.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
-                <div style="width: 48px; height: 48px; border: 4px solid #ff003c; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <p style="color: #a39ca0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Chargement...</p>
-            </div>
-        `;
-        try {
-            const response = await fetch('/privacy.html');
-            if (!response.ok) throw new Error('Failed to load Privacy page');
-            const html = await response.text();
-
-            // Extrait les styles du <head> et le contenu du <body> pour conserver la mise en page
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
-                .map(el => {
-                    if (el.tagName.toLowerCase() === 'style') {
-                        let css = el.innerHTML;
-                        // Remplace le sélecteur body pour le cibler dans l'overlay et ne pas polluer l'index
-                        css = css.replace(/\bbody\b/g, '#privacy-overlay');
-                        return `<style>${css}</style>`;
-                    }
-                    return el.outerHTML;
-                })
-                .join('\n');
-            const bodyContent = styles + doc.body.innerHTML;
-
-            privacyPageCache = bodyContent;
-            overlay.innerHTML = bodyContent;
-            setupPrivacyOverlayEvents(overlay);
-        } catch (err) {
-            console.error("Impossible de charger la page de confidentialité:", err);
-            overlay.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
-                    <p>Erreur lors du chargement de la page.</p>
-                    <button onclick="window.closePrivacyOverlay()" style="background: #ff003c; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Retour</button>
-                </div>
-            `;
-        }
-    }
-}
-
-function setupPrivacyOverlayEvents(overlay: HTMLElement) {
-    const backButtons = overlay.querySelectorAll('.back-home');
-    backButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            closePrivacyOverlay();
-        });
-    });
-
-    // --- Back to Top ---
-    const backToTopBtn = overlay.querySelector('#backToTop') as HTMLElement | null;
-    if (backToTopBtn) {
-        let isBackToTopVisible = false;
-        overlay.addEventListener('scroll', () => {
-            const shouldShow = overlay.scrollTop > 300;
-            if (shouldShow !== isBackToTopVisible) {
-                isBackToTopVisible = shouldShow;
-                backToTopBtn.style.display = isBackToTopVisible ? 'block' : 'none';
-            }
-        }, { passive: true });
-        backToTopBtn.addEventListener('click', () => {
-            overlay.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    }
-
-    // --- ScrollSpy avec IntersectionObserver ---
-    const sections = overlay.querySelectorAll('section[id]');
-    const navLinks = overlay.querySelectorAll('.privacy-nav a');
-
-    if (sections.length > 0 && navLinks.length > 0) {
-        // Clic sur un lien de navigation pour défiler de manière fluide
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetId = link.getAttribute('href')?.substring(1);
-                const targetSection = overlay.querySelector(`#${targetId}`);
-                if (targetSection) {
-                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        });
-
-        const observerOptions = {
-            root: overlay,
-            rootMargin: '-30% 0px -50% 0px',
-            threshold: 0.1
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const currentSectionId = entry.target.getAttribute('id');
-                    navLinks.forEach(link => {
-                        link.classList.remove('active');
-                        if (link.getAttribute('href') === `#${currentSectionId}`) {
-                            link.classList.add('active');
-                        }
-                    });
-                }
-            });
-        }, observerOptions);
-
-        sections.forEach(section => observer.observe(section));
-    }
-}
-
-function closePrivacyOverlay() {
-    const overlay = document.getElementById('privacy-overlay');
-    if (!overlay) return;
-
-    overlay.style.opacity = '0';
-    setTimeout(() => {
-        overlay.style.display = 'none';
-        document.body.style.overflow = ''; // Rétablit le défilement
-    }, 300);
-
-    restoreMainPageUrl();
-}
-
-(window as any).closePrivacyOverlay = closePrivacyOverlay;
-
-// Cache global pour le contenu HTML de dmca.html
-let dmcaPageCache: string | null = null;
-
-async function openDmcaOverlay() {
-    const overlay = document.getElementById('dmca-overlay');
-    if (!overlay) return;
-
-    // Affiche l'overlay
-    overlay.style.display = 'block';
-    overlay.offsetHeight; // Force reflow
-    overlay.style.opacity = '1';
-    document.body.style.overflow = 'hidden';
-
-    // Change l'URL de l'historique sans recharger la page
-    history.pushState({ page: 'dmca' }, '', '/dmca');
-
-    if (dmcaPageCache) {
-        overlay.innerHTML = dmcaPageCache;
-        setupDmcaOverlayEvents(overlay);
-    } else {
-        overlay.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
-                <div style="width: 48px; height: 48px; border: 4px solid #ff003c; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <p style="color: #a39ca0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Chargement...</p>
-            </div>
-        `;
-        try {
-            const response = await fetch('/dmca.html');
-            if (!response.ok) throw new Error('Failed to load DMCA page');
-            const html = await response.text();
-
-            // Extrait les styles du <head> et le contenu du <body> pour conserver la mise en page
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
-                .map(el => {
-                    if (el.tagName.toLowerCase() === 'style') {
-                        let css = el.innerHTML;
-                        // Remplace le sélecteur body pour le cibler dans l'overlay et ne pas polluer l'index
-                        css = css.replace(/\bbody\b/g, '#dmca-overlay');
-                        return `<style>${css}</style>`;
-                    }
-                    return el.outerHTML;
-                })
-                .join('\n');
-            const bodyContent = styles + doc.body.innerHTML;
-
-            dmcaPageCache = bodyContent;
-            overlay.innerHTML = bodyContent;
-            setupDmcaOverlayEvents(overlay);
-        } catch (err) {
-            console.error("Impossible de charger la page DMCA:", err);
-            overlay.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column; gap: 20px; color: #fff; font-family: sans-serif;">
-                    <p>Erreur lors du chargement de la page.</p>
-                    <button onclick="window.closeDmcaOverlay()" style="background: #ff003c; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold;">Retour</button>
-                </div>
-            `;
-        }
-    }
-}
-
-function setupDmcaOverlayEvents(overlay: HTMLElement) {
-    const backButtons = overlay.querySelectorAll('.back-home');
-    backButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeDmcaOverlay();
-        });
-    });
-
-    // --- Back to Top ---
-    const backToTopBtn = overlay.querySelector('#backToTop') as HTMLElement | null;
-    if (backToTopBtn) {
-        let isBackToTopVisible = false;
-        overlay.addEventListener('scroll', () => {
-            const shouldShow = overlay.scrollTop > 300;
-            if (shouldShow !== isBackToTopVisible) {
-                isBackToTopVisible = shouldShow;
-                backToTopBtn.style.display = isBackToTopVisible ? 'block' : 'none';
-            }
-        }, { passive: true });
-        backToTopBtn.addEventListener('click', () => {
-            overlay.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    }
-
-    // --- ScrollSpy avec IntersectionObserver ---
-    const sections = overlay.querySelectorAll('section[id]');
-    const navLinks = overlay.querySelectorAll('.dmca-nav a');
-
-    if (sections.length > 0 && navLinks.length > 0) {
-        // Clic sur un lien de navigation pour défiler de manière fluide
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetId = link.getAttribute('href')?.substring(1);
-                const targetSection = overlay.querySelector(`#${targetId}`);
-                if (targetSection) {
-                    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        });
-
-        const observerOptions = {
-            root: overlay,
-            rootMargin: '-30% 0px -50% 0px',
-            threshold: 0.1
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const currentSectionId = entry.target.getAttribute('id');
-                    navLinks.forEach(link => {
-                        link.classList.remove('active');
-                        if (link.getAttribute('href') === `#${currentSectionId}`) {
-                            link.classList.add('active');
-                        }
-                    });
-                }
-            });
-        }, observerOptions);
-
-        sections.forEach(section => observer.observe(section));
-    }
-}
-
-function closeDmcaOverlay() {
-    const overlay = document.getElementById('dmca-overlay');
-    if (!overlay) return;
-
-    overlay.style.opacity = '0';
-    setTimeout(() => {
-        overlay.style.display = 'none';
-        document.body.style.overflow = ''; // Rétablit le défilement
-    }, 300);
-
-    restoreMainPageUrl();
-}
-
-(window as any).closeDmcaOverlay = closeDmcaOverlay;
-
-// Intercepte les clics sur les liens du projet, de contact, des CGU, de confidentialité et du DMCA
-document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    
-    const projectLink = target.closest('a[href="/project.html"]');
-    if (projectLink) {
-        e.preventDefault();
-        openProjectOverlay();
-        return;
-    }
-
-    const contactLink = target.closest('a[href="/contact.html"]');
-    if (contactLink) {
-        e.preventDefault();
-        openContactOverlay();
-        return;
-    }
-
-    const cguLink = target.closest('a[href="/cgu.html"]');
-    if (cguLink) {
-        e.preventDefault();
-        openCguOverlay();
-        return;
-    }
-
-    const privacyLink = target.closest('a[href="/privacy.html"]');
-    if (privacyLink) {
-        e.preventDefault();
-        openPrivacyOverlay();
-        return;
-    }
-
-    const dmcaLink = target.closest('a[href="/dmca.html"]');
-    if (dmcaLink) {
-        e.preventDefault();
-        openDmcaOverlay();
-    }
-});
-
-// Écoute le bouton retour/suivant du navigateur
-window.addEventListener('popstate', (e) => {
-    if (e.state) {
-        if (e.state.page === 'project') {
-            openProjectOverlay();
-            closeContactOverlay();
-            closeCguOverlay();
-            closePrivacyOverlay();
-            closeDmcaOverlay();
-        } else if (e.state.page === 'contact') {
-            openContactOverlay();
-            closeProjectOverlay();
-            closeCguOverlay();
-            closePrivacyOverlay();
-            closeDmcaOverlay();
-        } else if (e.state.page === 'cgu') {
-            openCguOverlay();
-            closeProjectOverlay();
-            closeContactOverlay();
-            closePrivacyOverlay();
-            closeDmcaOverlay();
-        } else if (e.state.page === 'privacy') {
-            openPrivacyOverlay();
-            closeProjectOverlay();
-            closeContactOverlay();
-            closeCguOverlay();
-            closeDmcaOverlay();
-        } else if (e.state.page === 'dmca') {
-            openDmcaOverlay();
-            closeProjectOverlay();
-            closeContactOverlay();
-            closeCguOverlay();
-            closePrivacyOverlay();
-        } else if (['trending', 'movie', 'tv', 'iptv', 'reprendre', 'sagas'].includes(e.state.page)) {
-            closeProjectOverlay();
-            closeContactOverlay();
-            closeCguOverlay();
-            closePrivacyOverlay();
-            closeDmcaOverlay();
-            if (currentType !== e.state.page) {
-                handleNavigation(e.state.page, true);
-            }
-        } else {
-            closeProjectOverlay();
-            closeContactOverlay();
-            closeCguOverlay();
-            closePrivacyOverlay();
-            closeDmcaOverlay();
-        }
-    } else {
-        closeProjectOverlay();
-        closeContactOverlay();
-        closeCguOverlay();
-        closePrivacyOverlay();
-        closeDmcaOverlay();
-
-        // Rétablir la page principale correspondante au pathname actuel
-        let type = 'trending';
-        const path = window.location.pathname;
-        if (path === '/movie') type = 'movie';
-        else if (path === '/tv') type = 'tv';
-        else if (path === '/iptv') type = 'iptv';
-        else if (path === '/reprendre') type = 'reprendre';
-        else if (path === '/sagas') type = 'sagas';
-
-        if (currentType !== type) {
-            handleNavigation(type, true);
-        }
-    }
-});
-
 initApp();
-

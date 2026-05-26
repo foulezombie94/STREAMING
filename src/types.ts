@@ -44,9 +44,9 @@ export interface SectionConfig {
     id: string;
     title: string;
     endpoint: string;
-    params: string;
+    params?: string;
     icon: string;
-    mediaType: 'movie' | 'tv' | 'trending';
+    mediaType: 'movie' | 'tv' | 'trending' | string;
 }
 
 export interface TMDBGenre {
