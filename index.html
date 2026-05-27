@@ -36,18 +36,14 @@
 
     <!-- Preload Fetch des requêtes critiques TMDB pour éliminer la cascade réseau (zéro délai mobile) -->
     <link rel="preload" as="fetch" href="https://api.themoviedb.org/3/trending/all/day?api_key=e1a2bb6a3ed288feb5d767908732e751&language=fr-FR" crossorigin="anonymous">
-    <link rel="preload" as="fetch" href="https://api.themoviedb.org/3/genre/movie/list?api_key=e1a2bb6a3ed288feb5d767908732e751&language=fr-FR" crossorigin="anonymous">
-    <link rel="preload" as="fetch" href="https://api.themoviedb.org/3/genre/tv/list?api_key=e1a2bb6a3ed288feb5d767908732e751&language=fr-FR" crossorigin="anonymous">
 
     <!-- Fonts : display=swap pour affichage immédiat (Réduit le LCP/TBT) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="anonymous">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=optional" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=optional" rel="stylesheet"></noscript>
     
     <!-- Material Symbols Outlined - Chargement asynchrone non-bloquant avec display=swap pour éliminer tout Layout Shift -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap" rel="stylesheet"></noscript>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap&text=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789%26%20" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap&text=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789%26%20" rel="stylesheet"></noscript>
     <!-- Fallback immédiat pour les icônes (visibles dès le premier rendu) -->
     <style>
         /* Masque le FOUT des Material Symbols pendant le chargement async */

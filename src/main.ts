@@ -16,7 +16,9 @@ import {
     isMobileViewport,
     fetchWithCache,
     showToast,
-    SECTIONS_CONFIG
+    SECTIONS_CONFIG,
+    MOVIE_GENRES,
+    TV_GENRES
 } from './globals';
 
 import { HeroCarouselManager } from './carousel';
@@ -914,38 +916,8 @@ function initCarouselDrag(specificContainer?: HTMLElement) {
 let genresPromise: Promise<void> | null = null;
 
 async function fetchGenres() {
-    // 1. Vérifier le cache
-    const cachedMovieGenres = sessionStorage.getItem('movie_genres');
-    const cachedTvGenres = sessionStorage.getItem('tv_genres');
-
-    if (cachedMovieGenres && cachedTvGenres) {
-        movieGenres = JSON.parse(cachedMovieGenres);
-        tvGenres = JSON.parse(cachedTvGenres);
-        console.log("Genres chargés du cache");
-        return;
-    }
-
-    try {
-        console.log("Fetching genres from API...");
-        const [mData, tData] = await Promise.all([
-            fetchWithCache(`${BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=fr-FR`),
-            fetchWithCache(`${BASE_URL}/genre/tv/list?api_key=${TMDB_API_KEY}&language=fr-FR`)
-        ]);
-
-        movieGenres = mData.genres || [];
-        tvGenres = tData.genres || [];
-
-        // Sauvegarder dans le cache
-        sessionStorage.setItem('movie_genres', JSON.stringify(movieGenres));
-        sessionStorage.setItem('tv_genres', JSON.stringify(tvGenres));
-        
-        console.log("Genres récupérés et cachés");
-    } catch (error) {
-        console.error('Erreur lors de la récupération des genres:', error);
-        // Fallback minimal si l'API échoue
-        movieGenres = [];
-        tvGenres = [];
-    }
+    movieGenres = MOVIE_GENRES;
+    tvGenres = TV_GENRES;
 }
 
 function ensureGenresLoaded(): Promise<void> {
