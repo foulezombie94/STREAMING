@@ -116,16 +116,12 @@ export class HeroCarouselManager {
     private renderSlides() {
         const slidesContainer = getHeroSlidesContainer();
         if (!slidesContainer) return;
-        // Retirer le placeholder LCP statique avant d'injecter les vraies slides
-        const placeholder = document.getElementById('hero-lcp-placeholder');
-        if (placeholder) placeholder.remove();
 
-        // Poids réseau optimisé de manière granulaire sur mobile (M-2 : w300 pour mobile <480px, w780 pour tablette, w1280 pour desktop)
         const width = cachedInnerWidth;
         const backdropSize = width <= 480 ? 'w300' : (width <= 768 ? 'w780' : 'w1280');
         const IMAGE_HERO_URL = `https://image.tmdb.org/t/p/${backdropSize}`;
 
-        slidesContainer.innerHTML = this.slides.map((item, index) => {
+        const generateSlideHtml = (item: any, index: number) => {
             const isSaga = !!(item as any).isSaga;
             const displayType = isSaga ? 'saga' : (item.media_type || (getCurrentType() === 'tv' ? 'tv' : 'movie'));
             const title = isSaga ? (item as any).title : (displayType === 'tv' ? (item.name || item.original_name) : (item.title || item.original_title));
@@ -133,10 +129,7 @@ export class HeroCarouselManager {
             const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : (isSaga ? 'SAGA' : 'N/A');
             const rating = isSaga ? 'N/A' : (item.vote_average ? item.vote_average.toFixed(1) : '0.0');
             
-            // Pour les sagas, on utilise l'image des icônes (poster) comme demandé par l'utilisateur
             let backdropUrl = isSaga ? item.poster : (item.backdrop || (item.backdrop_path ? `${IMAGE_HERO_URL}${item.backdrop_path}` : ''));
-            
-            // Si l'image est manquante ou cassée
             if (!backdropUrl || backdropUrl.includes('86Yp1S669SFWFWFW') || backdropUrl === '') {
                 backdropUrl = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop';
             }
@@ -177,7 +170,39 @@ export class HeroCarouselManager {
                     </div>
                 </div>
             `;
-        }).join('');
+        };
+
+        const placeholder = document.getElementById('hero-lcp-placeholder');
+        if (placeholder) {
+            // PRÉSERVER LE DOM NODE DU PLACEHOLDER LCP POUR PAGESPEED
+            placeholder.removeAttribute('id');
+            placeholder.setAttribute('data-index', '0');
+            
+            // Activer les boutons du placeholder avec les vraies données
+            const firstItem = this.slides[0];
+            const displayType = !!(firstItem as any).isSaga ? 'saga' : (firstItem.media_type || (getCurrentType() === 'tv' ? 'tv' : 'movie'));
+            const btnPlay = placeholder.querySelector('.hero-btn-play');
+            const btnInfo = placeholder.querySelector('.hero-btn-info');
+            if (btnPlay) {
+                btnPlay.setAttribute('data-id', firstItem.id.toString());
+                btnPlay.setAttribute('data-type', displayType);
+                (btnPlay as HTMLElement).style.pointerEvents = 'auto';
+                (btnPlay as HTMLElement).style.opacity = '1';
+            }
+            if (btnInfo) {
+                btnInfo.setAttribute('data-id', firstItem.id.toString());
+                btnInfo.setAttribute('data-type', displayType);
+                (btnInfo as HTMLElement).style.pointerEvents = 'auto';
+                (btnInfo as HTMLElement).style.opacity = '1';
+            }
+
+            // Générer et ajouter uniquement les slides 1 à 5
+            const restHtml = this.slides.slice(1).map((item, i) => generateSlideHtml(item, i + 1)).join('');
+            slidesContainer.insertAdjacentHTML('beforeend', restHtml);
+        } else {
+            // Comportement normal si le placeholder n'existe pas (ex: navigation inter-pages)
+            slidesContainer.innerHTML = this.slides.map((item, index) => generateSlideHtml(item, index)).join('');
+        }
     }
 
     private renderDots() {
