@@ -37,13 +37,9 @@
     <!-- Preload Fetch des requêtes critiques TMDB pour éliminer la cascade réseau (zéro délai mobile) -->
     <link rel="preload" as="fetch" href="https://api.themoviedb.org/3/trending/all/day?api_key=e1a2bb6a3ed288feb5d767908732e751&language=fr-FR" crossorigin="anonymous">
 
-    <!-- Fonts : display=swap pour affichage immédiat (Réduit le LCP/TBT) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="anonymous">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-    
-    <!-- Inter Font -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"></noscript>
+    <!-- Fonts are self-hosted, no preconnect needed -->
+    <!-- Inter Font - Hébergé localement pour PageSpeed -->
+    <link rel="preload" as="font" href="/fonts/inter-latin-variable-full-normal.woff2" type="font/woff2" crossorigin="anonymous">
     
     <!-- Material Symbols Outlined - Hébergé localement pour PageSpeed (Cache 1 an) -->
     <link rel="preload" as="font" href="/fonts/material-symbols-outlined.woff2" type="font/woff2" crossorigin="anonymous">
