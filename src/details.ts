@@ -1,5 +1,7 @@
 import './base.css';
 import './details.css';
+// Telemetry page hit reporter
+fetch('/api/health').catch(() => {});
 import { ProgressManager } from './storage';
 import { 
     TMDBMedia, TMDBCastMember, TMDBActorDetail, 

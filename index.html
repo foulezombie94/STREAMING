@@ -41,6 +41,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="anonymous">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
     
+    <!-- Inter Font -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"></noscript>
+    
     <!-- Material Symbols Outlined - Chargement asynchrone non-bloquant avec display=swap pour éliminer tout Layout Shift -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap&text=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789%26%20" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap&text=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789%26%20" rel="stylesheet"></noscript>
@@ -114,7 +118,7 @@
                     Le JS remplacera ce slide par les vraies données TMDB.
                     fetchpriority=high + loading=eager = chargée en priorité absolue.
                 -->
-                <div class="hero-slide active" id="hero-lcp-placeholder" style="background-image: linear-gradient(180deg, rgba(5,5,5,0) 0%, rgba(5,5,5,0.95) 90%); background-color: #050505; background-position: center; background-size: cover;">
+                <div class="hero-slide active" id="hero-lcp-placeholder" style="background-image: linear-gradient(180deg, rgba(5,5,5,0) 0%, rgba(5,5,5,0.95) 90%); background-color: #050505; background-position: center; background-size: cover; height: 100svh; width: 100%; min-height: 100svh;">
                     <div class="slide-content">
                         <div class="slide-info">
                             <span class="type-tag" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">SÉRIE</span>

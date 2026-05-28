@@ -6,6 +6,7 @@ const axios = require('axios');
 const dns = require('dns');
 const https = require('https');
 const http = require('http');
+const { telemetryMiddleware } = require('./utils/telemetry');
 
 // Bypass local DNS blocks (like hosts file redirecting to 127.0.0.1)
 dns.setServers(['1.1.1.1', '8.8.8.8']);
@@ -56,6 +57,7 @@ app.use(compression({
 
 app.use(cors());
 app.use(express.json());
+app.use(telemetryMiddleware);
 
 // Basic health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));

@@ -33,6 +33,8 @@ async function loadMpegtsLib(): Promise<any> {
 }
 
 export async function initLiveTV() {
+    // Telemetry page hit reporter
+    fetch('/api/health').catch(() => {});
     console.log("[IPTV] Initialisation de l'onglet TV...");
     const liveContent = document.getElementById('live-tv-content');
     const loginForm = document.getElementById('xtream-login');

@@ -1,4 +1,6 @@
 import './style.css';
+// Telemetry page hit reporter
+fetch('/api/health').catch(() => {});
 import { ProgressManager } from './storage';
 import { TMDBMedia, TMDBGenre, SectionConfig } from './types';
 
@@ -442,14 +444,18 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
         configs.push(...SECTIONS_CONFIG.filter(c => c.id === 'tv-action' || c.id === 'genre-action' || c.id === 'genre-animation' || c.id === 'tv-animation'));
     }
 
-    // Créer les squelettes
-    configs.forEach(conf => {
-        const section = document.createElement('section');
-        section.className = 'popular';
-        section.id = `section-${conf.id}`;
-        
+    // --- Chargement progressif des sections (batching) & Optimisation DOM (TBT) ---
+    const fetchableConfigs = configs;
+
+    // Sur mobile, seule la première section est visible au-dessus du pli (above the fold)
+    // Ne créer le DOM lourd que pour la/les premières sections.
+    const priorityCount = isMobileViewport() ? 1 : 2;
+    const prioritySections = fetchableConfigs.slice(0, priorityCount);
+    const lazySections = fetchableConfigs.slice(priorityCount);
+
+    const getSectionHTML = (conf: SectionConfig) => {
         if (conf.id === 'sagas') {
-            section.innerHTML = `
+            return `
                 <h2 class="section-title">
                     <span class="material-symbols-outlined">${conf.icon}</span>
                     ${conf.title}
@@ -458,11 +464,8 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                     <div class="loading-shimmer section-shimmer-placeholder"></div>
                 </div>
             `;
-            mainContent?.appendChild(section);
-            return;
         }
-
-        section.innerHTML = `
+        return `
             <h2 class="section-title">
                 <span class="material-symbols-outlined">${conf.icon}</span>
                 ${conf.title}
@@ -471,34 +474,43 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
                 <div class="loading-shimmer section-shimmer-placeholder"></div>
             </div>
         `;
+    };
+
+    // 1. Injecter et charger immédiatement les sections prioritaires
+    prioritySections.forEach(conf => {
+        const section = document.createElement('section');
+        section.className = 'popular';
+        section.id = `section-${conf.id}`;
+        section.innerHTML = getSectionHTML(conf);
         mainContent?.appendChild(section);
+        fetchSectionData(conf);
     });
 
-    // --- Chargement progressif des sections (batching) ---
-    // Les sagas sont désormais incluses dans le chargement différé/lazy
-    const fetchableConfigs = configs;
-
-    // Sur mobile, seule la première section est visible au-dessus du pli (above the fold)
-    // Charger uniquement cette première section au boot élimine /trending/all/week de la chaîne critique (M-3 : économie réseau critique)
-    const priorityCount = isMobileViewport() ? 1 : 2;
-    const prioritySections = fetchableConfigs.slice(0, priorityCount);
-    const lazySections = fetchableConfigs.slice(priorityCount);
-
-    prioritySections.forEach(conf => fetchSectionData(conf));
-
-    // Les sections suivantes chargent via IntersectionObserver
+    // 2. Créer de simples "stubs" vides (très légers) pour les sections différées pour économiser le Main Thread (TBT)
     lazySections.forEach(conf => {
-        const sectionEl = document.getElementById(`section-${conf.id}`);
-        if (!sectionEl) { fetchSectionData(conf); return; }
+        const stub = document.createElement('div');
+        stub.id = `stub-${conf.id}`;
+        stub.style.height = '1px'; // Minimum height pour l'IntersectionObserver
+        mainContent?.appendChild(stub);
 
         const sectionObserver = new IntersectionObserver((entries, obs) => {
             if (entries[0].isIntersecting) {
+                // Remplacer le stub par la vraie section
+                const section = document.createElement('section');
+                section.className = 'popular';
+                section.id = `section-${conf.id}`;
+                section.innerHTML = getSectionHTML(conf);
+                
+                if (stub.parentNode) {
+                    stub.parentNode.replaceChild(section, stub);
+                }
+                
                 fetchSectionData(conf);
                 obs.disconnect();
             }
         }, { rootMargin: '300px', threshold: 0 });
 
-        sectionObserver.observe(sectionEl);
+        sectionObserver.observe(stub);
     });
 }
 
@@ -673,7 +685,7 @@ export function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', ext
             const mobileUrl = isLowEndActive ? 'https://image.tmdb.org/t/p/w154' : 'https://image.tmdb.org/t/p/w185';
             src = `${mobileUrl}${posterPath}`;
             srcset = `${mobileUrl}${posterPath} 185w, https://image.tmdb.org/t/p/w342${posterPath} 342w`;
-            sizes = "185px";
+            sizes = "(max-width: 480px) 50vw, 185px";
         } else {
             src = `${IMAGE_W342_URL}${posterPath}`;
             srcset = `${IMAGE_W185_URL}${posterPath} 185w, ${IMAGE_W342_URL}${posterPath} 342w`;
