@@ -102,9 +102,11 @@ export class HeroCarouselManager {
     public setSlides(data: TMDBMedia[]) {
         // Filtrer les IDs blacklistés
         const filtered = data.filter(item => !GLOBAL_BLACKLIST_IDS.includes(item.id.toString()));
-        // Mélanger les données au hasard entre films et séries tendances
-        const shuffled = [...filtered].sort(() => 0.5 - Math.random());
-        this.slides = shuffled.slice(0, 6); 
+        // Mélanger les données au hasard, mais en gardant Spider-Noir en première position
+        let firstSlide = filtered[0];
+        const rest = filtered.slice(1);
+        const shuffledRest = [...rest].sort(() => 0.5 - Math.random());
+        this.slides = [firstSlide, ...shuffledRest].slice(0, 6); 
         this.renderSlides();
         this.renderDots();
         this.goToSlide(0);
