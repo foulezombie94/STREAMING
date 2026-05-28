@@ -45,11 +45,16 @@
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet"></noscript>
     
-    <!-- Material Symbols Outlined - Chargement asynchrone non-bloquant avec display=swap pour éliminer tout Layout Shift -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap&text=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789%26%20" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&display=swap&text=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789%26%20" rel="stylesheet"></noscript>
-    <!-- Fallback immédiat pour les icônes (visibles dès le premier rendu) -->
+    <!-- Material Symbols Outlined - Hébergé localement pour PageSpeed (Cache 1 an) -->
+    <link rel="preload" as="font" href="/fonts/material-symbols-outlined.woff2" type="font/woff2" crossorigin="anonymous">
     <style>
+        @font-face {
+            font-family: 'Material Symbols Outlined';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('/fonts/material-symbols-outlined.woff2') format('woff2');
+        }
         /* Masque le FOUT des Material Symbols pendant le chargement async */
         .material-symbols-outlined {
             font-family: 'Material Symbols Outlined', sans-serif;
