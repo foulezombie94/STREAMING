@@ -24,6 +24,19 @@ import {
 } from './globals';
 
 import { HeroCarouselManager } from './carousel';
+
+const SPIDER_NOIR_MOCK = {
+    id: 220102,
+    name: "Spider-Noir",
+    title: "Spider-Noir",
+    overview: "Ben Reilly, an aging and down on his luck private investigator in 1930s New York, is forced to grapple with his past life as the city's one and only superhero.",
+    backdrop_path: "/mkwVoyP9bFSmfVqU8FJyem52hVR.jpg",
+    poster_path: "/oD8WSVqz84ZRfelkr7JPeJwR9Iv.jpg",
+    media_type: "tv",
+    genre_ids: [80, 9648, 18],
+    vote_average: 9.0
+};
+
 // iptv.ts est chargé dynamiquement uniquement quand l'utilisateur navigue vers "TV Direct"
 // Cela crée un chunk JS séparé et économise ~30 Kio au démarrage
 let iptvModule: typeof import('./iptv') | null = null;
@@ -169,7 +182,7 @@ async function handleNavigation(type: any, isPopState = false) {
         if (type === 'sagas') {
             await heroCarouselManager.setSagaSlides();
         } else {
-            const cacheKey = 'mv_trending_day';
+            const cacheKey = 'mv_trending_day_v2';
             const cached = localStorage.getItem(cacheKey);
             let hasRenderedFromCache = false;
             if (cached) {
@@ -185,7 +198,8 @@ async function handleNavigation(type: any, isPopState = false) {
 
             fetchWithCache(`${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`)
                 .then(data => {
-                    const results = data.results || [];
+                    let results = data.results || [];
+                    results = [SPIDER_NOIR_MOCK, ...results.filter((r: any) => r.id !== 220102)];
                     localStorage.setItem(cacheKey, JSON.stringify({
                         timestamp: Date.now(),
                         data: results
@@ -607,6 +621,7 @@ async function fetchSectionData(conf: SectionConfig) {
 
         // Si c'est la toute première section du home, on met à jour le hero carousel
         if (conf.id === 'trending-day' && currentType === 'trending') {
+            allItems.unshift(SPIDER_NOIR_MOCK);
             heroCarouselManager.setSlides(allItems);
         }
 
@@ -1085,7 +1100,7 @@ async function initApp() {
     
     if (sagaId) {
         // Toujours initialiser le hero en arrière-plan si on commence sur une saga
-        const cacheKey = 'mv_trending_day';
+        const cacheKey = 'mv_trending_day_v2';
         const cached = localStorage.getItem(cacheKey);
         let hasRenderedFromCache = false;
         if (cached) {
@@ -1100,7 +1115,8 @@ async function initApp() {
 
         fetchWithCache(`${BASE_URL}/trending/all/day?api_key=${TMDB_API_KEY}&language=fr-FR`)
             .then(data => {
-                const results = data.results || [];
+                let results = data.results || [];
+                results = [SPIDER_NOIR_MOCK, ...results.filter((r: any) => r.id !== 220102)];
                 localStorage.setItem(cacheKey, JSON.stringify({
                     timestamp: Date.now(),
                     data: results
