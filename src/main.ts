@@ -1,6 +1,4 @@
 import './style.css';
-// Telemetry page hit reporter
-fetch('/api/health').catch(() => {});
 import { ProgressManager } from './storage';
 import { TMDBMedia, TMDBGenre, SectionConfig } from './types';
 
