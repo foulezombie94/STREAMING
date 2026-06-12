@@ -81,51 +81,112 @@
 
 /* Bouton Favoris */
 .btn-favorite {
+    position: relative;
     background: rgba(255, 255, 255, 0.08);
     color: #ffffff;
     border: 1.5px solid rgba(255, 255, 255, 0.25);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    z-index: 1;
+}
+
+/* Pseudo-element for bubble expansion fill animation */
+.btn-favorite::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: #ffffff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), height 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: -1;
+}
+
+.btn-favorite:hover::before,
+.btn-favorite:active::before {
+    width: 300px;
+    height: 300px;
 }
 
 .btn-favorite svg {
     width: 20px;
     height: 20px;
-    fill: #ffffff;
-    transition: fill 0.3s ease, transform 0.3s ease;
+    z-index: 2;
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.btn-favorite:hover {
-    background: #ffffff;
+.btn-favorite span {
+    z-index: 2;
+    transition: color 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.btn-favorite .fav-solid {
+    fill: transparent;
+    transition: fill 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.btn-favorite .fav-outline {
+    fill: #ffffff;
+    transition: fill 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Hover / Active (Touch mobile) State */
+.btn-favorite:hover,
+.btn-favorite:active {
     color: #000000;
     border-color: #ffffff;
     box-shadow: 0 8px 25px rgba(255, 255, 255, 0.4);
     transform: translateY(-2px);
 }
 
-.btn-favorite:hover svg {
+.btn-favorite:hover svg,
+.btn-favorite:active svg {
+    transform: scale(1.15);
+}
+
+.btn-favorite:hover .fav-solid,
+.btn-favorite:active .fav-solid,
+.btn-favorite:hover .fav-outline,
+.btn-favorite:active .fav-outline {
     fill: #000000;
 }
 
+/* Active (Favorited) State */
 .btn-favorite.active {
-    background: rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.15);
     color: #ef4444;
     border-color: rgba(239, 68, 68, 0.5);
 }
 
-.btn-favorite.active svg {
+.btn-favorite.active::before {
+    background: #ef4444;
+}
+
+.btn-favorite.active .fav-solid {
     fill: #ef4444;
 }
 
-.btn-favorite.active:hover {
-    background: #ef4444;
+.btn-favorite.active .fav-outline {
+    fill: #ef4444;
+}
+
+/* Active Hover / Touch Active State */
+.btn-favorite.active:hover,
+.btn-favorite.active:active {
     color: #ffffff;
     border-color: #ef4444;
     box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
 }
 
-.btn-favorite.active:hover svg {
+.btn-favorite.active:hover .fav-solid,
+.btn-favorite.active:active .fav-solid,
+.btn-favorite.active:hover .fav-outline,
+.btn-favorite.active:active .fav-outline {
     fill: #000000;
 }
 
