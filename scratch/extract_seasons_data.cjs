@@ -3,7 +3,7 @@ const cheerio = require('cheerio');
 
 async function run() {
     try {
-        const url = "https://coflix.dance/animes/one-piece/";
+        const url = "https://coflix.blue/animes/one-piece/";
         console.log(`Fetching: ${url}`);
         const res = await axios.get(url, {
             headers: {

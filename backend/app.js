@@ -79,7 +79,7 @@ app.get('/api/diag', async (req, res) => {
 
     // Test 1: DNS Resolution for Coflix
     try {
-        const hostname = 'coflix.dance';
+        const hostname = 'coflix.blue';
         const addresses = await new Promise((resolve, reject) => {
             dns.resolve4(hostname, (err, addr) => err ? reject(err) : resolve(addr));
         });
@@ -91,7 +91,7 @@ app.get('/api/diag', async (req, res) => {
     // Test 2: Direct Axios request to Coflix (with our custom lookup)
     try {
         const start = Date.now();
-        const testRes = await axios.get('https://coflix.dance/', { timeout: 5000 });
+        const testRes = await axios.get('https://coflix.blue/', { timeout: 5000 });
         report.tests.coflix_connectivity = { 
             status: 'ok', 
             time: Date.now() - start,
