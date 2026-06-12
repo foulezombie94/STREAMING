@@ -213,6 +213,10 @@ a {
         display: none;
     }
 
+    .navbar.menu-open {
+        z-index: 9999;
+    }
+
     .navbar.menu-open .nav-links {
         transform: translateY(0);
         pointer-events: auto;
