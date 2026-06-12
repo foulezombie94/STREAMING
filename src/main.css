@@ -2975,7 +2975,11 @@ html.low-perf .carousel-timer {
     }
 }
 
-/* Favorites section icon hover effect */
-.section-fav-icon:hover path {
-    fill: #000000;
+/* Favorites menu item hover fill color */
+.bottom-nav-item[data-type="favorites"]:hover svg path {
+    fill: #000000 !important;
+}
+
+.nav-item[data-type="favorites"]:hover .material-symbols-outlined {
+    color: #000000 !important;
 }

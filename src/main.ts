@@ -97,7 +97,7 @@ function initSelectors() {
 }
 
 let currentData: TMDBMedia[] = []; 
-let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' | 'sagas' = 'trending';
+let currentType: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' | 'sagas' | 'favorites' = 'trending';
 let movieGenres: TMDBGenre[] = [];
 let tvGenres: TMDBGenre[] = [];
 let activeGenreId: number | null = null;
@@ -164,6 +164,7 @@ async function handleNavigation(type: any, isPopState = false) {
         else if (type === 'iptv') path = '/iptv';
         else if (type === 'reprendre') path = '/reprendre';
         else if (type === 'sagas') path = '/sagas';
+        else if (type === 'favorites') path = '/favorites';
 
         if (window.location.pathname !== path) {
             history.pushState({ page: type }, '', path);
@@ -176,7 +177,7 @@ async function handleNavigation(type: any, isPopState = false) {
     }
 
     // Sécurité: Si le hero va être affiché mais est vide, on le charge
-    if (type !== 'iptv' && type !== 'reprendre' && heroCarouselManager.getSlidesCount() === 0) {
+    if (type !== 'iptv' && type !== 'reprendre' && type !== 'favorites' && heroCarouselManager.getSlidesCount() === 0) {
         if (type === 'sagas') {
             await heroCarouselManager.setSagaSlides();
         } else {
@@ -245,7 +246,7 @@ async function handleNavigation(type: any, isPopState = false) {
     }
 
     if (heroSection) {
-        const isHidden = (currentType === 'iptv' || currentType === 'reprendre');
+        const isHidden = (currentType === 'iptv' || currentType === 'reprendre' || currentType === 'favorites');
         heroSection.style.display = isHidden ? 'none' : 'block';
         if (!isHidden) {
             heroCarouselManager.refresh();
@@ -257,7 +258,7 @@ async function handleNavigation(type: any, isPopState = false) {
 
     if (mainContent) {
         mainContent.style.display = (currentType === 'iptv') ? 'none' : 'block';
-        if (currentType === 'reprendre' || currentType === 'iptv') {
+        if (currentType === 'reprendre' || currentType === 'iptv' || currentType === 'favorites') {
             mainContent.classList.add('no-hero');
         } else {
             mainContent.classList.remove('no-hero');
@@ -278,6 +279,8 @@ async function handleNavigation(type: any, isPopState = false) {
         
         if (currentType === 'reprendre') {
             renderResumePage();
+        } else if (currentType === 'favorites') {
+            renderFavoritesPage();
         } else if (currentType === 'sagas') {
             const sagasMod = await getSagasModule();
             await sagasMod.renderSagasPage();
@@ -421,6 +424,42 @@ function renderResumePage() {
     mainContent?.appendChild(section);
 }
 
+function renderFavoritesPage() {
+    if (!mainContent) return;
+    mainContent.innerHTML = '';
+
+    const favorites = FavoritesManager.getAllFavorites();
+    const favList = Object.values(favorites);
+
+    const section = document.createElement('section');
+    section.className = 'popular';
+    section.innerHTML = `
+        <h2 class="section-title">
+            <svg class="section-fav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="24" height="24" style="vertical-align: middle; margin-right: 10px; fill: #ef4444; transition: fill 0.3s ease; cursor: pointer;">
+                <path d="M 7 5 L 7 28 L 8.59375 26.8125 L 16 21.25 L 23.40625 26.8125 L 25 28 L 25 5 Z M 9 7 L 23 7 L 23 24 L 16.59375 19.1875 L 16 18.75 L 15.40625 19.1875 L 9 24 Z"/>
+            </svg>
+            Mes Favoris
+        </h2>
+        <div class="carousel-container resume-grid" id="carousel-favorites" style="padding: 0 4rem;">
+            ${favList.length > 0 
+                ? favList.map(item => {
+                    const cardItem = {
+                        id: item.mediaId,
+                        media_type: item.mediaType,
+                        poster_path: item.poster ? item.poster.replace(IMAGE_W500_URL, '') : '',
+                        vote_average: item.rating,
+                        title: item.title,
+                        name: item.title
+                    };
+                    return renderMovieCard(cardItem as any, item.mediaType);
+                }).join('')
+                : '<div class="no-history" style="grid-column: span 4; text-align: center; color: rgba(255,255,255,0.4); padding: 40px;">Aucun favori enregistré.</div>'
+            }
+        </div>
+    `;
+    mainContent.appendChild(section);
+}
+
 async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: number | null = null) {
     if (!mainContent) return;
     mainContent.innerHTML = ''; 
@@ -524,49 +563,6 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
 
         sectionObserver.observe(stub);
     });
-
-    appendFavoritesSection();
-}
-
-function appendFavoritesSection() {
-    if (!mainContent || currentType === 'iptv') return;
-    
-    const existing = document.getElementById('section-favorites');
-    if (existing) existing.remove();
-
-    const favorites = FavoritesManager.getAllFavorites();
-    const favList = Object.values(favorites);
-    if (favList.length === 0) return;
-
-    const section = document.createElement('section');
-    section.className = 'popular';
-    section.id = 'section-favorites';
-    
-    section.innerHTML = `
-        <h2 class="section-title">
-            <svg class="section-fav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="24" height="24" style="vertical-align: middle; margin-right: 10px; fill: #ef4444; transition: fill 0.3s ease; cursor: pointer;">
-                <path d="M 7 5 L 7 28 L 8.59375 26.8125 L 16 21.25 L 23.40625 26.8125 L 25 28 L 25 5 Z M 9 7 L 23 7 L 23 24 L 16.59375 19.1875 L 16 18.75 L 15.40625 19.1875 L 9 24 Z"/>
-            </svg>
-            Mes Favoris
-        </h2>
-        <div class="carousel-container" id="carousel-favorites">
-            <div class="movie-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; padding: 0 4rem;">
-                ${favList.map(item => {
-                    const cardItem = {
-                        id: item.mediaId,
-                        media_type: item.mediaType,
-                        poster_path: item.poster ? item.poster.replace(IMAGE_W500_URL, '') : '',
-                        vote_average: item.rating,
-                        title: item.title,
-                        name: item.title
-                    };
-                    return renderMovieCard(cardItem as any, item.mediaType);
-                }).join('')}
-            </div>
-        </div>
-    `;
-
-    mainContent.appendChild(section);
 }
 
 
@@ -809,10 +805,10 @@ export function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', ext
 const desktopGenres = document.getElementById('desktop-genres');
 const mobileNavGenres = document.getElementById('mobile-nav-genres');
 
-function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' | 'sagas') {
+function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' | 'sagas' | 'favorites') {
     if (!genreFiltersContainer) return;
     
-    if (type === 'trending' || type === 'reprendre' || type === 'iptv' || type === 'sagas') {
+    if (type === 'trending' || type === 'reprendre' || type === 'iptv' || type === 'sagas' || type === 'favorites') {
         genreFiltersContainer.style.display = 'none';
         return;
     }
