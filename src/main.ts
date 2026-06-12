@@ -65,6 +65,22 @@ async function getOverlaysModule() {
 (window as any).openPrivacyOverlay = () => getOverlaysModule().then(m => m.openPrivacyOverlay());
 (window as any).openDmcaOverlay = () => getOverlaysModule().then(m => m.openDmcaOverlay());
 (window as any).renderSagaDetailsPage = (id: string) => getSagasModule().then(m => m.renderSagaDetailsPage(id));
+(window as any).removeFavoriteAndAnimate = (id: string, type: string, buttonEl: HTMLButtonElement) => {
+    const card = buttonEl.closest('.movie-card');
+    if (!card) return;
+    FavoritesManager.toggleFavorite(id, type, {});
+    card.classList.add('removing-card');
+    setTimeout(() => {
+        card.remove();
+        const favorites = FavoritesManager.getAllFavorites();
+        if (Object.keys(favorites).length === 0) {
+            const container = document.getElementById('carousel-favorites');
+            if (container) {
+                container.innerHTML = '<div class="no-history" style="grid-column: span 4; text-align: center; color: rgba(255,255,255,0.4); padding: 40px;">Aucun favori enregistré.</div>';
+            }
+        }
+    }, 400);
+};
 
 export let heroCarouselManager: HeroCarouselManager;
 
@@ -451,7 +467,12 @@ function renderFavoritesPage() {
                         title: item.title,
                         name: item.title
                     };
-                    return renderMovieCard(cardItem as any, item.mediaType);
+                    const removeBtn = `
+                        <button class="remove-fav-btn" onclick="event.stopPropagation(); removeFavoriteAndAnimate('${item.mediaId}', '${item.mediaType}', this)">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    `;
+                    return renderMovieCard(cardItem as any, item.mediaType, removeBtn);
                 }).join('')
                 : '<div class="no-history" style="grid-column: span 4; text-align: center; color: rgba(255,255,255,0.4); padding: 40px;">Aucun favori enregistré.</div>'
             }

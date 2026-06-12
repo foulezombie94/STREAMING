@@ -2983,3 +2983,53 @@ html.low-perf .carousel-timer {
 .nav-item[data-type="favorites"]:hover .material-symbols-outlined {
     color: #000000 !important;
 }
+
+/* Remove favorite button on card */
+.movie-card {
+    position: relative;
+}
+
+.remove-fav-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.movie-card:hover .remove-fav-btn {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.remove-fav-btn:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+    transform: scale(1.1) !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.remove-fav-btn .material-symbols-outlined {
+    font-size: 16px;
+    font-variation-settings: 'wght' 600;
+}
+
+/* Card removal animation */
+.movie-card.removing-card {
+    pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    opacity: 0 !important;
+    transform: scale(0.6) translateY(15px) !important;
+}
