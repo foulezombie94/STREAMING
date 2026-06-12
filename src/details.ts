@@ -1,6 +1,6 @@
 import './base.css';
 import './details.css';
-import { ProgressManager } from './storage';
+import { ProgressManager, FavoritesManager } from './storage';
 import { 
     TMDBMedia, TMDBCastMember, TMDBActorDetail, 
     CoflixSource, TMDBEpisode, TMDBGenre, TMDBCrewMember, TMDBVideo 
@@ -67,6 +67,7 @@ const trailerModal = document.getElementById('trailer-modal') as HTMLDivElement 
 const closeModalBtn = document.getElementById('close-modal') as HTMLButtonElement | null;
 const trailerIframe = document.getElementById('trailer-iframe') as HTMLIFrameElement | null;
 const navbar = document.getElementById('navbar') as HTMLElement | null;
+const favoriteBtn = document.getElementById('favorite-btn') as HTMLButtonElement | null;
 
 let trailerKey = '';
 let currentMediaData: TMDBMedia | null = null; 
@@ -119,8 +120,32 @@ function setupBackButton() {
 // Appeler setupBackButton au chargement du DOM
 document.addEventListener('DOMContentLoaded', setupBackButton);
 
+function updateFavoriteButtonUI() {
+    if (!favoriteBtn || !mediaId || !mediaType) return;
+    const isFav = FavoritesManager.isFavorite(mediaId, mediaType);
+    if (isFav) {
+        favoriteBtn.classList.add('active');
+        const span = favoriteBtn.querySelector('span');
+        if (span) span.textContent = 'Favori';
+    } else {
+        favoriteBtn.classList.remove('active');
+        const span = favoriteBtn.querySelector('span');
+        if (span) span.textContent = 'Favoris';
+    }
+}
+
+if (favoriteBtn) {
+    favoriteBtn.addEventListener('click', () => {
+        if (!mediaId || !mediaType || !currentMediaData) return;
+        FavoritesManager.toggleFavorite(mediaId, mediaType, currentMediaData);
+        updateFavoriteButtonUI();
+    });
+}
+
 function renderPreview(data: any) {
     if (!data) return;
+    currentMediaData = data;
+    updateFavoriteButtonUI();
 
     // Background (optimisé pour vieux PC)
     const backdropPath = data.backdrop_path || data.backdrop;
@@ -206,6 +231,7 @@ async function fetchDetails() {
         }
 
         currentMediaData = data;
+        updateFavoriteButtonUI();
 
         // Background (optimisé pour vieux PC)
         if (heroSection && data.backdrop_path) {

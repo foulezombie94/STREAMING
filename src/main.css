@@ -2974,3 +2974,8 @@ html.low-perf .carousel-timer {
         font-size: 12px;
     }
 }
+
+/* Favorites section icon hover effect */
+.section-fav-icon:hover path {
+    fill: #000000;
+}

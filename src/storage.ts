@@ -134,3 +134,44 @@ export const ProgressManager = {
         }
     }
 };
+
+const FAVORITES_KEY = 'movieverse_favorites';
+
+export const FavoritesManager = {
+    toggleFavorite(mediaId: string, mediaType: string, details: any): boolean {
+        const favorites = this.getAllFavorites();
+        const id = `${mediaType}_${mediaId}`;
+        if (favorites[id]) {
+            delete favorites[id];
+            localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+            return false;
+        } else {
+            favorites[id] = {
+                mediaId,
+                mediaType,
+                title: details.title || details.name,
+                poster: details.poster_path || details.poster,
+                backdrop: details.backdrop_path || details.backdrop,
+                overview: details.overview || details.description,
+                rating: details.vote_average,
+                year: details.release_date || details.first_air_date ? new Date(details.release_date || details.first_air_date).getFullYear().toString() : '',
+                genres: details.genres ? details.genres.map((g: any) => g.name || g) : []
+            };
+            localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+            return true;
+        }
+    },
+    isFavorite(mediaId: string, mediaType: string): boolean {
+        const favorites = this.getAllFavorites();
+        return !!favorites[`${mediaType}_${mediaId}`];
+    },
+    getAllFavorites(): Record<string, any> {
+        try {
+            const data = localStorage.getItem(FAVORITES_KEY);
+            return data ? JSON.parse(data) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+};
+
