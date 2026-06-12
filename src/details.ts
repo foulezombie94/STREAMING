@@ -552,6 +552,29 @@ let coflixSources: CoflixSource[] = [];
 async function fetchCoflixSources(type: string, id: string, season?: string, episode?: string) {
     if (!serverButtonsContainer) return;
 
+    const clientCacheKey = type === 'tv'
+        ? `coflix_sources_v1:tv:${id}:${season}:${episode}`
+        : `coflix_sources_v1:movie:${id}`;
+
+    try {
+        const cached = localStorage.getItem(clientCacheKey);
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                console.log("[Client Cache] Loading sources instantly from cache:", clientCacheKey);
+                coflixSources = parsed;
+                // S'assurer que le sélecteur de serveurs est visible
+                const selector = document.getElementById('server-selector');
+                if (selector) selector.classList.remove('hidden');
+                if (mobileScrollHint) mobileScrollHint.classList.add('active');
+                renderSourceButtons();
+                return;
+            }
+        }
+    } catch (err) {
+        console.warn("Error reading local coflix cache:", err);
+    }
+
     serverButtonsContainer.innerHTML = '<span class="loading-sources">🔍 Recherche de sources live...</span>';
     
     // S'assurer que le sélecteur de serveurs est visible au début d'une recherche
@@ -623,6 +646,14 @@ async function fetchCoflixSources(type: string, id: string, season?: string, epi
 
         if (data.success && data.sources && data.sources.length > 0) {
             coflixSources = data.sources;
+            
+            // Save to client cache indefinitely ("à vie")
+            try {
+                localStorage.setItem(clientCacheKey, JSON.stringify(data.sources));
+            } catch (err) {
+                console.warn("Error saving sources to local cache:", err);
+            }
+
             renderSourceButtons();
         } else {
             serverButtonsContainer.innerHTML = `<span class="no-sources">⚠️ Aucune source live trouvée pour "${title}".</span>`;

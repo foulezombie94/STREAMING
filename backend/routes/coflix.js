@@ -227,9 +227,9 @@ router.get("/movie/:tmdbId", async (req, res) => {
         
         const players = await extractPlayers(results[0].url);
         
-        // 3. Save to Cache (24h)
+        // 3. Save to Cache (7 days)
         if (players.length > 0) {
-            await cache.set(cacheKey, players, 86400);
+            await cache.set(cacheKey, players, 604800);
         }
 
         res.json({ success: true, tmdbId, sources: players });
@@ -304,9 +304,9 @@ router.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
             }
         }
 
-        // 3. Save to Cache
+        // 3. Save to Cache (7 days)
         if (players.length > 0) {
-            await cache.set(cacheKey, players, 86400);
+            await cache.set(cacheKey, players, 604800);
         }
 
         res.json({ success: true, sources: players });

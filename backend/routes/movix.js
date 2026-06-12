@@ -259,9 +259,9 @@ router.get("/movie/:tmdbId", async (req, res) => {
             vostfr: players.filter(s => s.lang === "VOSTFR")
         };
 
-        // 2. Save to Cache
+        // 2. Save to Cache (7 days)
         if (players.length > 0) {
-            await cache.set(cacheKey, finalPlayers, 86400);
+            await cache.set(cacheKey, finalPlayers, 604800);
         }
 
         res.json({
@@ -369,9 +369,9 @@ router.get("/tv/:tmdbId/:season/:episode", async (req, res) => {
             vostfr: players.filter(s => s.lang === "VOSTFR")
         };
 
-        // 2. Save to Cache
+        // 2. Save to Cache (7 days)
         if (players.length > 0) {
-            await cache.set(cacheKey, finalPlayers, 86400);
+            await cache.set(cacheKey, finalPlayers, 604800);
         }
 
         res.json({
