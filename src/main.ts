@@ -82,6 +82,63 @@ async function getOverlaysModule() {
     }, 400);
 };
 
+(window as any).toggleFavoriteFromCard = (id: string, type: string, buttonEl: HTMLButtonElement, event: Event) => {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    const card = buttonEl.closest('.movie-card') as HTMLElement;
+    if (!card) return;
+    
+    const title = card.querySelector('.card-title')?.textContent || card.querySelector('img')?.getAttribute('alt') || '';
+    const imgEl = card.querySelector('img') as HTMLImageElement;
+    const poster = imgEl ? imgEl.getAttribute('src') || '' : '';
+    const ratingText = card.querySelector('.card-rating')?.textContent || '';
+    const rating = parseFloat(ratingText.replace('★', '').trim()) || 0;
+    const yearText = card.querySelector('.card-year')?.textContent || '';
+    
+    const details = {
+        title: title,
+        name: title,
+        poster_path: poster.replace('https://image.tmdb.org/t/p/w342', '').replace('https://image.tmdb.org/t/p/w185', '').replace('https://image.tmdb.org/t/p/w154', '').replace('https://image.tmdb.org/t/p/w500', ''),
+        vote_average: rating,
+        release_date: yearText,
+        first_air_date: yearText,
+        genres: []
+    };
+    
+    const isNowFav = FavoritesManager.toggleFavorite(id, type, details);
+    
+    // Synchroniser toutes les cartes du même média sur la page
+    const matchingButtons = document.querySelectorAll(`.movie-card[data-id="${id}"] .card-fav-btn`);
+    matchingButtons.forEach(btn => {
+        const iconEl = btn.querySelector('.material-symbols-outlined');
+        if (iconEl) {
+            iconEl.textContent = isNowFav ? 'bookmark' : 'bookmark_border';
+        }
+        if (isNowFav) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    // Si on est sur la page favoris et qu'on retire le favori, animer et enlever la carte
+    if (currentType === 'favorites' && !isNowFav) {
+        card.classList.add('removing-card');
+        setTimeout(() => {
+            card.remove();
+            const favorites = FavoritesManager.getAllFavorites();
+            if (Object.keys(favorites).length === 0) {
+                const container = document.getElementById('carousel-favorites');
+                if (container) {
+                    container.innerHTML = '<div class="no-history" style="grid-column: span 4; text-align: center; color: rgba(255,255,255,0.4); padding: 40px;">Aucun favori enregistré.</div>';
+                }
+            }
+        }, 400);
+    }
+};
+
 export let heroCarouselManager: HeroCarouselManager;
 
 let navbar: HTMLElement | null = null;
@@ -795,6 +852,16 @@ export function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', ext
         }
     }
 
+    const isFav = FavoritesManager.isFavorite(item.id.toString(), displayType);
+    const favIcon = isFav ? 'bookmark' : 'bookmark_border';
+    const favClass = isFav ? 'card-fav-btn active' : 'card-fav-btn';
+    
+    const favBtnHtml = !extra ? `
+        <button class="${favClass}" onclick="event.stopPropagation(); toggleFavoriteFromCard('${item.id}', '${displayType}', this, event)" title="Ajouter aux favoris">
+            <span class="material-symbols-outlined">${favIcon}</span>
+        </button>
+    ` : '';
+
     return `
         <div class="movie-card" data-id="${item.id}" data-type="${displayType}" data-extra="${extraUrlParams}">
             <div class="card-badge">${badgeText}</div>
@@ -815,6 +882,7 @@ export function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', ext
                 </div>
             </div>
             ${progressBarHtml}
+            ${favBtnHtml}
             ${extra}
         </div>
     `;
