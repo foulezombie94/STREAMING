@@ -121,6 +121,7 @@ async function getOverlaysModule() {
         } else {
             btn.classList.remove('active');
         }
+        (btn as HTMLElement).blur();
     });
     
     // Si on est sur la page favoris et qu'on retire le favori, animer et enlever la carte
@@ -1161,6 +1162,9 @@ function setupEventListeners() {
             // 2. Movie Card
             const card = target.closest('.movie-card') as HTMLElement | null;
             if (card) {
+                if (target.closest('.card-fav-btn') || target.closest('.remove-fav-btn')) {
+                    return;
+                }
                 const id = card.dataset.id;
                 const type = card.dataset.type;
                 const extra = card.dataset.extra || '';
