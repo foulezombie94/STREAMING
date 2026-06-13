@@ -500,7 +500,13 @@
     align-items: center;
     gap: 10px;
     width: 80px;
-    cursor: pointer;
+    cursor: default;
+}
+
+@media (min-width: 769px) {
+    .cast-member {
+        cursor: pointer;
+    }
 }
 
 .cast-member img {

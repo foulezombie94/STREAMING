@@ -363,6 +363,8 @@ async function fetchDetails() {
             // Attach click listeners to actor cards
             document.querySelectorAll('.cast-member').forEach(card => {
                 card.addEventListener('click', () => {
+                    // Désactiver le clic sur mobile
+                    if (window.innerWidth <= 768) return;
                     const actorId = card.getAttribute('data-id');
                     if (actorId) openActorModal(actorId);
                 });
