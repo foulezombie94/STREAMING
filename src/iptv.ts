@@ -748,9 +748,12 @@ function playLiveChannel(url: string, name: string) {
                         url: target,
                         cors: true
                     }, {
-                        // Limiter la RAM de mpegts.js sur le direct TS
-                        enableStashBuffer: false,
-                        stashInitialSize: 128 * 1024,
+                        // Configuration optimisée pour tolérer les micro-coupures et instabilités
+                        enableStashBuffer: true,
+                        stashInitialSize: 384 * 1024, // Augmente le buffer avant de démarrer la lecture
+                        liveBufferLatencyChasing: false, // Ne pas chercher à rattraper le direct absolu
+                        liveBufferLatencyMaxLatency: 15, // Accepter jusqu'à 15s de retard
+                        liveBufferLatencyMinRemain: 5, // Garder une bonne marge dans le buffer
                         lazyLoadMaxKeepBehindDuration: 10,
                         lazyLoad: true
                     });
