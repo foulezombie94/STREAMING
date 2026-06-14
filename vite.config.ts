@@ -2,6 +2,8 @@ import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { defineConfig } from 'vite'
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 function inlineCSSPlugin() {
@@ -39,7 +41,7 @@ function inlineCSSPlugin() {
 }
 
 export default defineConfig({
-  plugins: [inlineCSSPlugin()],
+  plugins: [inlineCSSPlugin(), cloudflare()],
   build: {
     cssCodeSplit: false,
     rollupOptions: {

@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview",
-    "start-backend": "node --max-old-space-size=256 backend/server.js"
+    "preview": "npm run build && wrangler dev",
+    "start-backend": "node --max-old-space-size=256 backend/server.js",
+    "deploy": "npm run build && wrangler deploy"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.40.2",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/postcss": "^4.2.4",
@@ -18,7 +20,8 @@
     "postcss": "^8.5.14",
     "tailwindcss": "^4.2.4",
     "typescript": "~6.0.2",
-    "vite": "^8.0.10"
+    "vite": "^8.0.10",
+    "wrangler": "^4.100.0"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0",
