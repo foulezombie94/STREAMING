@@ -756,3 +756,94 @@ a {
     }
 }
 
+
+/* =========================================================================
+   DESIGN REFRESH — corrections partagées (index + détails)
+   ========================================================================= */
+
+/* Navbar : libellés sur une seule ligne ("DIRECT TV" passait sur 2 lignes)
+   et plus de "saut" vertical de l'élément actif / survolé */
+.nav-links a {
+    white-space: nowrap;
+}
+.nav-links a.active,
+.nav-links a:hover:not(.active) {
+    transform: none;
+}
+.nav-links a:hover:not(.active) {
+    opacity: 1;
+}
+.nav-links a.active::after {
+    bottom: -10px;
+}
+
+/* Écrans intermédiaires (tablettes paysage, petits laptops) : le menu centré en absolu
+   chevauchait le logo. On le remet dans le flux et on compacte. */
+@media (min-width: 769px) and (max-width: 1280px) {
+    .navbar,
+    .navbar.scrolled {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    .logo { font-size: 22px; }
+    .nav-links {
+        position: static;
+        transform: none;
+        margin: 0 auto;
+        gap: clamp(14px, 2vw, 28px);
+    }
+    .nav-links a { font-size: 12.5px; letter-spacing: 0.06em; }
+}
+@media (min-width: 769px) and (max-width: 1100px) {
+    .nav-links a .material-symbols-outlined { display: none; }
+}
+
+@media (max-width: 768px) {
+    /* Menu mobile : le soulignement desktop dépassait sous la tuile active */
+    .nav-links a.active::after { display: none; }
+}
+
+/* Accessibilité : focus clavier visible (base.css supprimait tous les outlines) */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid #ef4444;
+    outline-offset: 3px;
+    border-radius: 6px;
+}
+
+::selection {
+    background: rgba(239, 68, 68, 0.35);
+    color: #fff;
+}
+
+/* Respecte le réglage système "réduire les animations" */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Les tuiles de genres n'existent que dans le menu mobile */
+@media (min-width: 769px) {
+    .mobile-nav-genres { display: none !important; }
+}
+
+@media (max-width: 768px) {
+    /* Menu mobile : avec les tuiles de genres le contenu dépasse l'écran,
+       un centrage vertical cachait les premiers liens -> on aligne en haut */
+    .nav-links {
+        justify-content: flex-start;
+        padding-top: 84px;
+        padding-bottom: 32px;
+    }
+    .nav-links li { flex-shrink: 0; }
+}

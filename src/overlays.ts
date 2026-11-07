@@ -34,7 +34,7 @@ export async function openProjectOverlay() {
             // Extrait les styles du <head> et le contenu du <body> pour conserver toute la mise en page
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
+            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"], link[rel="preload"][as="style"]'))
                 .map(el => {
                     if (el.tagName.toLowerCase() === 'style') {
                         let css = el.innerHTML;
@@ -42,7 +42,7 @@ export async function openProjectOverlay() {
                         css = css.replace(/\bbody\b/g, '#project-overlay');
                         return `<style>${css}</style>`;
                     }
-                    return el.outerHTML;
+                    return `<link rel="stylesheet" href="${el.getAttribute('href')}">`;
                 })
                 .join('\n');
             const bodyContent = styles + doc.body.innerHTML;
@@ -176,7 +176,7 @@ export async function openContactOverlay() {
             // Extrait les styles du <head> et le contenu du <body> pour conserver la mise en page
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
+            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"], link[rel="preload"][as="style"]'))
                 .map(el => {
                     if (el.tagName.toLowerCase() === 'style') {
                         let css = el.innerHTML;
@@ -184,7 +184,7 @@ export async function openContactOverlay() {
                         css = css.replace(/\bbody\b/g, '#contact-overlay');
                         return `<style>${css}</style>`;
                     }
-                    return el.outerHTML;
+                    return `<link rel="stylesheet" href="${el.getAttribute('href')}">`;
                 })
                 .join('\n');
             const bodyContent = styles + doc.body.innerHTML;
@@ -263,7 +263,7 @@ export async function openCguOverlay() {
             // Extrait les styles du <head> et le contenu du <body> pour conserver la mise en page
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
+            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"], link[rel="preload"][as="style"]'))
                 .map(el => {
                     if (el.tagName.toLowerCase() === 'style') {
                         let css = el.innerHTML;
@@ -271,7 +271,7 @@ export async function openCguOverlay() {
                         css = css.replace(/\bbody\b/g, '#cgu-overlay');
                         return `<style>${css}</style>`;
                     }
-                    return el.outerHTML;
+                    return `<link rel="stylesheet" href="${el.getAttribute('href')}">`;
                 })
                 .join('\n');
             const bodyContent = styles + doc.body.innerHTML;
@@ -406,7 +406,7 @@ export async function openPrivacyOverlay() {
             // Extrait les styles du <head> et le contenu du <body> pour conserver la mise en page
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
+            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"], link[rel="preload"][as="style"]'))
                 .map(el => {
                     if (el.tagName.toLowerCase() === 'style') {
                         let css = el.innerHTML;
@@ -414,7 +414,7 @@ export async function openPrivacyOverlay() {
                         css = css.replace(/\bbody\b/g, '#privacy-overlay');
                         return `<style>${css}</style>`;
                     }
-                    return el.outerHTML;
+                    return `<link rel="stylesheet" href="${el.getAttribute('href')}">`;
                 })
                 .join('\n');
             const bodyContent = styles + doc.body.innerHTML;
@@ -549,7 +549,7 @@ export async function openDmcaOverlay() {
             // Extrait les styles du <head> et le contenu du <body> pour conserver la mise en page
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"]'))
+            const styles = Array.from(doc.head.querySelectorAll('style, link[rel="stylesheet"], link[rel="preload"][as="style"]'))
                 .map(el => {
                     if (el.tagName.toLowerCase() === 'style') {
                         let css = el.innerHTML;
@@ -557,7 +557,7 @@ export async function openDmcaOverlay() {
                         css = css.replace(/\bbody\b/g, '#dmca-overlay');
                         return `<style>${css}</style>`;
                     }
-                    return el.outerHTML;
+                    return `<link rel="stylesheet" href="${el.getAttribute('href')}">`;
                 })
                 .join('\n');
             const bodyContent = styles + doc.body.innerHTML;

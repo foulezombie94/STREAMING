@@ -3094,3 +3094,173 @@ html.low-perf .carousel-timer {
         transform: scale(1);
     }
 }
+
+/* =========================================================================
+   DESIGN REFRESH — page d'accueil
+   ========================================================================= */
+
+/* --- Perf : la barre de progression du hero est animée en transform (compositeur)
+       au lieu de width (qui forçait un layout à chaque frame) --- */
+.carousel-progress {
+    width: 100% !important;
+    transform: scaleX(0);
+    transform-origin: left center;
+    will-change: transform;
+}
+
+/* --- Perf : "transition: all" sur chaque carte -> uniquement ce qui bouge --- */
+.movie-card {
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* --- Barre de filtres par genre (Films / Séries, desktop) --- */
+.genre-filters-container {
+    position: relative;
+    z-index: 5;
+    padding: 0 4rem;
+    margin: 28px 0 8px;
+}
+.genre-chips {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 6px 2px 10px;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, #000 92%, transparent);
+}
+.genre-chips::-webkit-scrollbar { display: none; }
+.genre-btn {
+    flex: 0 0 auto;
+    padding: 9px 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    color: rgba(255, 255, 255, 0.75);
+    font: 600 13px/1 'Inter', sans-serif;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.genre-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.09) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+.genre-btn.active {
+    color: #fff;
+    background: #ef4444 !important;
+    border-color: #ef4444 !important;
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+}
+@media (max-width: 768px) {
+    /* Sur mobile les genres sont dans le menu (tuiles) */
+    .genre-filters-container { display: none !important; }
+}
+
+/* --- Écrans vides (Reprendre / Favoris / Recherche) --- */
+.no-history,
+.no-results {
+    grid-column: 1 / -1 !important;
+    margin: 8px auto;
+    width: 100%;
+    max-width: 560px;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    font-size: 15px;
+}
+
+/* --- Footer : liens "Explorer" trop gros / trop espacés --- */
+.card-nav .nav-grid { gap: 0.35rem; }
+.card-nav .nav-item {
+    font-size: 0.95rem !important;
+    padding: 0.8rem 1rem !important;
+    border-radius: 12px !important;
+}
+
+/* --- Formulaire de connexion Direct TV (les classes Tailwind n'étaient jamais compilées :
+       champs invisibles, aucun espacement) --- */
+#xtream-login .glass-panel {
+    border-radius: 24px;
+    padding: 44px 40px;
+}
+#xtream-login .glass-panel > .absolute {
+    position: absolute;
+    top: -8rem;
+    right: -8rem;
+    width: 20rem;
+    height: 20rem;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.18);
+    filter: blur(110px);
+    pointer-events: none;
+}
+#xtream-login .glass-panel > .relative { position: relative; z-index: 1; }
+.xtream-form-title { margin-bottom: 32px; }
+.xtream-form-title h3 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin-bottom: 10px;
+}
+.xtream-form-bar {
+    width: 56px;
+    height: 4px;
+    border-radius: 4px;
+    background: #ef4444;
+}
+.xtream-form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.xtream-input-group {
+    border-radius: 14px;
+    padding: 16px 18px;
+}
+.xtream-input-label {
+    margin: 0 0 8px;
+    color: rgba(255, 255, 255, 0.45);
+}
+#xtream-host,
+#xtream-user,
+#xtream-pass {
+    padding: 2px 0;
+    font-size: 17px;
+}
+#xtream-host::placeholder,
+#xtream-user::placeholder,
+#xtream-pass::placeholder {
+    color: rgba(255, 255, 255, 0.22);
+}
+#xtream-login input:focus { box-shadow: none; }
+#xtream-submit {
+    border-radius: 14px;
+    padding: 18px;
+    margin-top: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 15px;
+    box-shadow: 0 14px 34px rgba(239, 68, 68, 0.35);
+}
+#xtream-submit:hover { filter: brightness(1.08); }
+#xtream-submit:active { transform: scale(0.98); }
+.xtream-hero-title {
+    font-size: 48px;
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #fff;
+}
+.xtream-hero-title em {
+    color: #ef4444;
+    font-style: italic;
+}
+.xtream-hero-text {
+    margin-top: 16px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 17px;
+    line-height: 1.6;
+}

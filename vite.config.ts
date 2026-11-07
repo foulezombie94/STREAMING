@@ -4,36 +4,42 @@ import { defineConfig } from 'vite'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+/**
+ * Inline le CSS directement dans le HTML (évite une requête render-blocking),
+ * mais UNIQUEMENT le CSS réellement référencé par chaque page.
+ * Avant : tout le CSS de l'app (~80 Ko) était injecté dans chaque page,
+ * y compris les pages légales qui n'en utilisent pas une ligne.
+ */
 function inlineCSSPlugin() {
   return {
     name: 'inline-css',
     enforce: 'post' as const,
-    generateBundle(options: any, bundle: any) {
-      const cssAssets = Object.keys(bundle).filter(name => name.endsWith('.css'));
-      const htmlAssets = Object.keys(bundle).filter(name => name.endsWith('.html'));
-      
-      let cssContent = '';
-      for (const cssName of cssAssets) {
-        const asset = bundle[cssName];
-        if (asset.type === 'asset') {
-          cssContent += asset.source;
-          delete bundle[cssName]; // Ne pas générer de fichier .css externe
+    generateBundle(_options: any, bundle: any) {
+      const usedCss = new Set<string>();
+
+      for (const htmlName of Object.keys(bundle).filter(n => n.endsWith('.html'))) {
+        const htmlAsset = bundle[htmlName];
+        if (htmlAsset.type !== 'asset') continue;
+        let html = htmlAsset.source as string;
+        let inlined = '';
+
+        html = html.replace(/<link[^>]+rel=["']stylesheet["'][^>]*>/gi, (tag) => {
+          const href = tag.match(/href=["']\/?([^"']+)["']/)?.[1];
+          const asset = href ? bundle[href] : undefined;
+          if (!asset || asset.type !== 'asset') return tag; // feuille externe : on garde le <link>
+          inlined += asset.source;
+          usedCss.add(href!);
+          return '';
+        });
+
+        if (inlined) {
+          html = html.replace('</head>', () => `<style>${inlined}</style></head>`);
         }
+        htmlAsset.source = html;
       }
 
-      if (cssContent) {
-        for (const htmlName of htmlAssets) {
-          const htmlAsset = bundle[htmlName];
-          if (htmlAsset.type === 'asset') {
-            let html = htmlAsset.source as string;
-            // Supprimer les balises <link rel="stylesheet"> générées par Vite
-            html = html.replace(/<link[^>]+rel=["']stylesheet["'][^>]*>/gi, '');
-            // Injecter le CSS minifié dans la balise <style> du <head>
-            html = html.replace('</head>', `<style>${cssContent}</style></head>`);
-            htmlAsset.source = html;
-          }
-        }
-      }
+      // Ne pas publier les .css déjà inlinés
+      for (const name of usedCss) delete bundle[name];
     }
   };
 }
@@ -41,7 +47,7 @@ function inlineCSSPlugin() {
 export default defineConfig({
   plugins: [inlineCSSPlugin()],
   build: {
-    cssCodeSplit: false,
+    cssCodeSplit: true,
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),

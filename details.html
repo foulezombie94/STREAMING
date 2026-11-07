@@ -27,16 +27,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <!-- DNS Prefetch & Preconnect pour TMDB (Accélère le chargement des posters et de l'API) -->
-    <link rel="dns-prefetch" href="https://image.tmdb.org" crossorigin="anonymous">
+    <link rel="dns-prefetch" href="https://image.tmdb.org">
     <link rel="dns-prefetch" href="https://api.themoviedb.org" crossorigin="anonymous">
-    <link rel="preconnect" href="https://image.tmdb.org" crossorigin="anonymous">
+    <link rel="preconnect" href="https://image.tmdb.org"><!-- sans crossorigin : les <img> ne sont pas en CORS, sinon la connexion préouverte serait inutilisable -->
     <link rel="preconnect" href="https://api.themoviedb.org" crossorigin="anonymous">
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="anonymous">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=optional" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=optional" rel="stylesheet"></noscript>
+    <!-- Inter est auto-hébergée (cf. @font-face dans base.css) : plus besoin de Google Fonts -->
+    <link rel="preload" as="font" href="/fonts/inter-latin-variable-full-normal.woff2" type="font/woff2" crossorigin="anonymous">
     <script type="module" src="/src/details.ts" defer></script>
 </head>
 <body>

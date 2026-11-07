@@ -137,13 +137,32 @@ export const ProgressManager = {
 
 const FAVORITES_KEY = 'movieverse_favorites';
 
+// Cache mémoire : isFavorite() est appelé pour CHAQUE carte rendue,
+// on évite donc de re-parser le JSON du localStorage à chaque fois.
+let favoritesCache: Record<string, any> | null = null;
+
+function saveFavorites(favorites: Record<string, any>) {
+    favoritesCache = favorites;
+    try {
+        localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+    } catch (e) {
+        console.warn("LocalStorage bloqué ou plein", e);
+    }
+}
+
+// Synchronisation si les favoris sont modifiés dans un autre onglet
+window.addEventListener('storage', (e) => {
+    if (e.key === FAVORITES_KEY) favoritesCache = null;
+    if (e.key === STORAGE_KEY) progressCache = null;
+});
+
 export const FavoritesManager = {
     toggleFavorite(mediaId: string, mediaType: string, details: any): boolean {
         const favorites = this.getAllFavorites();
         const id = `${mediaType}_${mediaId}`;
         if (favorites[id]) {
             delete favorites[id];
-            localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+            saveFavorites(favorites);
             return false;
         } else {
             favorites[id] = {
@@ -157,7 +176,7 @@ export const FavoritesManager = {
                 year: details.release_date || details.first_air_date ? new Date(details.release_date || details.first_air_date).getFullYear().toString() : '',
                 genres: details.genres ? details.genres.map((g: any) => g.name || g) : []
             };
-            localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+            saveFavorites(favorites);
             return true;
         }
     },
@@ -166,12 +185,14 @@ export const FavoritesManager = {
         return !!favorites[`${mediaType}_${mediaId}`];
     },
     getAllFavorites(): Record<string, any> {
+        if (favoritesCache !== null) return favoritesCache;
         try {
             const data = localStorage.getItem(FAVORITES_KEY);
-            return data ? JSON.parse(data) : {};
+            favoritesCache = data ? JSON.parse(data) : {};
         } catch (e) {
-            return {};
+            favoritesCache = {};
         }
+        return favoritesCache!;
     }
 };
 

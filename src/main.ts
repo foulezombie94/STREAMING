@@ -31,6 +31,7 @@ const SPIDER_NOIR_MOCK = {
     backdrop_path: "/mkwVoyP9bFSmfVqU8FJyem52hVR.jpg",
     poster_path: "/oD8WSVqz84ZRfelkr7JPeJwR9Iv.jpg",
     media_type: "tv",
+    first_air_date: "2026-05-27",
     genre_ids: [80, 9648, 18],
     vote_average: 9.0
 };
@@ -141,6 +142,14 @@ async function getOverlaysModule() {
 };
 
 export let heroCarouselManager: HeroCarouselManager;
+
+// Placeholder d'affiche (SVG inline : aucune requête réseau, via.placeholder.com n'existe plus)
+const NO_POSTER_PLACEHOLDER = 'data:image/svg+xml,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="342" height="513" viewBox="0 0 342 513">' +
+    '<rect width="342" height="513" fill="#161618"/>' +
+    '<path d="M151 236h40v30h-40z M141 226h60v50h-60z" fill="none" stroke="#3a3a3d" stroke-width="4"/>' +
+    '<text x="171" y="312" fill="#5a5a5e" font-family="Inter,sans-serif" font-size="18" text-anchor="middle">Pas d\'affiche</text></svg>'
+);
 
 let navbar: HTMLElement | null = null;
 let heroSection: HTMLElement | null = null;
@@ -539,8 +548,14 @@ function renderFavoritesPage() {
     mainContent.appendChild(section);
 }
 
+// Observer partagé des sections différées (évite d'en recréer un par section à chaque navigation,
+// et de garder en mémoire des observers sur des stubs déjà retirés du DOM)
+let lazySectionObserver: IntersectionObserver | null = null;
+
 async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: number | null = null) {
     if (!mainContent) return;
+    lazySectionObserver?.disconnect();
+    lazySectionObserver = null;
     mainContent.innerHTML = ''; 
 
     // Préchargement des sagas supprimé pour éliminer sagas_data de la chaîne réseau critique au démarrage.
@@ -617,30 +632,35 @@ async function renderHomeSections(type: 'movie' | 'tv' | 'trending', genreId: nu
     });
 
     // 2. Créer de simples "stubs" vides (très légers) pour les sections différées pour économiser le Main Thread (TBT)
+    const stubConfigs = new Map<Element, SectionConfig>();
+    const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const stub = entry.target;
+            const conf = stubConfigs.get(stub);
+            obs.unobserve(stub);
+            if (!conf) return;
+            stubConfigs.delete(stub);
+
+            // Remplacer le stub par la vraie section
+            const section = document.createElement('section');
+            section.className = 'popular';
+            section.id = `section-${conf.id}`;
+            section.innerHTML = getSectionHTML(conf);
+            stub.parentNode?.replaceChild(section, stub);
+            fetchSectionData(conf);
+        });
+        if (stubConfigs.size === 0) obs.disconnect();
+    }, { rootMargin: '300px', threshold: 0 });
+    lazySectionObserver = observer;
+
     lazySections.forEach(conf => {
         const stub = document.createElement('div');
         stub.id = `stub-${conf.id}`;
         stub.style.height = '1px'; // Minimum height pour l'IntersectionObserver
         mainContent?.appendChild(stub);
-
-        const sectionObserver = new IntersectionObserver((entries, obs) => {
-            if (entries[0].isIntersecting) {
-                // Remplacer le stub par la vraie section
-                const section = document.createElement('section');
-                section.className = 'popular';
-                section.id = `section-${conf.id}`;
-                section.innerHTML = getSectionHTML(conf);
-                
-                if (stub.parentNode) {
-                    stub.parentNode.replaceChild(section, stub);
-                }
-                
-                fetchSectionData(conf);
-                obs.disconnect();
-            }
-        }, { rootMargin: '300px', threshold: 0 });
-
-        sectionObserver.observe(stub);
+        stubConfigs.set(stub, conf);
+        observer.observe(stub);
     });
 }
 
@@ -736,9 +756,8 @@ async function fetchSectionData(conf: SectionConfig) {
         renderCarouselPage(conf.id, 0);
 
         // Si c'est la toute première section du home, on met à jour le hero carousel
-        if (conf.id === 'trending-day' && currentType === 'trending') {
-            allItems.unshift(SPIDER_NOIR_MOCK);
-            heroCarouselManager.setSlides(allItems);
+        if (conf.id === 'trending-day' && currentType === 'trending' && heroCarouselManager.getSlidesCount() === 0) {
+            heroCarouselManager.setSlides([SPIDER_NOIR_MOCK, ...allItems.filter(i => i.id !== SPIDER_NOIR_MOCK.id)]);
         }
 
     } catch (err) {
@@ -804,7 +823,7 @@ export function renderMovieCard(item: TMDBMedia, forceType: string = 'auto', ext
  
     // Responsive Imagery: w185 pour mobile, w342 pour desktop
     const posterPath = item.poster_path;
-    const placeholder = 'https://via.placeholder.com/185x278?text=No+Image';
+    const placeholder = NO_POSTER_PLACEHOLDER;
     
     const isMobile = cachedInnerWidth <= 768;
     let src: string;
@@ -896,14 +915,12 @@ const desktopGenres = document.getElementById('desktop-genres');
 const mobileNavGenres = document.getElementById('mobile-nav-genres');
 
 function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' | 'sagas' | 'favorites') {
-    if (!genreFiltersContainer) return;
-    
     if (type === 'trending' || type === 'reprendre' || type === 'iptv' || type === 'sagas' || type === 'favorites') {
-        genreFiltersContainer.style.display = 'none';
+        if (genreFiltersContainer) genreFiltersContainer.style.display = 'none';
         return;
     }
     
-    genreFiltersContainer.style.display = 'flex';
+    if (genreFiltersContainer) genreFiltersContainer.style.display = 'flex';
     const genres = type === 'movie' ? movieGenres : tvGenres;
     
     // Injecter dans le menu mobile (Grille 2 colonnes)
@@ -919,12 +936,11 @@ function renderGenres(type: 'movie' | 'tv' | 'trending' | 'reprendre' | 'iptv' |
         }).join('');
     }
 
-    if (desktopGenres && desktopGenres.style.display !== 'none') {
+    if (desktopGenres) {
         if (genres.length === 0) {
             desktopGenres.innerHTML = `<div class="genre-label">Chargement...</div>`;
         } else {
             desktopGenres.innerHTML = `
-                <div class="genre-label">${type === 'movie' ? 'Genres Films' : 'Genres Séries'}</div>
                 <button class="genre-btn ${activeGenreId === null ? 'active' : ''}" data-id="all">Tous</button>
                 ${genres.map(g => `<button class="genre-btn ${activeGenreId === g.id ? 'active' : ''}" data-id="${g.id}">${g.name === 'Animation' ? 'Animé' : g.name}</button>`).join('')}
             `;
@@ -1335,7 +1351,6 @@ document.body.appendChild(mobileMenuBackdrop);
 
 // --- Mobile Menu Toggle ---
 export function toggleMobileMenu() {
-    console.log("Toggle Menu Clicked");
     const navbar = document.getElementById('navbar');
     const menuToggle = document.getElementById('menu-toggle');
     if (!navbar || !menuToggle) return;

@@ -138,7 +138,7 @@ export class HeroCarouselManager {
             const isLongTitle = title && title.length > 18;
 
             return `
-                <div class="hero-slide ${index === 0 ? 'active' : ''} ${isLongTitle ? 'long-title' : ''}" style="${index === 0 ? '' : `background-image: url('${backdropUrl}')`}" data-index="${index}">
+                <div class="hero-slide ${index === 0 ? 'active' : ''} ${isLongTitle ? 'long-title' : ''}" ${index === 0 ? '' : `data-bg="${backdropUrl}"`} data-index="${index}">
                     ${index === 0
                         ? `<img src="${backdropUrl}"
                                alt=""
@@ -227,17 +227,36 @@ export class HeroCarouselManager {
     }
 
     private updateDOM() {
-        const slides = document.querySelectorAll('.hero-slide');
+        const slides = document.querySelectorAll<HTMLElement>('.hero-slide');
         const dots = document.querySelectorAll('.dot');
         
         slides.forEach(s => s.classList.remove('active'));
         dots.forEach(d => d.classList.remove('active'));
 
+        // Chargement paresseux des backdrops : seulement la slide affichée + la suivante
+        // (avant : les 6 images HD étaient téléchargées d'un coup au démarrage)
+        if (slides.length) {
+            this.loadSlideBackground(slides[this.currentIndex]);
+            this.loadSlideBackground(slides[(this.currentIndex + 1) % slides.length]);
+        }
+
         if (slides[this.currentIndex]) slides[this.currentIndex].classList.add('active');
         if (dots[this.currentIndex]) dots[this.currentIndex].classList.add('active');
 
+        this.setProgress(0);
+    }
+
+    private loadSlideBackground(slide?: HTMLElement) {
+        const bg = slide?.dataset.bg;
+        if (!slide || !bg) return;
+        slide.style.backgroundImage = `url('${bg}')`;
+        delete slide.dataset.bg;
+    }
+
+    // transform: scaleX est animé par le compositeur (pas de layout à chaque frame, contrairement à width)
+    private setProgress(percent: number) {
         const progressEl = getHeroProgress();
-        if (progressEl) progressEl.style.width = '0%';
+        if (progressEl) progressEl.style.transform = `scaleX(${Math.min(percent, 100) / 100})`;
     }
 
     public nextSlide() {
@@ -274,8 +293,7 @@ export class HeroCarouselManager {
             const elapsed = timestamp - this.lastTimestamp;
             this.lastTimestamp = timestamp;
             this.progress += (elapsed / this.DURATION) * 100;
-            const progressEl = getHeroProgress();
-            if (progressEl) progressEl.style.width = `${Math.min(this.progress, 100)}%`;
+            this.setProgress(this.progress);
             if (this.progress >= 100) {
                 this.nextSlide();
                 this.lastTimestamp = timestamp;
