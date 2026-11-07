@@ -1,3 +1,4 @@
+import { profileStorageKey } from './profile-store';
 /**
  * Gestionnaire de progression et d'historique (LocalStorage)
  */
@@ -62,7 +63,7 @@ export const ProgressManager = {
         progressCache = allProgress;
         
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(allProgress));
+            localStorage.setItem(profileStorageKey(STORAGE_KEY), JSON.stringify(allProgress));
         } catch (e) {
             console.warn("LocalStorage bloqué ou plein", e);
         }
@@ -103,7 +104,7 @@ export const ProgressManager = {
             delete allProgress[id];
             progressCache = allProgress;
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(allProgress));
+                localStorage.setItem(profileStorageKey(STORAGE_KEY), JSON.stringify(allProgress));
             } catch (e) {
                 console.warn("LocalStorage bloqué ou plein", e);
             }
@@ -125,7 +126,7 @@ export const ProgressManager = {
             return progressCache;
         }
         try {
-            const data = localStorage.getItem(STORAGE_KEY);
+            const data = localStorage.getItem(profileStorageKey(STORAGE_KEY));
             progressCache = data ? JSON.parse(data) : {};
             return progressCache!;
         } catch (e) {
@@ -144,7 +145,7 @@ let favoritesCache: Record<string, any> | null = null;
 function saveFavorites(favorites: Record<string, any>) {
     favoritesCache = favorites;
     try {
-        localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+        localStorage.setItem(profileStorageKey(FAVORITES_KEY), JSON.stringify(favorites));
     } catch (e) {
         console.warn("LocalStorage bloqué ou plein", e);
     }
@@ -152,8 +153,8 @@ function saveFavorites(favorites: Record<string, any>) {
 
 // Synchronisation si les favoris sont modifiés dans un autre onglet
 window.addEventListener('storage', (e) => {
-    if (e.key === FAVORITES_KEY) favoritesCache = null;
-    if (e.key === STORAGE_KEY) progressCache = null;
+    if (e.key === profileStorageKey(FAVORITES_KEY)) favoritesCache = null;
+    if (e.key === profileStorageKey(STORAGE_KEY)) progressCache = null;
 });
 
 export const FavoritesManager = {
@@ -187,7 +188,7 @@ export const FavoritesManager = {
     getAllFavorites(): Record<string, any> {
         if (favoritesCache !== null) return favoritesCache;
         try {
-            const data = localStorage.getItem(FAVORITES_KEY);
+            const data = localStorage.getItem(profileStorageKey(FAVORITES_KEY));
             favoritesCache = data ? JSON.parse(data) : {};
         } catch (e) {
             favoritesCache = {};

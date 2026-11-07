@@ -35,7 +35,6 @@
     <link rel="preconnect" href="https://api.themoviedb.org" crossorigin="anonymous">
 
     <!-- Preload Fetch des requêtes critiques TMDB pour éliminer la cascade réseau (zéro délai mobile) -->
-    <link rel="preload" as="fetch" href="https://api.themoviedb.org/3/trending/all/day?api_key=e1a2bb6a3ed288feb5d767908732e751&language=fr-FR" crossorigin="anonymous">
 
     <!-- Fonts are self-hosted, no preconnect needed -->
     <!-- Inter Font - Hébergé localement pour PageSpeed -->
@@ -86,25 +85,21 @@
     <header class="navbar" id="navbar">
         <div class="logo" onclick="handleNavigation('trending')" style="cursor: pointer;">MOVIEVERSE</div>
 
-        <ul class="nav-links">
-            <li><a href="#" class="nav-item active" data-type="trending"><span class="material-symbols-outlined">home</span>Accueil</a></li>
-            <li><a href="#" class="nav-item" data-type="movie"><span class="material-symbols-outlined">movie</span>Films</a></li>
-            <li><a href="#" class="nav-item" data-type="tv"><span class="material-symbols-outlined">tv</span>Séries</a></li>
-            <li><a href="#" class="nav-item" data-type="favorites"><span class="material-symbols-outlined">bookmark</span>Favoris</a></li>
-            <li><a href="#" class="nav-item" data-type="iptv"><span class="material-symbols-outlined">live_tv</span>Direct TV</a></li>
-            <li><a href="#" class="nav-item" data-type="reprendre"><span class="material-symbols-outlined">history</span>Reprendre</a></li>
-            <div class="mobile-nav-genres" id="mobile-nav-genres">
-                <!-- Genres will be injected here as tiles -->
-            </div>
-        </ul>
-
+        <nav aria-label="Navigation principale"><ul class="nav-links">
+            <li><a href="/" class="nav-item active" data-type="trending">Accueil</a></li>
+            <li><a href="/tv" class="nav-item" data-type="tv">Séries</a></li>
+            <li><a href="/movie" class="nav-item" data-type="movie">Films</a></li>
+            <li><a href="/new" class="nav-item" data-type="new">Nouveautés et tendances</a></li>
+            <li><a href="/favorites" class="nav-item" data-type="favorites">Ma liste</a></li>
+            <li><a href="/iptv" class="nav-item" data-type="iptv">TV en direct</a></li>
+        </ul></nav>
         <div class="nav-right">
-            <button class="search-trigger" id="search-trigger" aria-label="Rechercher">
-                <span class="material-symbols-outlined">search</span>
-            </button>
-            <button class="menu-toggle" id="menu-toggle" aria-label="Menu" onclick="toggleMobileMenu()">
-                <span class="material-symbols-outlined">menu</span>
-            </button>
+            <button class="search-trigger" id="search-trigger" aria-label="Rechercher"><span class="material-symbols-outlined">search</span></button>
+            <a href="/new" class="notification-trigger nav-item" data-type="new" aria-label="Nouveautés"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 10a7 7 0 0 1 14 0v7l2 2H3l2-2zM10 22h4"/></svg></a>
+            <div class="profile-navigation"><button id="profile-trigger" aria-label="Mon profil" aria-expanded="false" aria-controls="profile-menu"></button><div class="profile-menu" id="profile-menu" hidden>
+                <button data-open-profiles>Changer de profil</button><button data-manage-profiles>Gérer les profils</button><button data-open-preferences>Mon profil et préférences</button><a href="/reprendre" class="nav-item" data-type="reprendre">Reprendre la lecture</a><a href="/sagas" class="nav-item" data-type="sagas">Collections et sagas</a><a href="/project.html">À propos de MovieVerse</a>
+            </div></div>
+            <button class="menu-toggle" id="menu-toggle" aria-label="Menu" onclick="toggleMobileMenu()"><span class="material-symbols-outlined">menu</span></button>
         </div>
     </header>
 
@@ -114,52 +109,7 @@
         <h1 style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;">MOVIEVERSE - Films, Séries et TV en Direct en streaming gratuit</h1>
         <!-- New Hero Carousel (Movix Style) -->
         <section class="hero-carousel" id="hero-carousel">
-            <div class="hero-slides-container" id="hero-slides">
-                <!--
-                    LCP PLACEHOLDER : Image statique visible dès le HTML (pas besoin d'attendre le JS).
-                    Le JS remplacera ce slide par les vraies données TMDB.
-                    fetchpriority=high + loading=eager = chargée en priorité absolue.
-                -->
-                <style>
-                    #hero-lcp-placeholder {
-                        background-image: linear-gradient(180deg, rgba(5,5,5,0) 0%, rgba(5,5,5,0.95) 90%), url('https://image.tmdb.org/t/p/w1280/mkwVoyP9bFSmfVqU8FJyem52hVR.jpg');
-                        background-color: #050505; background-position: center; background-size: cover; height: 100svh; width: 100%; min-height: 100svh;
-                    }
-                    @media (max-width: 768px) {
-                        #hero-lcp-placeholder {
-                            background-image: linear-gradient(180deg, rgba(5,5,5,0) 0%, rgba(5,5,5,0.95) 90%), url('https://image.tmdb.org/t/p/w780/mkwVoyP9bFSmfVqU8FJyem52hVR.jpg');
-                        }
-                    }
-                    @media (max-width: 480px) {
-                        #hero-lcp-placeholder {
-                            background-image: linear-gradient(180deg, rgba(5,5,5,0) 0%, rgba(5,5,5,0.95) 90%), url('https://image.tmdb.org/t/p/w300/mkwVoyP9bFSmfVqU8FJyem52hVR.jpg');
-                        }
-                    }
-                </style>
-                <div class="hero-slide active" id="hero-lcp-placeholder">
-                    <div class="slide-content">
-                        <div class="slide-info">
-                            <span class="type-tag" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">SÉRIE</span>
-                            <span class="year-tag">
-                                <span class="material-symbols-outlined">calendar_today</span>
-                                2026
-                            </span>
-                            <span class="rating-tag">
-                                <span class="material-symbols-outlined">star</span>
-                                9.0
-                            </span>
-                        </div>
-                        <h1>Spider-Noir</h1>
-                        <p class="slide-synopsis">Ben Reilly, an aging and down on his luck private investigator in 1930s New York...</p>
-
-                        <div class="slide-actions">
-                            <button class="hero-btn-play" style="pointer-events: none; opacity: 0.6;"><span class="material-symbols-outlined">play_arrow</span><span>Lecture</span></button>
-                            <button class="hero-btn-info" style="pointer-events: none; opacity: 0.6;"><span class="material-symbols-outlined">info</span><span>Plus d'infos</span></button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
+            <div class="hero-slides-container" id="hero-slides"><div class="hero-skeleton"><span class="original-label"><b>M</b> MOVIEVERSE</span><div class="loading-shimmer"></div><p>Le cinéma, les séries, vos prochaines découvertes.</p></div></div>
             <!-- Carousel Navigation -->
             <div class="carousel-nav">
                 <div class="carousel-dots" id="carousel-dots">
@@ -361,7 +311,7 @@
         </a>
         <a href="#" class="bottom-nav-item" data-type="favorites">
             <svg viewBox="0 0 32 32"><path d="M 7 5 L 7 28 L 8.59375 26.8125 L 16 21.25 L 23.40625 26.8125 L 25 28 L 25 5 Z M 9 7 L 23 7 L 23 24 L 16.59375 19.1875 L 16 18.75 L 15.40625 19.1875 L 9 24 Z"/></svg>
-            <span>Favoris</span>
+            <span>Ma liste</span>
         </a>
         <a href="#" class="bottom-nav-item" data-type="iptv">
             <svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
@@ -374,128 +324,12 @@
     </nav>
 
     <!-- Overlay de Recherche Premium -->
-    <div class="search-overlay" id="search-overlay">
-        <div class="search-overlay-content">
-            <div class="search-bar-premium">
-                <span class="material-symbols-outlined">search</span>
-                <input type="text" aria-label="Rechercher" id="search-input-premium" placeholder="Rechercher un film, une série, un animé...">
-            </div>
-            <button class="close-search" id="close-search" aria-label="Fermer la recherche">
-                <span class="material-symbols-outlined">close</span>
-            </button>
-        </div>
-    </div>
+    <dialog class="search-overlay" id="search-overlay" aria-label="Rechercher dans le catalogue">
+        <div class="search-overlay-content"><div class="search-bar-premium"><span class="material-symbols-outlined">search</span><input type="search" aria-label="Rechercher un titre, un acteur ou un genre" id="search-input-premium" placeholder="Titres, personnes, genres" autocomplete="off"></div><button class="close-search round-control" id="close-search" aria-label="Fermer la recherche"><span class="material-symbols-outlined">close</span></button></div><div id="search-results" aria-live="polite"><p class="search-hint">Recherchez un titre, un acteur ou un genre.</p></div>
+    </dialog>
 
     <!-- ===== BENTO FOOTER ===== -->
-    <footer class="bento-footer" id="site-footer">
-        <div class="footer-content">
-
-            <div class="bento-grid">
-
-                <!-- Carte 1 : Branding & Légal (2 colonnes) -->
-                <div class="bento-card card-brand">
-                    <div>
-                        <div class="brand-logo">MOVIEVERSE.</div>
-                        <p class="legal-text">
-                            MOVIEVERSE agit comme un moteur de recherche. Nous n'hébergeons aucun fichier vidéo sur nos serveurs. L'ensemble du contenu est fourni par des tiers de manière automatisée. En cas de litige relatif aux droits d'auteur, merci de contacter les hébergeurs finaux.
-                        </p>
-                    </div>
-                    <a href="https://github.com/foulezombie94" target="_blank" rel="noopener" class="btn-source">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
-                        Voir sur GitHub
-                    </a>
-                </div>
-
-                <!-- Carte 2 : Navigation (hauteur 2 rangées) -->
-                <div class="bento-card card-nav">
-                    <h3 class="card-title">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-                        Explorer
-                    </h3>
-                    <div class="nav-grid">
-                        <a href="https://t.me/+xtY0ZqrKgUIyNDlk" class="nav-item" target="_blank" rel="noopener">
-                            <span>💬 Canal Telegram</span>
-                            <svg class="arrow" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
-                        </a>
-                        <a href="/contact.html" class="nav-item">
-                            <span>✉️ Nous Contacter</span>
-                            <svg class="arrow" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
-                        </a>
-                        <a href="/project.html" class="nav-item">
-                            <span>ℹ️ Le Projet</span>
-                            <svg class="arrow" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
-                        </a>
-                        <a href="/privacy.html" class="nav-item">
-                            <span>🛡️ Confidentialité</span>
-                            <svg class="arrow" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
-                        </a>
-                        <a href="/cgu.html" class="nav-item">
-                            <span>📄 CGU</span>
-                            <svg class="arrow" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
-                        </a>
-                        <a href="/dmca.html" class="nav-item">
-                            <span>⚖️ DMCA</span>
-                            <svg class="arrow" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
-                        </a>
-                        <a href="/MovieVerse-debug.apk" class="nav-item" download>
-                            <span>🤖 Application Android (APK)</span>
-                            <svg class="arrow" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Carte 3 : Développeur -->
-                <div class="bento-card card-dev">
-                    <span class="dev-tag">✨ Entièrement Vibe Coded</span>
-                    <div class="dev-name">@foulezombie94</div>
-                </div>
-
-                <!-- Carte 4 : Stack Technique -->
-                <div class="bento-card card-tech">
-                    <h3 class="card-title">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M15 9H9v6h6V9zm-2 4h-2v-2h2v2zm8-2V9h-2V7c0-1.1-.9-2-2-2h-2V3h-2v2h-2V3H9v2H7C5.9 5 5 5.9 5 7v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h2v2h2v-2h2v2h2v-2h2c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2zm-4 6H7V7h10v10z"/></svg>
-                        Engine
-                    </h3>
-                    <div class="tech-pills">
-                        <!-- TypeScript -->
-                        <a href="https://www.typescriptlang.org/" target="_blank" rel="noopener noreferrer" class="tech-pill tech-ts">
-                            TypeScript
-                        </a>
-                        <!-- Node.js -->
-                        <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer" class="tech-pill tech-node">
-                            Node.js
-                        </a>
-                        <!-- Vite -->
-                        <a href="https://vite.dev/" target="_blank" rel="noopener noreferrer" class="tech-pill tech-vite">
-                            Vite
-                        </a>
-                        <!-- Tailwind CSS -->
-                        <a href="https://tailwindcss.com/" target="_blank" rel="noopener noreferrer" class="tech-pill tech-tailwind">
-                            Tailwind
-                        </a>
-                        <!-- Upstash -->
-                        <a href="https://upstash.com/" target="_blank" rel="noopener noreferrer" class="tech-pill tech-upstash">
-                            Upstash
-                        </a>
-                        <!-- Vercel -->
-                        <a href="https://vercel.com/" target="_blank" rel="noopener noreferrer" class="tech-pill tech-vercel">
-                            Vercel
-                        </a>
-                        <!-- TMDB -->
-                        <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" class="tech-pill tech-tmdb">
-                            TMDB
-                        </a>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="footer-copyright">
-                © 2026 MOVIEVERSE — Conçu pour repousser les limites.
-            </div>
-
-        </div>
-    </footer>
+    <footer class="bento-footer" id="site-footer"><div class="footer-content"><div class="footer-brand">MOVIEVERSE</div><div class="footer-links"><a href="/project.html">À propos</a><a href="/contact.html">Nous contacter</a><a href="/cgu.html">Conditions d’utilisation</a><a href="/privacy.html">Confidentialité</a><a href="/dmca.html">Droits d’auteur</a><a href="https://github.com/foulezombie94/STREAMING" target="_blank" rel="noopener">Le projet sur GitHub</a><a href="/sagas" onclick="event.preventDefault();handleNavigation('sagas')">Collections et sagas</a><a href="/reprendre" onclick="event.preventDefault();handleNavigation('reprendre')">Historique de lecture</a></div><p class="footer-caption">MovieVerse agit comme un moteur de recherche. Les contenus vidéo sont fournis par des services tiers. Les informations et visuels du catalogue proviennent de TMDB.</p><p class="footer-caption">© 2026 MovieVerse</p></div></footer>
 
     <!-- Projet Page Overlay (SPA style) -->
     <div id="project-overlay" style="display: none; position: fixed; inset: 0; z-index: 10000; background: #050505; overflow-y: auto; opacity: 0; transition: opacity 0.3s ease;"></div>
