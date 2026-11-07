@@ -55,6 +55,18 @@
     {
       "source": "/sagas",
       "destination": "/index.html"
+    },
+    {
+      "source": "/favorites",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/new",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/profiles",
+      "destination": "/index.html"
     }
   ],
   "headers": [

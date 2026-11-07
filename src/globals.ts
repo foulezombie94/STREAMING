@@ -198,8 +198,8 @@ export function showToast(message: string, duration = 3500) {
 }
 
 export const SECTIONS_CONFIG: SectionConfig[] = [
-    { id: 'trending-day', title: 'Tendances du jour', icon: 'local_fire_department', endpoint: '/trending/all/day', mediaType: 'trending' },
-    { id: 'trending-week', title: 'Tendances', icon: 'trending_up', endpoint: '/trending/all/week', mediaType: 'trending' },
+    { id: 'trending-day', title: 'Les tendances du moment', icon: 'local_fire_department', endpoint: '/trending/all/day', mediaType: 'trending' },
+    { id: 'trending-week', title: 'Le top 10 du moment', icon: 'trending_up', endpoint: '/trending/all/week', mediaType: 'trending' },
     { id: 'sagas', title: 'Les sagas incontournables', icon: 'auto_awesome', endpoint: '/movie/top_rated', mediaType: 'movie' },
     { id: 'pop-movies', title: 'Films populaires', icon: 'movie', endpoint: '/movie/popular', mediaType: 'movie' },
     { id: 'pop-tv', title: 'Séries populaires', icon: 'tv', endpoint: '/tv/popular', mediaType: 'tv' },

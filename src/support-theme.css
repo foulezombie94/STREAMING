@@ -1,0 +1,9 @@
+@font-face { font-family: Inter; src: url('/fonts/inter-latin-variable-full-normal.woff2') format('woff2'); font-weight: 100 900; font-display: swap; }
+:root { --bg-color: #141414; --text-main: #eee; --text-muted: #a3a3a3; --accent-solid: #e50914; --accent-gradient: #e50914; --glass-bg: #222; --glass-border: #333; --card-bg: #222; --card-border: #333; }
+body { background: #141414 !important; color: #eee; font-family: Inter, Arial, sans-serif !important; }
+body::before, body::after, .glow-orb, .floating-shape, .background-effects { display: none !important; }
+h1, h2, h3, p, a, input, button, textarea { font-family: inherit !important; }
+h1 { font-weight: 700 !important; letter-spacing: -1px !important; background: none !important; -webkit-text-fill-color: currentColor !important; }
+.glass-card, .contact-card, .timeline-content, .content-card, .policy-section, .legal-section { border-radius: 5px !important; background: #222 !important; box-shadow: none !important; backdrop-filter: none !important; border-color: #333 !important; }
+a { color: #ccc; }a:hover { color: #fff; }button, input, textarea { border-radius: 4px !important; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }

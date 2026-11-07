@@ -1,14 +1,16 @@
+import { openTitle } from './title-dialog';
+import { escapeHtml } from './ui';
 import { TMDBMedia } from './types';
-import { 
-    GLOBAL_BLACKLIST_IDS, 
-    cachedInnerWidth, 
-    getCurrentType, 
-    getHeroProgress, 
-    getHeroPauseBtn, 
-    getHeroPrevBtn, 
-    getHeroNextBtn, 
-    getHeroSlidesContainer, 
-    getHeroDotsContainer 
+import {
+    GLOBAL_BLACKLIST_IDS,
+    cachedInnerWidth,
+    getCurrentType,
+    getHeroProgress,
+    getHeroPauseBtn,
+    getHeroPrevBtn,
+    getHeroNextBtn,
+    getHeroSlidesContainer,
+    getHeroDotsContainer
 } from './globals';
 // sagas est importé dynamiquement dans setSagaSlides() uniquement
 
@@ -18,7 +20,7 @@ export class HeroCarouselManager {
     private rafId: number = 0;
     private lastTimestamp: number = 0;
     private progress: number = 0;
-    private isPaused: boolean = false;
+    private isPaused: boolean = localStorage.getItem('movieverse_autoplay') === 'false' || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     private isIntersecting: boolean = true;
     private readonly DURATION: number = 8000;
     // La rotation auto ne démarre qu'après la 1re interaction de l'utilisateur.
@@ -31,7 +33,7 @@ export class HeroCarouselManager {
         this.initEventListeners();
         this.initSwipe();
         this.waitForFirstInteraction();
-        
+
         // Pause le carousel quand l'onglet est en arrière-plan (économie CPU/batterie)
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
@@ -80,7 +82,8 @@ export class HeroCarouselManager {
                         } else {
                             sessionStorage.removeItem('current_media_preview');
                         }
-                        window.location.href = `/details.html?id=${id}&type=${type}`;
+                        if (btn.classList.contains('hero-btn-play')) window.location.href = `/details.html?id=${id}&type=${type}&autoplay=1`;
+                        else openTitle(id, type, foundMedia);
                     }
                 }
             }
@@ -119,12 +122,13 @@ export class HeroCarouselManager {
 
     public setSlides(data: TMDBMedia[]) {
         // Filtrer les IDs blacklistés
+        if (!data.length) return;
         const filtered = data.filter(item => !GLOBAL_BLACKLIST_IDS.includes(item.id.toString()));
         // Mélanger les données au hasard, mais en gardant Spider-Noir en première position
         let firstSlide = filtered[0];
         const rest = filtered.slice(1);
         const shuffledRest = [...rest].sort(() => 0.5 - Math.random());
-        this.slides = [firstSlide, ...shuffledRest].slice(0, 6); 
+        this.slides = [firstSlide, ...shuffledRest].filter(Boolean).slice(0, 6);
         this.renderSlides();
         this.renderDots();
         this.goToSlide(0);
@@ -136,7 +140,7 @@ export class HeroCarouselManager {
         if (!slidesContainer) return;
 
         const width = cachedInnerWidth;
-        const backdropSize = width <= 480 ? 'w300' : (width <= 768 ? 'w780' : 'w1280');
+        const backdropSize = width <= 768 ? 'w780' : 'w1280';
         const IMAGE_HERO_URL = `https://image.tmdb.org/t/p/${backdropSize}`;
 
         const generateSlideHtml = (item: any, index: number) => {
@@ -146,7 +150,7 @@ export class HeroCarouselManager {
             const releaseDate = isSaga ? null : (displayType === 'tv' ? item.first_air_date : item.release_date);
             const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : (isSaga ? 'SAGA' : 'N/A');
             const rating = isSaga ? 'N/A' : (item.vote_average ? item.vote_average.toFixed(1) : '0.0');
-            
+
             let backdropUrl = isSaga ? item.poster : (item.backdrop || (item.backdrop_path ? `${IMAGE_HERO_URL}${item.backdrop_path}` : ''));
             if (!backdropUrl || backdropUrl.includes('86Yp1S669SFWFWFW') || backdropUrl === '') {
                 backdropUrl = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=2070&auto=format&fit=crop';
@@ -179,8 +183,8 @@ export class HeroCarouselManager {
                                 ${rating}
                             </span>
                         </div>
-                        <h1>${title}</h1>
-                        <p class="slide-synopsis">${overview}</p>
+                        <div class="original-label"><b>M</b> ${displayType === 'tv' ? 'S É R I E' : 'F I L M'}</div><h1>${escapeHtml(title)}</h1>
+                        <p class="slide-synopsis">${escapeHtml(overview)}</p>
                         <div class="slide-actions">
                             <button class="hero-btn-play" data-id="${item.id}" data-type="${displayType}"><span class="material-symbols-outlined">${isSaga ? 'visibility' : 'play_arrow'}</span><span>${isSaga ? 'Découvrir' : 'Lecture'}</span></button>
                             <button class="hero-btn-info" data-id="${item.id}" data-type="${displayType}"><span class="material-symbols-outlined">info</span><span>Plus d'infos</span></button>
@@ -190,44 +194,14 @@ export class HeroCarouselManager {
             `;
         };
 
-        const placeholder = document.getElementById('hero-lcp-placeholder');
-        if (placeholder) {
-            // PRÉSERVER LE DOM NODE DU PLACEHOLDER LCP POUR PAGESPEED
-            placeholder.removeAttribute('id');
-            placeholder.setAttribute('data-index', '0');
-            
-            // Activer les boutons du placeholder avec les vraies données
-            const firstItem = this.slides[0];
-            const displayType = !!(firstItem as any).isSaga ? 'saga' : (firstItem.media_type || (getCurrentType() === 'tv' ? 'tv' : 'movie'));
-            const btnPlay = placeholder.querySelector('.hero-btn-play');
-            const btnInfo = placeholder.querySelector('.hero-btn-info');
-            if (btnPlay) {
-                btnPlay.setAttribute('data-id', firstItem.id.toString());
-                btnPlay.setAttribute('data-type', displayType);
-                (btnPlay as HTMLElement).style.pointerEvents = 'auto';
-                (btnPlay as HTMLElement).style.opacity = '1';
-            }
-            if (btnInfo) {
-                btnInfo.setAttribute('data-id', firstItem.id.toString());
-                btnInfo.setAttribute('data-type', displayType);
-                (btnInfo as HTMLElement).style.pointerEvents = 'auto';
-                (btnInfo as HTMLElement).style.opacity = '1';
-            }
-
-            // Générer et ajouter uniquement les slides 1 à 5
-            const restHtml = this.slides.slice(1).map((item, i) => generateSlideHtml(item, i + 1)).join('');
-            slidesContainer.insertAdjacentHTML('beforeend', restHtml);
-        } else {
-            // Comportement normal si le placeholder n'existe pas (ex: navigation inter-pages)
-            slidesContainer.innerHTML = this.slides.map((item, index) => generateSlideHtml(item, index)).join('');
-        }
+        slidesContainer.innerHTML = this.slides.map((item, index) => generateSlideHtml(item, index)).join('');
     }
 
     private renderDots() {
         const dotsContainer = getHeroDotsContainer();
         if (!dotsContainer) return;
         dotsContainer.innerHTML = this.slides.map((_, index) => `
-            <div class="dot ${index === 0 ? 'active' : ''}" data-index="${index}"></div>
+            <button class="dot ${index === 0 ? 'active' : ''}" data-index="${index}" aria-label="Programme à la une ${index + 1}"></button>
         `).join('');
 
         dotsContainer.querySelectorAll('.dot').forEach(dot => {
@@ -247,7 +221,7 @@ export class HeroCarouselManager {
     private updateDOM() {
         const slides = document.querySelectorAll<HTMLElement>('.hero-slide');
         const dots = document.querySelectorAll('.dot');
-        
+
         slides.forEach(s => s.classList.remove('active'));
         dots.forEach(d => d.classList.remove('active'));
 

@@ -1,5 +1,6 @@
 import './base.css';
 import './details.css';
+import './theme.css';
 import { ProgressManager, FavoritesManager } from './storage';
 import { 
     TMDBMedia, TMDBCastMember, TMDBActorDetail, 
@@ -126,11 +127,11 @@ function updateFavoriteButtonUI() {
     if (isFav) {
         favoriteBtn.classList.add('active');
         const span = favoriteBtn.querySelector('span');
-        if (span) span.textContent = 'Favori';
+        if (span) span.textContent = 'Dans ma liste';
     } else {
         favoriteBtn.classList.remove('active');
         const span = favoriteBtn.querySelector('span');
-        if (span) span.textContent = 'Favoris';
+        if (span) span.textContent = 'Ma liste';
     }
 }
 
@@ -319,12 +320,14 @@ async function fetchDetails() {
 
             // Pre-populate selectors immediately to avoid "Empty" state
             const lastProgress = ProgressManager.getProgress(mediaId!, 'tv');
-            const targetS = lastProgress?.season || 1;
-            const targetE = lastProgress?.episode || 1;
+            const requestedSeason = Number(urlParams.get('season'));
+            const requestedEpisode = Number(urlParams.get('episode'));
+            const targetS = Number.isInteger(requestedSeason) && requestedSeason > 0 && requestedSeason <= currentSeasonsCount ? requestedSeason : lastProgress?.season || 1;
+            const targetE = Number.isInteger(requestedEpisode) && requestedEpisode > 0 ? requestedEpisode : lastProgress?.episode || 1;
             
             if (seasonSelect) {
                 populateSeasonSelect(targetS);
-                fetchEpisodes(targetS, targetE);
+                await fetchEpisodes(targetS, targetE);
             }
         }
 
@@ -986,4 +989,6 @@ document.addEventListener('visibilitychange', () => {
 
 
 
-fetchDetails();
+fetchDetails().then(() => {
+    if (urlParams.get('autoplay') === '1' && currentMediaData) watchMovieBtn?.click();
+});
