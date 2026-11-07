@@ -21,10 +21,16 @@ export class HeroCarouselManager {
     private isPaused: boolean = false;
     private isIntersecting: boolean = true;
     private readonly DURATION: number = 8000;
+    // La rotation auto ne démarre qu'après la 1re interaction de l'utilisateur.
+    // Raison : Chrome mesure le LCP jusqu'à la 1re interaction (tap, clic, molette, touche).
+    // Si le carrousel tourne avant, le titre de la slide suivante (souvent plus grand)
+    // devient le nouveau "plus grand élément" et le LCP passait de ~0,4 s à ~9 s.
+    private hasUserInteracted: boolean = false;
 
     constructor() {
         this.initEventListeners();
         this.initSwipe();
+        this.waitForFirstInteraction();
         
         // Pause le carousel quand l'onglet est en arrière-plan (économie CPU/batterie)
         document.addEventListener('visibilitychange', () => {
@@ -79,6 +85,18 @@ export class HeroCarouselManager {
                 }
             }
         });
+    }
+
+    private waitForFirstInteraction() {
+        // Uniquement des événements qui terminent la mesure du LCP (pas 'scroll' :
+        // il peut être déclenché par le code ou la restauration de position du navigateur)
+        const events = ['pointerdown', 'keydown', 'wheel', 'touchstart'] as const;
+        const onFirstInteraction = () => {
+            events.forEach(evt => window.removeEventListener(evt, onFirstInteraction, true));
+            this.hasUserInteracted = true;
+            if (this.slides.length > 0 && !this.isPaused && !document.hidden) this.start();
+        };
+        events.forEach(evt => window.addEventListener(evt, onFirstInteraction, { capture: true, passive: true }));
     }
 
     // Swipe tactile natif sur le hero carousel (H-1)
@@ -282,7 +300,7 @@ export class HeroCarouselManager {
 
     public start() {
         this.stop();
-        if (this.isPaused || !this.isIntersecting || document.documentElement.classList.contains('low-perf')) return;
+        if (!this.hasUserInteracted || this.isPaused || !this.isIntersecting || document.documentElement.classList.contains('low-perf')) return;
         this.lastTimestamp = 0;
         const tick = (timestamp: number) => {
             if (this.isPaused || !this.isIntersecting || document.documentElement.classList.contains('low-perf')) {
